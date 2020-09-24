@@ -39,6 +39,7 @@ pub mod cstr {
 
     use libc::c_char;
     use std::ffi::CStr;
+    use std::ptr;
 
     /// Returns the specified `*const c_char` as a `&'a str`. Ownership is not taken.
     ///
@@ -47,6 +48,9 @@ pub mod cstr {
     ///
     /// [`CStr::from_ptr()`]: https://doc.rust-lang.org/std/ffi/struct.CStr.html#method.from_ptr
     pub unsafe fn raw_to_str<'a>(s: *const c_char) -> &'a str {
+        if s == ptr::null() {
+            panic!("raw_to_str(): raw input must not be null");
+        }
         CStr::from_ptr(s).to_str().unwrap()
     }
 
@@ -58,5 +62,38 @@ pub mod cstr {
     /// [`raw_to_str()`]: fn.raw_to_str.html
     pub unsafe fn copy_raw(s: *const c_char) -> String {
         String::from(raw_to_str(s))
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use libc::c_char;
+        use std::ffi::CString;
+        use std::ptr;
+
+        #[test]
+        fn raw_to_str_success() {
+            let c_string = CString::new("foo").unwrap();
+            unsafe { assert_eq!(raw_to_str(c_string.as_ptr() as *const c_char), "foo") };
+        }
+
+        #[test]
+        #[should_panic]
+        fn raw_to_str_expects_non_null() {
+            unsafe { raw_to_str(ptr::null() as *const c_char) };
+        }
+
+        #[test]
+        fn copy_raw_success() {
+            let c_string = CString::new("foo").unwrap();
+            let c_str = c_string.as_ptr() as *const c_char;
+            unsafe { assert_eq!(copy_raw(c_str), "foo".to_string()) };
+        }
+
+        #[test]
+        #[should_panic]
+        fn copy_raw_expects_non_null() {
+            unsafe { copy_raw(ptr::null() as *const c_char) };
+        }
     }
 }

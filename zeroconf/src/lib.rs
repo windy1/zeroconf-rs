@@ -16,7 +16,7 @@
 //! callback. The only requirement is that this context implements the [`Any`] trait, which most
 //! types will automatically. See [`MdnsService`] for more information about contexts.
 //!
-//! ```
+//! ```no_run
 //! use std::any::Any;
 //! use std::sync::{Arc, Mutex};
 //! use zeroconf::{MdnsService, ServiceRegistration};
@@ -57,7 +57,7 @@
 //!
 //! ## Browsing services
 //!
-//! ```
+//! ```no_run
 //! use std::any::Any;
 //! use std::sync::Arc;
 //! use zeroconf::{MdnsBrowser, ServiceDiscovery};
