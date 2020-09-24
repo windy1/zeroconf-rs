@@ -1,3 +1,5 @@
+//! Rust friendly Bonjour wrappers/helpers
+
 use bonjour_sys::{
     DNSServiceBrowse, DNSServiceBrowseReply, DNSServiceFlags, DNSServiceGetAddrInfo,
     DNSServiceGetAddrInfoReply, DNSServiceProcessResult, DNSServiceProtocol, DNSServiceRef,
@@ -7,58 +9,24 @@ use bonjour_sys::{
 use libc::{c_char, c_void};
 use std::ptr;
 
+/// Wraps the `DNSServiceRef` type from the raw Bonjour bindings.
+///
+/// This struct allocates a new `DNSServiceRef` when any of the delgate functions is invoked and
+/// calls the Bonjour function responsible for freeing the client on `trait Drop`.
+///
+/// # Note
+/// This wrapper is meant for one-off calls to underlying Bonjour functions. The behaviour for
+/// using an already initialized `DNSServiceRef` in one of these functions is undefined. Therefore,
+/// it is preferable to only call one delegate function per-instance.
 #[derive(Debug)]
 pub struct ManagedDNSServiceRef {
     service: DNSServiceRef,
 }
 
-#[derive(Builder, BuilderDelegate)]
-pub struct RegisterServiceParams {
-    flags: DNSServiceFlags,
-    interface_index: u32,
-    name: *const c_char,
-    regtype: *const c_char,
-    domain: *const c_char,
-    host: *const c_char,
-    port: u16,
-    txt_len: u16,
-    txt_record: *const c_void,
-    callback: DNSServiceRegisterReply,
-    context: *mut c_void,
-}
-
-#[derive(Builder, BuilderDelegate)]
-pub struct BrowseServicesParams {
-    flags: DNSServiceFlags,
-    interface_index: u32,
-    regtype: *const c_char,
-    domain: *const c_char,
-    callback: DNSServiceBrowseReply,
-    context: *mut c_void,
-}
-
-#[derive(Builder, BuilderDelegate)]
-pub struct ServiceResolveParams {
-    flags: DNSServiceFlags,
-    interface_index: u32,
-    name: *const c_char,
-    regtype: *const c_char,
-    domain: *const c_char,
-    callback: DNSServiceResolveReply,
-    context: *mut c_void,
-}
-
-#[derive(Builder, BuilderDelegate)]
-pub struct GetAddressInfoParams {
-    flags: DNSServiceFlags,
-    interface_index: u32,
-    protocol: DNSServiceProtocol,
-    hostname: *const c_char,
-    callback: DNSServiceGetAddrInfoReply,
-    context: *mut c_void,
-}
-
 impl ManagedDNSServiceRef {
+    /// Delegate function for [`DNSServiceRegister`].
+    ///
+    /// [`DNSServiceRegister`]: https://developer.apple.com/documentation/dnssd/1804733-dnsserviceregister?language=objc
     pub fn register_service(
         &mut self,
         RegisterServiceParams {
@@ -101,6 +69,9 @@ impl ManagedDNSServiceRef {
         }
     }
 
+    /// Delegate function for [`DNSServiceBrowse`].
+    ///
+    /// [`DNSServiceBrowse`]: https://developer.apple.com/documentation/dnssd/1804742-dnsservicebrowse?language=objc
     pub fn browse_services(
         &mut self,
         BrowseServicesParams {
@@ -133,6 +104,9 @@ impl ManagedDNSServiceRef {
         }
     }
 
+    /// Delegate function fro [`DNSServiceResolve`].
+    ///
+    /// [`DNSServiceResolve`]: https://developer.apple.com/documentation/dnssd/1804744-dnsserviceresolve?language=objc
     pub fn resolve_service(
         &mut self,
         ServiceResolveParams {
@@ -168,6 +142,9 @@ impl ManagedDNSServiceRef {
         self.process_result()
     }
 
+    /// Delegate function for [`DNSServiceGetAddrInfo`].
+    ///
+    /// [`DNSServiceGetAddrInfo`]: https://developer.apple.com/documentation/dnssd/1804700-dnsservicegetaddrinfo?language=objc
     pub fn get_address_info(
         &mut self,
         GetAddressInfoParams {
@@ -201,6 +178,9 @@ impl ManagedDNSServiceRef {
         self.process_result()
     }
 
+    /// Delegate function for [`DNSServiceProcessResult`].
+    ///
+    /// [`DNSServiceProcessResult`]: https://developer.apple.com/documentation/dnssd/1804696-dnsserviceprocessresult?language=objc
     fn process_result(&self) -> Result<(), String> {
         let err = unsafe { DNSServiceProcessResult(self.service) };
         if err != 0 {
@@ -227,4 +207,54 @@ impl Drop for ManagedDNSServiceRef {
             }
         }
     }
+}
+
+/// Holds parameters for `ManagedDNSServiceRef::register_service()`.
+#[derive(Builder, BuilderDelegate)]
+pub struct RegisterServiceParams {
+    flags: DNSServiceFlags,
+    interface_index: u32,
+    name: *const c_char,
+    regtype: *const c_char,
+    domain: *const c_char,
+    host: *const c_char,
+    port: u16,
+    txt_len: u16,
+    txt_record: *const c_void,
+    callback: DNSServiceRegisterReply,
+    context: *mut c_void,
+}
+
+/// Holds parameters for `ManagedDNSServiceRef::browse_services()`.
+#[derive(Builder, BuilderDelegate)]
+pub struct BrowseServicesParams {
+    flags: DNSServiceFlags,
+    interface_index: u32,
+    regtype: *const c_char,
+    domain: *const c_char,
+    callback: DNSServiceBrowseReply,
+    context: *mut c_void,
+}
+
+/// Holds parameters for `ManagedDNSServiceRef::resolve_service()`.
+#[derive(Builder, BuilderDelegate)]
+pub struct ServiceResolveParams {
+    flags: DNSServiceFlags,
+    interface_index: u32,
+    name: *const c_char,
+    regtype: *const c_char,
+    domain: *const c_char,
+    callback: DNSServiceResolveReply,
+    context: *mut c_void,
+}
+
+/// Holds parameters for `ManagedDNSServiceRef::get_address_info()`.
+#[derive(Builder, BuilderDelegate)]
+pub struct GetAddressInfoParams {
+    flags: DNSServiceFlags,
+    interface_index: u32,
+    protocol: DNSServiceProtocol,
+    hostname: *const c_char,
+    callback: DNSServiceGetAddrInfoReply,
+    context: *mut c_void,
 }

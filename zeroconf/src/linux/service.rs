@@ -24,7 +24,7 @@ pub struct AvahiMdnsService {
 }
 
 impl AvahiMdnsService {
-    /// Creates a new `AvahiMdnsService` with the specified `kidn` (e.g. `_http._tcp`) and `port`.
+    /// Creates a new `AvahiMdnsService` with the specified `kind` (e.g. `_http._tcp`) and `port`.
     pub fn new(kind: &str, port: u16) -> Self {
         Self {
             client: None,

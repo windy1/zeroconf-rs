@@ -13,6 +13,7 @@ use std::sync::Arc;
 const BONJOUR_IF_UNSPEC: u32 = 0;
 const BONJOUR_RENAME_FLAGS: DNSServiceFlags = 0;
 
+/// Interface for interacting with Bonjour's mDNS service registration capabilities.
 #[derive(Debug)]
 pub struct BonjourMdnsService {
     service: ManagedDNSServiceRef,
@@ -23,6 +24,8 @@ pub struct BonjourMdnsService {
 }
 
 impl BonjourMdnsService {
+    /// Creates a new `BonjourMdnsService` with the specified `kind` (e.g. `_http._tcp`) and
+    /// `port`.
     pub fn new(kind: &str, port: u16) -> Self {
         Self {
             service: ManagedDNSServiceRef::default(),
@@ -33,22 +36,32 @@ impl BonjourMdnsService {
         }
     }
 
+    /// Sets the name to register this service under. If no name is set, Bonjour will
+    /// automatically assign one (usually to the name of the machine).
     pub fn set_name(&mut self, name: &str) {
         self.name = Some(CString::new(name).unwrap());
     }
 
+    /// Sets the [`ServiceRegisteredCallback`] that is invoked when the service has been
+    /// registered.
+    ///
+    /// [`ServiceRegisteredCallback`]: ../type.ServiceRegisteredCallback.html
     pub fn set_registered_callback(&mut self, registered_callback: Box<ServiceRegisteredCallback>) {
         unsafe { (*self.context).registered_callback = Some(registered_callback) };
     }
 
+    /// Sets the optional user context to pass through to the callback. This is useful if you need
+    /// to share state between pre and post-callback. The context type must implement `Any`.
     pub fn set_context(&mut self, context: Box<dyn Any>) {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
+    /// Registers and start's the service; continuously polling the event loop. This call will
+    /// block the current thread.
     pub fn start(&mut self) -> Result<(), String> {
         debug!("Registering service: {:?}", self);
 
-        let name: *const c_char = self
+        let name = self
             .name
             .as_ref()
             .map(|s| s.as_ptr() as *const c_char)

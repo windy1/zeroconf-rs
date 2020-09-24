@@ -13,6 +13,7 @@ use std::fmt::{self, Formatter};
 use std::ptr;
 use std::sync::Arc;
 
+/// Interface for interacting with Bonjour's mDNS service browsing capabilities.
 #[derive(Debug)]
 pub struct BonjourMdnsBrowser {
     service: ManagedDNSServiceRef,
@@ -21,6 +22,8 @@ pub struct BonjourMdnsBrowser {
 }
 
 impl BonjourMdnsBrowser {
+    /// Creates a new `BonjourMdnsBrowser` that browses for the specified `kind`
+    /// (e.g. `_http._tcp`).
     pub fn new(kind: &str) -> Self {
         Self {
             service: ManagedDNSServiceRef::default(),
@@ -29,6 +32,10 @@ impl BonjourMdnsBrowser {
         }
     }
 
+    /// Sets the [`ServiceDiscoveredCallback`] that is invoked when the browser has discovered and
+    /// resolved a service.
+    ///
+    /// [`ServiceDiscoveredCallback`]: ../type.ServiceDiscoveredCallback.html
     pub fn set_service_discovered_callback(
         &self,
         service_discovered_callback: Box<ServiceDiscoveredCallback>,
@@ -36,10 +43,14 @@ impl BonjourMdnsBrowser {
         unsafe { (*self.context).service_discovered_callback = Some(service_discovered_callback) };
     }
 
+    /// Sets the optional user context to pass through to the callback. This is useful if you need
+    /// to share state between pre and post-callback. The context type must implement `Any`.
     pub fn set_context(&mut self, context: Box<dyn Any>) {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
+    /// Starts the browser; continuously polling the event loop. This call will block the current
+    /// thread.
     pub fn start(&mut self) -> Result<(), String> {
         debug!("Browsing services: {:?}", self);
 
