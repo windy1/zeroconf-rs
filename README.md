@@ -82,7 +82,12 @@ fn on_service_discovered(service: ServiceDiscovery, _context: Option<Arc<dyn Any
 
 ## TODO
 
+* TXT Record support
+* Windows support
+
 ## Caveats
+
+TODO
 
 [ZeroConf/mDNS]: https://en.wikipedia.org/wiki/Zero-configuration_networking
 [Bonjour]: https://en.wikipedia.org/wiki/Bonjour_(software)
