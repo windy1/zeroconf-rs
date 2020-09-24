@@ -24,6 +24,7 @@ pub struct AvahiMdnsService {
 }
 
 impl AvahiMdnsService {
+    /// Creates a new `AvahiMdnsService` with the specified `kidn` (e.g. `_http._tcp`) and `port`.
     pub fn new(kind: &str, port: u16) -> Self {
         Self {
             client: None,
@@ -32,18 +33,32 @@ impl AvahiMdnsService {
         }
     }
 
+    /// Sets the name to register this service under. If no name is set, the client's host name
+    /// will be used instead.
+    ///
+    /// See: [`AvahiClient::host_name()`]
+    ///
+    /// [`AvahiClient::host_name()`]: client/struct.ManagedAvahiClient.html#method.host_name
     pub fn set_name(&mut self, name: &str) {
         unsafe { (*self.context).name = Some(CString::new(name).unwrap()) };
     }
 
+    /// Sets the [`ServiceRegisteredCallback`] that is invoked when the service has been
+    /// registered.
+    ///
+    /// [`ServiceRegisteredCallback`]: ../type.ServiceRegisteredCallback.html
     pub fn set_registered_callback(&mut self, registered_callback: Box<ServiceRegisteredCallback>) {
         unsafe { (*self.context).registered_callback = Some(registered_callback) };
     }
 
+    /// Sets the optional user context to pass through to the callback. This is useful if you need
+    /// to share state between pre and post-callback. The context type must implement `Any`.
     pub fn set_context(&mut self, context: Box<dyn Any>) {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
+    /// Registers and start's the service; continuously polling the event loop. This call will
+    /// block the current thread.
     pub fn start(&mut self) -> Result<(), String> {
         debug!("Registering service: {:?}", self);
 
