@@ -30,7 +30,7 @@ pub struct AvahiMdnsBrowser {
 }
 
 impl AvahiMdnsBrowser {
-    /// Creates a new `AvahiMdnsBrowser` with the specified `kind` (e.g. `_http._tcp`)
+    /// Creates a new `AvahiMdnsBrowser` that browses for the specified `kind` (e.g. `_http._tcp`)
     pub fn new(kind: &str) -> Self {
         Self {
             poll: None,
@@ -40,6 +40,10 @@ impl AvahiMdnsBrowser {
         }
     }
 
+    /// Sets the [`ServiceDiscoveredCallback`] that is invoked when the browser has discovered and
+    /// resolved a service.
+    ///
+    /// [`ServiceDiscoveredCallback`]: ../type.ServiceDiscoveredCallback.html
     pub fn set_service_discovered_callback(
         &mut self,
         service_discovered_callback: Box<ServiceDiscoveredCallback>,
@@ -47,10 +51,14 @@ impl AvahiMdnsBrowser {
         unsafe { (*self.context).service_discovered_callback = Some(service_discovered_callback) };
     }
 
+    /// Sets the optional user context to pass through to the callback. This is useful if you need
+    /// to share state between pre and post-callback. The context type must implement `Any`.
     pub fn set_context(&mut self, context: Box<dyn Any>) {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
+    /// Starts the browser; continuously polling the event loop. This call will block the current
+    /// thread.
     pub fn start(&mut self) -> Result<(), String> {
         debug!("Browsing services: {:?}", self);
 

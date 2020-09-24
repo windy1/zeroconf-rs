@@ -15,6 +15,7 @@ use std::fmt::{self, Formatter};
 use std::ptr;
 use std::sync::Arc;
 
+/// Interface for interacting with Avahi's mDNS service registration capabilities.
 #[derive(Debug)]
 pub struct AvahiMdnsService {
     client: Option<ManagedAvahiClient>,
