@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "zeroconf",
+    "zeroconf-macros",
+]

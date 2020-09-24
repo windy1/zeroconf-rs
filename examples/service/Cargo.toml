@@ -1,0 +1,8 @@
+[package]
+name = "zeroconf-service-example"
+version = "0.1.0"
+authors = ["Walker Crouse <walkercrouse@hotmail.com>"]
+edition = "2018"
+
+[dependencies]
+zeroconf = { path = "../../zeroconf" }
