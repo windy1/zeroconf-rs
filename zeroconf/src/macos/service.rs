@@ -18,6 +18,7 @@ pub struct BonjourMdnsService {
     service: ManagedDNSServiceRef,
     kind: CString,
     port: u16,
+    name: Option<CString>,
     context: *mut BonjourServiceContext,
 }
 
@@ -29,6 +30,10 @@ impl BonjourMdnsService {
             port,
             context: Box::into_raw(Box::default()),
         }
+    }
+
+    pub fn set_name(&mut self, name: &str) {
+        self.name = Some(CString::new(name).unwrap());
     }
 
     pub fn set_registered_callback(&mut self, registered_callback: Box<ServiceRegisteredCallback>) {
@@ -46,7 +51,7 @@ impl BonjourMdnsService {
             RegisterServiceParams::builder()
                 .flags(BONJOUR_RENAME_FLAGS)
                 .interface_index(BONJOUR_IF_UNSPEC)
-                .name(ptr::null())
+                .name(self.name.unwrap_or_else(|| ptr::null()))
                 .regtype(self.kind.as_ptr())
                 .domain(ptr::null())
                 .host(ptr::null())

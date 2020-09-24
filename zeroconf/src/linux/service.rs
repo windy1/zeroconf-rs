@@ -32,6 +32,10 @@ impl AvahiMdnsService {
         }
     }
 
+    pub fn set_name(&mut self, name: &str) {
+        unsafe { (*self.context).name = Some(CString::new(name).unwrap()) };
+    }
+
     pub fn set_registered_callback(&mut self, registered_callback: Box<ServiceRegisteredCallback>) {
         unsafe { (*self.context).registered_callback = Some(registered_callback) };
     }
