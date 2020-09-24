@@ -4,10 +4,6 @@
 such as [Bonjour] or [Avahi], providing an easy and idiomatic way to both register and
 browse services.
 
-[ZeroConf/mDNS]: https://en.wikipedia.org/wiki/Zero-configuration_networking
-[Bonjour]: https://en.wikipedia.org/wiki/Bonjour_(software)
-[Avahi]: https://en.wikipedia.org/wiki/Avahi_(software)
-
 ## Prerequisites
 
 ```bash
@@ -22,7 +18,7 @@ $ sudo apt install xorg-dev libxcb-shape0-dev libxcb-xfixes0-dev clang
  callback. The only requirement is that this context implements the [`Any`] trait, which most
  types will automatically. See [`MdnsService`] for more information about contexts.
 
-```
+```rust
 use std::any::Any;
 use std::sync::{Arc, Mutex};
 use zeroconf::{MdnsService, ServiceRegistration};
@@ -63,7 +59,7 @@ fn on_service_registered(service: ServiceRegistration, context: Option<Arc<dyn A
 
 ## Browsing services
 
-```
+```rust
 use std::any::Any;
 use std::sync::Arc;
 use zeroconf::{MdnsBrowser, ServiceDiscovery};
@@ -87,3 +83,10 @@ fn on_service_discovered(service: ServiceDiscovery, _context: Option<Arc<dyn Any
 ## TODO
 
 ## Caveats
+
+[ZeroConf/mDNS]: https://en.wikipedia.org/wiki/Zero-configuration_networking
+[Bonjour]: https://en.wikipedia.org/wiki/Bonjour_(software)
+[Avahi]: https://en.wikipedia.org/wiki/Avahi_(software)
+[`MdnsService`]: struct.MdnsService.html
+[`MdnsBrowser`]: struct.MdnsBrowser.html
+[`Any`]: https://doc.rust-lang.org/std/any/trait.Any.html
