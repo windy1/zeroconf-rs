@@ -28,6 +28,7 @@ impl BonjourMdnsService {
             service: ManagedDNSServiceRef::default(),
             kind: CString::new(kind).unwrap(),
             port,
+            name: None,
             context: Box::into_raw(Box::default()),
         }
     }
@@ -47,11 +48,17 @@ impl BonjourMdnsService {
     pub fn start(&mut self) -> Result<(), String> {
         debug!("Registering service: {:?}", self);
 
+        let name: *const c_char = self
+            .name
+            .as_ref()
+            .map(|s| s.as_ptr() as *const c_char)
+            .unwrap_or_else(|| ptr::null() as *const c_char);
+
         self.service.register_service(
             RegisterServiceParams::builder()
                 .flags(BONJOUR_RENAME_FLAGS)
                 .interface_index(BONJOUR_IF_UNSPEC)
-                .name(self.name.unwrap_or_else(|| ptr::null()))
+                .name(name)
                 .regtype(self.kind.as_ptr())
                 .domain(ptr::null())
                 .host(ptr::null())
