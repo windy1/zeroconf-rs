@@ -10,6 +10,13 @@ browse services.
 $ sudo apt install xorg-dev libxcb-shape0-dev libxcb-xfixes0-dev clang
 ```
 
+## TODO
+
+* TXT Record support
+* Windows support
+* 1-1 mapping with Avahi/Bonjour
+* You tell me...
+
 ## Examples
 
  ## Register a service
@@ -79,15 +86,6 @@ fn on_service_discovered(service: ServiceDiscovery, _context: Option<Arc<dyn Any
     // ...
 }
 ```
-
-## TODO
-
-* TXT Record support
-* Windows support
-
-## Caveats
-
-TODO
 
 [ZeroConf/mDNS]: https://en.wikipedia.org/wiki/Zero-configuration_networking
 [Bonjour]: https://en.wikipedia.org/wiki/Bonjour_(software)

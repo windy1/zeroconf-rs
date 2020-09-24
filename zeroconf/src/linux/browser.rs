@@ -20,6 +20,7 @@ use std::ffi::CString;
 use std::sync::Arc;
 use std::{fmt, ptr};
 
+/// Interface for interacting with Avahi's mDNS service browsing capabilities.
 #[derive(Debug)]
 pub struct AvahiMdnsBrowser {
     poll: Option<ManagedAvahiSimplePoll>,
@@ -29,6 +30,7 @@ pub struct AvahiMdnsBrowser {
 }
 
 impl AvahiMdnsBrowser {
+    /// Creates a new `AvahiMdnsBrowser` with the specified `kind` (e.g. `_http._tcp`)
     pub fn new(kind: &str) -> Self {
         Self {
             poll: None,

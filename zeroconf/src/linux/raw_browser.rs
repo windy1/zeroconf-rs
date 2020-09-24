@@ -1,3 +1,5 @@
+//! Rust friendly `AvahiServiceBrowser` wrappers/helpers
+
 use super::client::ManagedAvahiClient;
 use avahi_sys::{
     avahi_service_browser_free, avahi_service_browser_new, AvahiIfIndex, AvahiLookupFlags,
@@ -6,12 +8,18 @@ use avahi_sys::{
 use libc::{c_char, c_void};
 use std::ptr;
 
+/// Wraps the `AvahiServiceBrowser` type from the raw Avahi bindings.
+///
+/// This struct allocates a new `*mut AvahiServiceBrowser` when `ManagedAvahiServiceBrowser::new()`
+/// is invoked and calls the Avahi function responsible for freeing the client on `trait Drop`.
 #[derive(Debug)]
 pub struct ManagedAvahiServiceBrowser {
     browser: *mut AvahiServiceBrowser,
 }
 
 impl ManagedAvahiServiceBrowser {
+    /// Intializes the underlying `*mut AvahiClient` and verifies it was created; returning
+    /// `Err(String)` if unsuccessful.
     pub fn new(
         ManagedAvahiServiceBrowserParams {
             client,
@@ -51,6 +59,12 @@ impl Drop for ManagedAvahiServiceBrowser {
     }
 }
 
+/// Holds parameters for initializing a new `ManagedAvahiServiceBrowser` with
+/// `ManagedAvahiServiceBrowser::new()`.
+///
+/// See [`avahi_service_browser_new()`] for more information about these parameters.
+///
+/// [`avahi_service_browser_new()`]: https://avahi.org/doxygen/html/lookup_8h.html#a52d55a5156a7943012d03e6700880d2b
 #[derive(Builder, BuilderDelegate)]
 pub struct ManagedAvahiServiceBrowserParams<'a> {
     client: &'a ManagedAvahiClient,

@@ -1,3 +1,5 @@
+//! Rust friendly `AvahiEntryGroup` wrappers/helpers
+
 use super::avahi_util;
 use avahi_sys::{
     avahi_entry_group_add_service, avahi_entry_group_commit, avahi_entry_group_free,
@@ -7,12 +9,18 @@ use avahi_sys::{
 use libc::{c_char, c_void};
 use std::ptr;
 
+/// Wraps the `AvahiEntryGroup` type from the raw Avahi bindings.
+///
+/// This struct allocates a new `*mut AvahiEntryGroup` when `ManagedAvahiEntryGroup::new()` is
+/// invoked and calls the Avahi function responsible for freeing the group on `trait Drop`.
 #[derive(Debug)]
 pub struct ManagedAvahiEntryGroup {
     group: *mut AvahiEntryGroup,
 }
 
 impl ManagedAvahiEntryGroup {
+    /// Intiializes the underlying `*mut AvahiEntryGroup` and verifies it was created; returning
+    /// `Err(String)` if unsuccessful.
     pub fn new(
         ManagedAvahiEntryGroupParams {
             client,
@@ -28,10 +36,18 @@ impl ManagedAvahiEntryGroup {
         }
     }
 
+    /// Delegate function for [`avahi_entry_group_is_empty()`].
+    ///
+    /// [`avahi_entry_group_is_empty()`]: https://avahi.org/doxygen/html/publish_8h.html#af5a78ee1fda6678970536889d459d85c
     pub fn is_empty(&self) -> bool {
         unsafe { avahi_entry_group_is_empty(self.group) != 0 }
     }
 
+    /// Delgate function for [`avahi_entry_group_add_service()`].
+    ///
+    /// Also propagates any error returned into a `Result`.
+    ///
+    /// [`avahi_entry_group_add_service()`]: https://avahi.org/doxygen/html/publish_8h.html#acb05a7d3d23a3b825ca77cb1c7d00ce4
     pub fn add_service(
         &mut self,
         AddServiceParams {
@@ -79,6 +95,9 @@ impl ManagedAvahiEntryGroup {
         }
     }
 
+    /// Delegate function for [`avahi_entry_group_reset()`].
+    ///
+    /// [`avahi_entry_group_reset()`]: https://avahi.org/doxygen/html/publish_8h.html#a1293bbccf878dbeb9916660022bc71b2
     pub fn reset(&mut self) {
         unsafe { avahi_entry_group_reset(self.group) };
     }
@@ -90,6 +109,12 @@ impl Drop for ManagedAvahiEntryGroup {
     }
 }
 
+/// Holds parameters for initializing a new `ManagedAvahiEntryGroup` with
+/// `ManagedAvahiEntryGroup::new()`.
+///
+/// See [`avahi_entry_group_new()`] for more information about these parameters.
+///
+/// [avahi_entry_group_new()]: https://avahi.org/doxygen/html/publish_8h.html#abb17598f2b6ec3c3f69defdd488d568c
 #[derive(Builder, BuilderDelegate)]
 pub struct ManagedAvahiEntryGroupParams {
     client: *mut AvahiClient,
@@ -97,6 +122,11 @@ pub struct ManagedAvahiEntryGroupParams {
     userdata: *mut c_void,
 }
 
+/// Holds parameters for `ManagedAvahiEntryGroup::add_service()`.
+///
+/// See [`avahi_entry_group_add_service()`] for more information about these parameters.
+///
+/// [`avahi_entry_group_add_service()`]: https://avahi.org/doxygen/html/publish_8h.html#acb05a7d3d23a3b825ca77cb1c7d00ce4
 #[derive(Builder, BuilderDelegate)]
 pub struct AddServiceParams {
     interface: AvahiIfIndex,

@@ -1,3 +1,5 @@
+//! Rust friendly `AvahiServiceResolver` wrappers/helpers
+
 use super::client::ManagedAvahiClient;
 use avahi_sys::{
     avahi_service_resolver_free, avahi_service_resolver_new, AvahiIfIndex, AvahiLookupFlags,
@@ -7,12 +9,19 @@ use libc::{c_char, c_void};
 use std::collections::HashMap;
 use std::ptr;
 
+/// Wraps the `AvahiServiceResolver` type from the raw Avahi bindings.
+///
+/// This struct allocates a new `*mut AvahiServiceResolver` when
+/// `ManagedAvahiServiceResolver::new()` is invoked and calls the Avahi function responsible for
+/// freeing the client on `trait Drop`.
 #[derive(Debug)]
 pub struct ManagedAvahiServiceResolver {
     resolver: *mut AvahiServiceResolver,
 }
 
 impl ManagedAvahiServiceResolver {
+    /// Intializes the underlying `*mut AvahiServiceResolver` and verifies it was created;
+    /// returning `Err(String)` if unsuccessful.
     pub fn new(
         ManagedAvahiServiceResolverParams {
             client,
@@ -56,6 +65,12 @@ impl Drop for ManagedAvahiServiceResolver {
     }
 }
 
+/// Holds parameters for initializing a new `ManagedAvahiServiceResolver` with
+/// `ManagedAvahiServiceResolver::new()`.
+///
+/// See [`avahi_service_resolver_new()`] for more information about these parameters.
+///
+/// [`avahi_service_resolver_new()`]: https://avahi.org/doxygen/html/lookup_8h.html#a904611a4134ceb5919f6bb637df84124
 #[derive(Builder, BuilderDelegate)]
 pub struct ManagedAvahiServiceResolverParams<'a> {
     client: &'a ManagedAvahiClient,
@@ -71,7 +86,7 @@ pub struct ManagedAvahiServiceResolverParams<'a> {
 }
 
 #[derive(Default, Debug)]
-pub struct ServiceResolverSet {
+pub(crate) struct ServiceResolverSet {
     resolvers: HashMap<*mut AvahiServiceResolver, ManagedAvahiServiceResolver>,
 }
 
