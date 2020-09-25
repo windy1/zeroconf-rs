@@ -93,6 +93,7 @@
 //! [`MdnsBrowser`]: struct.MdnsBrowser.html
 //! [`Any`]: https://doc.rust-lang.org/std/any/trait.Any.html
 
+#![allow(clippy::needless_doctest_main)]
 #[macro_use]
 extern crate serde;
 #[macro_use]
