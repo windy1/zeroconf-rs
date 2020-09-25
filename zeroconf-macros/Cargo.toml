@@ -3,6 +3,14 @@ name = "zeroconf-macros"
 version = "0.1.0"
 authors = ["Walker Crouse <walkercrouse@hotmail.com>"]
 edition = "2018"
+description = "Macros for zeroconf crate"
+readme = "../README.md"
+homepage = "https://github.com/windy1/zeroconf-rs"
+repository = "https://github.com/windy1/zeroconf-rs"
+license = "../MIT"
+license-file = "../LICENSE"
+keyworks = ["zeroconf", "mdns", "avahi", "bonjour", "dnssd"]
+categories = ["api-bindings", "network-programming", "os", "os::linux-apis", "os::macos-apis"]
 
 [lib]
 proc-macro = true
