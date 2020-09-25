@@ -16,6 +16,3 @@ pub mod entry_group;
 pub mod poll;
 pub mod raw_browser;
 pub mod resolver;
-
-pub use browser::*;
-pub use service::*;

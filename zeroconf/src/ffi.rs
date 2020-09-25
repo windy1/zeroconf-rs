@@ -9,6 +9,7 @@ pub trait FromRaw<T> {
     /// # Safety
     /// This function is unsafe due to the dereference of the specified raw pointer.
     unsafe fn from_raw<'a>(raw: *mut c_void) -> &'a mut T {
+        assert_not_null!(raw);
         &mut *(raw as *mut T)
     }
 }
@@ -22,6 +23,7 @@ pub trait CloneRaw<T: FromRaw<T> + Clone> {
     ///
     /// [`FromRaw::from_raw()`]: trait.FromRaw.html#method.from_raw
     unsafe fn clone_raw(raw: *mut c_void) -> Box<T> {
+        assert_not_null!(raw);
         Box::new(T::from_raw(raw).clone())
     }
 }
@@ -47,9 +49,7 @@ pub mod cstr {
     ///
     /// [`CStr::from_ptr()`]: https://doc.rust-lang.org/std/ffi/struct.CStr.html#method.from_ptr
     pub unsafe fn raw_to_str<'a>(s: *const c_char) -> &'a str {
-        if s.is_null() {
-            panic!("raw_to_str(): raw input must not be null");
-        }
+        assert_not_null!(s);
         CStr::from_ptr(s).to_str().unwrap()
     }
 
@@ -60,6 +60,7 @@ pub mod cstr {
     ///
     /// [`raw_to_str()`]: fn.raw_to_str.html
     pub unsafe fn copy_raw(s: *const c_char) -> String {
+        assert_not_null!(s);
         String::from(raw_to_str(s))
     }
 
@@ -67,12 +68,11 @@ pub mod cstr {
     mod tests {
         use super::*;
         use libc::c_char;
-        use std::ffi::CString;
         use std::ptr;
 
         #[test]
         fn raw_to_str_success() {
-            let c_string = CString::new("foo").unwrap();
+            let c_string = c_string!("foo");
             unsafe { assert_eq!(raw_to_str(c_string.as_ptr() as *const c_char), "foo") };
         }
 
@@ -84,7 +84,7 @@ pub mod cstr {
 
         #[test]
         fn copy_raw_success() {
-            let c_string = CString::new("foo").unwrap();
+            let c_string = c_string!("foo");
             let c_str = c_string.as_ptr() as *const c_char;
             unsafe { assert_eq!(copy_raw(c_str), "foo".to_string()) };
         }

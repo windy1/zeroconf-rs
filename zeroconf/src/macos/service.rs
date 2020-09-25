@@ -30,7 +30,7 @@ impl BonjourMdnsService {
     pub fn new(kind: &str, port: u16) -> Self {
         Self {
             service: ManagedDNSServiceRef::default(),
-            kind: CString::new(kind).unwrap(),
+            kind: c_string!(kind),
             port,
             name: None,
             interface_index: BONJOUR_IF_UNSPEC,
@@ -41,7 +41,7 @@ impl BonjourMdnsService {
     /// Sets the name to register this service under. If no name is set, Bonjour will
     /// automatically assign one (usually to the name of the machine).
     pub fn set_name(&mut self, name: &str) {
-        self.name = Some(CString::new(name).unwrap());
+        self.name = Some(c_string!(name));
     }
 
     /// Sets the network interface to bind this service to.

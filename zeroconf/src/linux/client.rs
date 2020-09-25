@@ -84,6 +84,7 @@ pub struct ManagedAvahiClientParams<'a> {
 }
 
 pub(super) unsafe fn get_host_name<'a>(client: *mut AvahiClient) -> Result<&'a str> {
+    assert_not_null!(client);
     let host_name = avahi_client_get_host_name(client);
     if !host_name.is_null() {
         Ok(cstr::raw_to_str(host_name))

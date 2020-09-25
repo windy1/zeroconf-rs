@@ -28,7 +28,7 @@ impl BonjourMdnsBrowser {
     pub fn new(kind: &str) -> Self {
         Self {
             service: ManagedDNSServiceRef::default(),
-            kind: CString::new(kind).unwrap(),
+            kind: c_string!(kind),
             context: Box::into_raw(Box::default()),
         }
     }
