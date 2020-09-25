@@ -163,26 +163,34 @@ unsafe extern "C" fn resolve_callback(
     context: *mut c_void,
 ) {
     let ctx = BonjourBrowserContext::from_raw(context);
+    if let Err(e) = handle_resolve(ctx, error, port, interface_index, host_target) {
+        ctx.invoke_callback(Err(e));
+    }
+}
 
+fn handle_resolve(
+    ctx: &mut BonjourBrowserContext,
+    error: DNSServiceErrorType,
+    port: u16,
+    interface_index: u32,
+    host_target: *const c_char,
+) -> Result<()> {
     if error != 0 {
-        panic!("error reported by resolve_callback: (code: {})", error);
+        return Err(format!("error reported by resolve_callback: (code: {})", error).into());
     }
 
     ctx.resolved_port = port;
 
-    ManagedDNSServiceRef::default()
-        .get_address_info(
-            GetAddressInfoParams::builder()
-                .flags(bonjour_sys::kDNSServiceFlagsForceMulticast)
-                .interface_index(interface_index)
-                .protocol(0)
-                .hostname(host_target)
-                .callback(Some(get_address_info_callback))
-                .context(context)
-                .build()
-                .expect("could not build GetAddressInfoParams"),
-        )
-        .unwrap();
+    ManagedDNSServiceRef::default().get_address_info(
+        GetAddressInfoParams::builder()
+            .flags(bonjour_sys::kDNSServiceFlagsForceMulticast)
+            .interface_index(interface_index)
+            .protocol(0)
+            .hostname(host_target)
+            .callback(Some(get_address_info_callback))
+            .context(ctx.as_raw())
+            .build()?,
+    )
 }
 
 unsafe extern "C" fn get_address_info_callback(
@@ -196,17 +204,28 @@ unsafe extern "C" fn get_address_info_callback(
     context: *mut c_void,
 ) {
     let ctx = BonjourBrowserContext::from_raw(context);
+    if let Err(e) = handle_get_address_info(ctx, error, address, hostname) {
+        ctx.invoke_callback(Err(e));
+    }
+}
 
+unsafe fn handle_get_address_info(
+    ctx: &mut BonjourBrowserContext,
+    error: DNSServiceErrorType,
+    address: *const sockaddr,
+    hostname: *const c_char,
+) -> Result<()> {
     // this callback runs multiple times for some reason
     if ctx.resolved_name.is_none() {
-        return;
+        return Ok(());
     }
 
     if error != 0 {
-        panic!(
+        return Err(format!(
             "get_address_info_callback() reported error (code: {})",
             error
-        );
+        )
+        .into());
     }
 
     let ip = get_ip(address as *const sockaddr_in);
@@ -224,6 +243,8 @@ unsafe extern "C" fn get_address_info_callback(
         .expect("could not build ServiceResolution");
 
     ctx.invoke_callback(Ok(result));
+
+    Ok(())
 }
 
 extern "C" {

@@ -117,8 +117,21 @@ unsafe extern "C" fn register_callback(
     domain: *const c_char,
     context: *mut c_void,
 ) {
+    let context = BonjourServiceContext::from_raw(context);
+    if let Err(e) = handle_register(context, error, domain, name, regtype) {
+        context.invoke_callback(Err(e));
+    }
+}
+
+unsafe fn handle_register(
+    context: &BonjourServiceContext,
+    error: DNSServiceErrorType,
+    domain: *const c_char,
+    name: *const c_char,
+    regtype: *const c_char,
+) -> Result<()> {
     if error != 0 {
-        panic!("register_callback() reported error (code: {0})", error);
+        return Err(format!("register_callback() reported error (code: {0})", error).into());
     }
 
     let domain = compat::normalize_domain(cstr::raw_to_str(domain));
@@ -130,7 +143,7 @@ unsafe extern "C" fn register_callback(
         .build()
         .expect("could not build ServiceRegistration");
 
-    let context = BonjourServiceContext::from_raw(context);
-
     context.invoke_callback(Ok(result));
+
+    Ok(())
 }
