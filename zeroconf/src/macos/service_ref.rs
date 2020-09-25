@@ -197,7 +197,7 @@ impl Default for ManagedDNSServiceRef {
 impl Drop for ManagedDNSServiceRef {
     fn drop(&mut self) {
         unsafe {
-            if self.service != ptr::null_mut() {
+            if !self.service.is_null() {
                 DNSServiceRefDeallocate(self.service);
             }
         }
