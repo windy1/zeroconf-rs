@@ -14,10 +14,10 @@ categories = ["api-bindings", "network-programming", "os", "os::linux-apis", "os
 [dependencies]
 serde = { version = "1.0.116", features = ["derive"] }
 derive-getters = "0.2.0"
-libc = "*"
 derive_builder = "0.9.0"
-zeroconf-macros = { path = "../zeroconf-macros", version = "0.1.0" }
 log = "0.4.11"
+libc = "0.2.77"
+zeroconf-macros = { path = "../zeroconf-macros", version = "0.1.0" }
 
 [target.'cfg(unix)'.dependencies]
 avahi-sys = "0.10.0"
