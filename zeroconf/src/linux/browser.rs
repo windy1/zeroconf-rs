@@ -36,7 +36,7 @@ impl AvahiMdnsBrowser {
         Self {
             poll: None,
             browser: None,
-            kind: CString::new(kind.to_string()).unwrap(),
+            kind: c_string!(kind.to_string()),
             context: Box::into_raw(Box::default()),
         }
     }

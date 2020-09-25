@@ -68,12 +68,11 @@ pub mod cstr {
     mod tests {
         use super::*;
         use libc::c_char;
-        use std::ffi::CString;
         use std::ptr;
 
         #[test]
         fn raw_to_str_success() {
-            let c_string = CString::new("foo").unwrap();
+            let c_string = c_string!("foo");
             unsafe { assert_eq!(raw_to_str(c_string.as_ptr() as *const c_char), "foo") };
         }
 
@@ -85,7 +84,7 @@ pub mod cstr {
 
         #[test]
         fn copy_raw_success() {
-            let c_string = CString::new("foo").unwrap();
+            let c_string = c_string!("foo");
             let c_str = c_string.as_ptr() as *const c_char;
             unsafe { assert_eq!(copy_raw(c_str), "foo".to_string()) };
         }

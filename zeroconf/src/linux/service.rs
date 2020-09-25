@@ -41,7 +41,7 @@ impl AvahiMdnsService {
     ///
     /// [`AvahiClient::host_name()`]: client/struct.ManagedAvahiClient.html#method.host_name
     pub fn set_name(&mut self, name: &str) {
-        unsafe { (*self.context).name = Some(CString::new(name).unwrap()) };
+        unsafe { (*self.context).name = Some(c_string!(name)) };
     }
 
     /// Sets the network interface to bind this service to.
@@ -112,7 +112,7 @@ impl AvahiServiceContext {
     fn new(kind: &str, port: u16) -> Self {
         Self {
             name: None,
-            kind: CString::new(kind).unwrap(),
+            kind: c_string!(kind),
             port,
             group: None,
             interface_index: constants::AVAHI_IF_UNSPEC,
@@ -171,7 +171,7 @@ unsafe fn create_service(
     client: *mut AvahiClient,
     context: &mut AvahiServiceContext,
 ) -> Result<()> {
-    context.name = Some(CString::new(client::get_host_name(client)?.to_string()).unwrap());
+    context.name = Some(c_string!(client::get_host_name(client)?.to_string()));
 
     if context.group.is_none() {
         debug!("Creating group");
