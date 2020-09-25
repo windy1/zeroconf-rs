@@ -16,11 +16,11 @@ serde = { version = "1.0.116", features = ["derive"] }
 derive-getters = "0.2.0"
 libc = "*"
 derive_builder = "0.9.0"
-zeroconf-macros = { path = "../zeroconf-macros" }
+zeroconf-macros = { path = "../zeroconf-macros", version = "0.1.0" }
 log = "0.4.11"
 
 [target.'cfg(unix)'.dependencies]
-avahi-sys = { path = "../../avahi-sys" }
+avahi-sys = "0.10.0"
 
 [target.'cfg(target_os = "macos")'.dependencies]
-bonjour-sys = { path = "../../bonjour-sys" }
+bonjour-sys = "0.1.0"
