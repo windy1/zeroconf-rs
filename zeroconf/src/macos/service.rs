@@ -2,8 +2,7 @@ use super::compat;
 use super::service_ref::{ManagedDNSServiceRef, RegisterServiceParams};
 use crate::builder::BuilderDelegate;
 use crate::ffi::{cstr, FromRaw};
-use crate::Result;
-use crate::{ServiceRegisteredCallback, ServiceRegistration};
+use crate::{NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration};
 use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_void};
 use std::any::Any;
@@ -21,6 +20,7 @@ pub struct BonjourMdnsService {
     kind: CString,
     port: u16,
     name: Option<CString>,
+    interface_index: u32,
     context: *mut BonjourServiceContext,
 }
 
@@ -33,6 +33,7 @@ impl BonjourMdnsService {
             kind: CString::new(kind).unwrap(),
             port,
             name: None,
+            interface_index: BONJOUR_IF_UNSPEC,
             context: Box::into_raw(Box::default()),
         }
     }
@@ -41,6 +42,17 @@ impl BonjourMdnsService {
     /// automatically assign one (usually to the name of the machine).
     pub fn set_name(&mut self, name: &str) {
         self.name = Some(CString::new(name).unwrap());
+    }
+
+    /// Sets the network interface to bind this service to.
+    ///
+    /// Most applications will want to use the default value `NetworkInterface::Unspec` to bind to
+    /// all available interfaces.
+    pub fn set_network_interface(&mut self, interface: NetworkInterface) {
+        self.interface_index = match interface {
+            NetworkInterface::Unspec => BONJOUR_IF_UNSPEC,
+            NetworkInterface::AtIndex(i) => i,
+        };
     }
 
     /// Sets the [`ServiceRegisteredCallback`] that is invoked when the service has been
@@ -71,7 +83,7 @@ impl BonjourMdnsService {
         self.service.register_service(
             RegisterServiceParams::builder()
                 .flags(BONJOUR_RENAME_FLAGS)
-                .interface_index(BONJOUR_IF_UNSPEC)
+                .interface_index(self.interface_index)
                 .name(name)
                 .regtype(self.kind.as_ptr())
                 .domain(ptr::null())
