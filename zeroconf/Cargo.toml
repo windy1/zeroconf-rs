@@ -1,9 +1,9 @@
 [package]
 name = "zeroconf"
-version = "0.3.0-beta"
+version = "0.4.0-beta"
 authors = ["Walker Crouse <walkercrouse@hotmail.com>"]
 edition = "2018"
-description = "zeroconf is a cross-platform library that wraps underlying ZeroConf/mDNS implementations such as Bonjour or Avahi, providing an easy and idiomatic way to both register and browse services."
+description = "cross-platform library that wraps ZeroConf/mDNS implementations like Bonjour or Avahi"
 readme = "../README.md"
 homepage = "https://github.com/windy1/zeroconf-rs"
 repository = "https://github.com/windy1/zeroconf-rs"
