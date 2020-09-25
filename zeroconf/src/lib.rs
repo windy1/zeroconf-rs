@@ -112,12 +112,14 @@ extern crate derive_new;
 extern crate libc;
 
 mod discovery;
-pub mod interface;
 mod registration;
+#[macro_use]
+mod macros;
 
 pub mod builder;
 pub mod error;
 pub mod ffi;
+pub mod interface;
 
 #[cfg(target_os = "linux")]
 pub mod linux;
