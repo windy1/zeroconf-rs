@@ -1,6 +1,7 @@
 //! Rust friendly `AvahiServiceBrowser` wrappers/helpers
 
 use super::client::ManagedAvahiClient;
+use crate::Result;
 use avahi_sys::{
     avahi_service_browser_free, avahi_service_browser_new, AvahiIfIndex, AvahiLookupFlags,
     AvahiProtocol, AvahiServiceBrowser, AvahiServiceBrowserCallback,
@@ -31,7 +32,7 @@ impl ManagedAvahiServiceBrowser {
             callback,
             userdata,
         }: ManagedAvahiServiceBrowserParams,
-    ) -> Result<Self, String> {
+    ) -> Result<Self> {
         let browser = unsafe {
             avahi_service_browser_new(
                 client.client,
@@ -46,7 +47,7 @@ impl ManagedAvahiServiceBrowser {
         };
 
         if browser == ptr::null_mut() {
-            Err("could not initialize Avahi service browser".to_string())
+            Err("could not initialize Avahi service browser".into())
         } else {
             Ok(Self { browser })
         }

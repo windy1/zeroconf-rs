@@ -18,7 +18,12 @@ fn main() {
     service.start().unwrap();
 }
 
-fn on_service_registered(service: ServiceRegistration, context: Option<Arc<dyn Any>>) {
+fn on_service_registered(
+    result: zeroconf::Result<ServiceRegistration>,
+    context: Option<Arc<dyn Any>>,
+) {
+    let service = result.unwrap();
+
     println!("Service registered: {:?}", service);
 
     let context = context

@@ -11,8 +11,11 @@ fn main() {
     browser.start().unwrap()
 }
 
-fn on_service_discovered(service: ServiceDiscovery, _context: Option<Arc<dyn Any>>) {
-    println!("Service discovered: {:?}", &service);
+fn on_service_discovered(
+    result: zeroconf::Result<ServiceDiscovery>,
+    _context: Option<Arc<dyn Any>>,
+) {
+    println!("Service discovered: {:?}", result.unwrap());
 
     // ...
 }

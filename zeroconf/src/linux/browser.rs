@@ -7,7 +7,8 @@ use super::resolver::{
     ManagedAvahiServiceResolver, ManagedAvahiServiceResolverParams, ServiceResolverSet,
 };
 use crate::builder::BuilderDelegate;
-use crate::ffi::{cstr, FromRaw};
+use crate::ffi::{cstr, AsRaw, FromRaw};
+use crate::Result;
 use crate::{ServiceDiscoveredCallback, ServiceDiscovery};
 use avahi_sys::{
     AvahiAddress, AvahiBrowserEvent, AvahiClient, AvahiClientFlags, AvahiClientState, AvahiIfIndex,
@@ -59,7 +60,7 @@ impl AvahiMdnsBrowser {
 
     /// Starts the browser; continuously polling the event loop. This call will block the current
     /// thread.
-    pub fn start(&mut self) -> Result<(), String> {
+    pub fn start(&mut self) -> Result<()> {
         debug!("Browsing services: {:?}", self);
 
         self.poll = Some(ManagedAvahiSimplePoll::new()?);
@@ -102,12 +103,22 @@ impl Drop for AvahiMdnsBrowser {
     }
 }
 
-#[derive(FromRaw)]
+#[derive(FromRaw, AsRaw)]
 struct AvahiBrowserContext {
     client: Option<ManagedAvahiClient>,
     resolvers: ServiceResolverSet,
     service_discovered_callback: Option<Box<ServiceDiscoveredCallback>>,
     user_context: Option<Arc<dyn Any>>,
+}
+
+impl AvahiBrowserContext {
+    fn invoke_callback(&self, result: Result<ServiceDiscovery>) {
+        if let Some(f) = &self.service_discovered_callback {
+            f(result, self.user_context.clone());
+        } else {
+            warn!("attempted to invoke callback but none was set");
+        }
+    }
 }
 
 impl Default for AvahiBrowserContext {
@@ -145,28 +156,41 @@ unsafe extern "C" fn browse_callback(
 
     match event {
         avahi_sys::AvahiBrowserEvent_AVAHI_BROWSER_NEW => {
-            context.resolvers.insert(
-                ManagedAvahiServiceResolver::new(
-                    ManagedAvahiServiceResolverParams::builder()
-                        .client(context.client.as_ref().unwrap())
-                        .interface(interface)
-                        .protocol(protocol)
-                        .name(name)
-                        .kind(kind)
-                        .domain(domain)
-                        .aprotocol(constants::AVAHI_PROTO_UNSPEC)
-                        .flags(0)
-                        .callback(Some(resolve_callback))
-                        .userdata(userdata)
-                        .build()
-                        .unwrap(),
-                )
-                .unwrap(),
-            );
+            if let Err(e) = handle_browser_new(context, interface, protocol, name, kind, domain) {
+                context.invoke_callback(Err(e));
+            }
         }
-        avahi_sys::AvahiBrowserEvent_AVAHI_BROWSER_FAILURE => panic!("browser failure"),
+        avahi_sys::AvahiBrowserEvent_AVAHI_BROWSER_FAILURE => {
+            context.invoke_callback(Err("browser failure".into()))
+        }
         _ => {}
     };
+}
+
+fn handle_browser_new(
+    context: &mut AvahiBrowserContext,
+    interface: AvahiIfIndex,
+    protocol: AvahiProtocol,
+    name: *const c_char,
+    kind: *const c_char,
+    domain: *const c_char,
+) -> Result<()> {
+    let raw_context = context.as_raw();
+    context.resolvers.insert(ManagedAvahiServiceResolver::new(
+        ManagedAvahiServiceResolverParams::builder()
+            .client(context.client.as_ref().unwrap())
+            .interface(interface)
+            .protocol(protocol)
+            .name(name)
+            .kind(kind)
+            .domain(domain)
+            .aprotocol(constants::AVAHI_PROTO_UNSPEC)
+            .flags(0)
+            .callback(Some(resolve_callback))
+            .userdata(raw_context)
+            .build()?,
+    )?);
+    Ok(())
 }
 
 unsafe extern "C" fn resolve_callback(
@@ -191,36 +215,60 @@ unsafe extern "C" fn resolve_callback(
     let context = AvahiBrowserContext::from_raw(userdata);
 
     match event {
-        avahi_sys::AvahiResolverEvent_AVAHI_RESOLVER_FAILURE => warn!(
-            "failed to resolve service `{}` of type `{}` in domain `{}`",
-            name, kind, domain
-        ),
+        avahi_sys::AvahiResolverEvent_AVAHI_RESOLVER_FAILURE => {
+            context.invoke_callback(Err(format!(
+                "failed to resolve service `{}` of type `{}` in domain `{}`",
+                name, kind, domain
+            )
+            .into()));
+        }
         avahi_sys::AvahiResolverEvent_AVAHI_RESOLVER_FOUND => {
-            let host_name = cstr::raw_to_str(host_name);
-            let address = avahi_util::avahi_address_to_string(addr);
+            let result = handle_resolver_found(
+                context,
+                cstr::raw_to_str(host_name),
+                addr,
+                name,
+                kind,
+                domain,
+                port,
+            );
 
-            let result = ServiceDiscovery::builder()
-                .name(name.to_string())
-                .kind(kind.to_string())
-                .domain(domain.to_string())
-                .host_name(host_name.to_string())
-                .address(address)
-                .port(port)
-                .build()
-                .unwrap();
-
-            debug!("Service resolved: {:?}", result);
-
-            if let Some(f) = &context.service_discovered_callback {
-                f(result, context.user_context.clone());
-            } else {
-                warn!("Service resolved but no callback was set");
+            if let Err(e) = result {
+                context.invoke_callback(Err(e));
             }
         }
         _ => {}
     };
 
     context.resolvers.remove_raw(resolver);
+}
+
+fn handle_resolver_found(
+    context: &AvahiBrowserContext,
+    host_name: &str,
+    addr: *const AvahiAddress,
+    name: &str,
+    kind: &str,
+    domain: &str,
+    port: u16,
+) -> Result<()> {
+    let address = avahi_util::avahi_address_to_string(addr);
+
+    let result = ServiceDiscovery::builder()
+        .name(name.to_string())
+        .kind(kind.to_string())
+        .domain(domain.to_string())
+        .host_name(host_name.to_string())
+        .address(address)
+        .port(port)
+        .build()
+        .unwrap();
+
+    debug!("Service resolved: {:?}", result);
+
+    context.invoke_callback(Ok(result));
+
+    Ok(())
 }
 
 extern "C" fn client_callback(

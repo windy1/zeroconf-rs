@@ -3,6 +3,7 @@
 use super::avahi_util;
 use super::poll::ManagedAvahiSimplePoll;
 use crate::ffi::cstr;
+use crate::Result;
 use avahi_sys::{
     avahi_client_free, avahi_client_get_host_name, avahi_client_new, avahi_simple_poll_get,
     AvahiClient, AvahiClientCallback, AvahiClientFlags,
@@ -29,7 +30,7 @@ impl ManagedAvahiClient {
             callback,
             userdata,
         }: ManagedAvahiClientParams,
-    ) -> Result<Self, String> {
+    ) -> Result<Self> {
         let mut err: c_int = 0;
 
         let client = unsafe {
@@ -43,7 +44,7 @@ impl ManagedAvahiClient {
         };
 
         if client == ptr::null_mut() {
-            return Err("could not initialize AvahiClient".to_string());
+            return Err("could not initialize AvahiClient".into());
         }
 
         match err {
@@ -51,14 +52,15 @@ impl ManagedAvahiClient {
             _ => Err(format!(
                 "could not initialize AvahiClient: {}",
                 avahi_util::get_error(err)
-            )),
+            )
+            .into()),
         }
     }
 
     /// Delegate function for [`avahi_client_get_host_name()`].
     ///
     /// [`avahi_client_get_host_name()`]: https://avahi.org/doxygen/html/client_8h.html#a89378618c3c592a255551c308ba300bf
-    pub fn host_name<'a>(&self) -> Result<&'a str, String> {
+    pub fn host_name<'a>(&self) -> Result<&'a str> {
         unsafe { get_host_name(self.client) }
     }
 }
@@ -82,11 +84,11 @@ pub struct ManagedAvahiClientParams<'a> {
     userdata: *mut c_void,
 }
 
-pub(super) unsafe fn get_host_name<'a>(client: *mut AvahiClient) -> Result<&'a str, String> {
+pub(super) unsafe fn get_host_name<'a>(client: *mut AvahiClient) -> Result<&'a str> {
     let host_name = avahi_client_get_host_name(client);
     if host_name != ptr::null_mut() {
         Ok(cstr::raw_to_str(host_name))
     } else {
-        Err("could not get host name from AvahiClient".to_string())
+        Err("could not get host name from AvahiClient".into())
     }
 }

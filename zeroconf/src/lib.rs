@@ -37,7 +37,12 @@
 //!     service.start().unwrap();
 //! }
 //!
-//! fn on_service_registered(service: ServiceRegistration, context: Option<Arc<dyn Any>>) {
+//! fn on_service_registered(
+//!     result: zeroconf::Result<ServiceRegistration>,
+//!     context: Option<Arc<dyn Any>>,
+//! ) {
+//!     let service = result.unwrap();
+//!
 //!     println!("Service registered: {:?}", service);
 //!
 //!     let context = context
@@ -71,12 +76,16 @@
 //!     browser.start().unwrap()
 //! }
 //!
-//! fn on_service_discovered(service: ServiceDiscovery, _context: Option<Arc<dyn Any>>) {
-//!     println!("Service discovered: {:?}", &service);
+//! fn on_service_discovered(
+//!     result: zeroconf::Result<ServiceDiscovery>,
+//!     _context: Option<Arc<dyn Any>>,
+//! ) {
+//!     println!("Service discovered: {:?}", result.unwrap());
 //!
 //!     // ...
 //! }
 //! ```
+//!
 //! [ZeroConf/mDNS]: https://en.wikipedia.org/wiki/Zero-configuration_networking
 //! [Bonjour]: https://en.wikipedia.org/wiki/Bonjour_(software)
 //! [Avahi]: https://en.wikipedia.org/wiki/Avahi_(software)
@@ -98,12 +107,15 @@ extern crate bonjour_sys;
 extern crate derive_getters;
 #[macro_use]
 extern crate log;
+#[macro_use]
+extern crate derive_new;
 extern crate libc;
 
 mod discovery;
 mod registration;
 
 pub mod builder;
+pub mod error;
 pub mod ffi;
 
 #[cfg(target_os = "linux")]
@@ -112,6 +124,7 @@ pub mod linux;
 pub mod macos;
 
 pub use discovery::*;
+pub use error::Result;
 pub use registration::*;
 
 /// Type alias for the platform-specific mDNS browser implementation

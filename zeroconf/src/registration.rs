@@ -9,7 +9,8 @@ use std::sync::Arc;
 ///
 /// [`MdnsService`]: struct.MdnsService.html
 /// [`MdnsService::set_context()`]: struct.MdnsService.html#method.set_context
-pub type ServiceRegisteredCallback = dyn Fn(ServiceRegistration, Option<Arc<dyn Any>>);
+pub type ServiceRegisteredCallback =
+    dyn Fn(Result<ServiceRegistration, super::error::Error>, Option<Arc<dyn Any>>);
 
 /// Represents a registration event for a [`MdnsService`].
 ///

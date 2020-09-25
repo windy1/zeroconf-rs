@@ -1,6 +1,7 @@
 //! Rust friendly `AvahiServiceResolver` wrappers/helpers
 
 use super::client::ManagedAvahiClient;
+use crate::Result;
 use avahi_sys::{
     avahi_service_resolver_free, avahi_service_resolver_new, AvahiIfIndex, AvahiLookupFlags,
     AvahiProtocol, AvahiServiceResolver, AvahiServiceResolverCallback,
@@ -35,7 +36,7 @@ impl ManagedAvahiServiceResolver {
             callback,
             userdata,
         }: ManagedAvahiServiceResolverParams,
-    ) -> Result<Self, String> {
+    ) -> Result<Self> {
         let resolver = unsafe {
             avahi_service_resolver_new(
                 client.client,
@@ -52,7 +53,7 @@ impl ManagedAvahiServiceResolver {
         };
 
         if resolver == ptr::null_mut() {
-            Err("could not initialize AvahiServiceResolver".to_string())
+            Err("could not initialize AvahiServiceResolver".into())
         } else {
             Ok(Self { resolver })
         }
