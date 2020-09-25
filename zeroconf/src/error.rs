@@ -4,8 +4,6 @@ use std::fmt;
 #[derive(Debug, new)]
 pub struct Error {
     description: String,
-    #[new(default)]
-    source: Option<Box<dyn std::error::Error>>,
 }
 
 impl std::error::Error for Error {}
