@@ -112,6 +112,7 @@ extern crate derive_new;
 extern crate libc;
 
 mod discovery;
+pub mod interface;
 mod registration;
 
 pub mod builder;
@@ -125,6 +126,7 @@ pub mod macos;
 
 pub use discovery::*;
 pub use error::Result;
+pub use interface::*;
 pub use registration::*;
 
 /// Type alias for the platform-specific mDNS browser implementation

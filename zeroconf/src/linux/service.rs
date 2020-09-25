@@ -4,10 +4,10 @@ use super::entry_group::{AddServiceParams, ManagedAvahiEntryGroup, ManagedAvahiE
 use super::poll::ManagedAvahiSimplePoll;
 use crate::builder::BuilderDelegate;
 use crate::ffi::{cstr, AsRaw, FromRaw};
-use crate::Result;
-use crate::{ServiceRegisteredCallback, ServiceRegistration};
+use crate::{NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration};
 use avahi_sys::{
     AvahiClient, AvahiClientFlags, AvahiClientState, AvahiEntryGroup, AvahiEntryGroupState,
+    AvahiIfIndex,
 };
 use libc::c_void;
 use std::any::Any;
@@ -42,6 +42,19 @@ impl AvahiMdnsService {
     /// [`AvahiClient::host_name()`]: client/struct.ManagedAvahiClient.html#method.host_name
     pub fn set_name(&mut self, name: &str) {
         unsafe { (*self.context).name = Some(CString::new(name).unwrap()) };
+    }
+
+    /// Sets the network interface to bind this service to.
+    ///
+    /// Most applications will want to use the default value `NetworkInterface::Unspec` to bind to
+    /// all available interfaces.
+    pub fn set_network_interface(&mut self, interface: NetworkInterface) {
+        let interface_index = match interface {
+            NetworkInterface::Unspec => constants::AVAHI_IF_UNSPEC,
+            NetworkInterface::AtIndex(i) => i as i32,
+        };
+
+        unsafe { (*self.context).interface_index = interface_index };
     }
 
     /// Sets the [`ServiceRegisteredCallback`] that is invoked when the service has been
@@ -90,6 +103,7 @@ struct AvahiServiceContext {
     kind: CString,
     port: u16,
     group: Option<ManagedAvahiEntryGroup>,
+    interface_index: AvahiIfIndex,
     registered_callback: Option<Box<ServiceRegisteredCallback>>,
     user_context: Option<Arc<dyn Any>>,
 }
@@ -101,6 +115,7 @@ impl AvahiServiceContext {
             kind: CString::new(kind).unwrap(),
             port,
             group: None,
+            interface_index: constants::AVAHI_IF_UNSPEC,
             registered_callback: None,
             user_context: None,
         }
@@ -177,7 +192,7 @@ unsafe fn create_service(
 
         group.add_service(
             AddServiceParams::builder()
-                .interface(constants::AVAHI_IF_UNSPEC)
+                .interface(context.interface_index)
                 .protocol(constants::AVAHI_PROTO_UNSPEC)
                 .flags(0)
                 .name(context.name.as_ref().unwrap().as_ptr())
