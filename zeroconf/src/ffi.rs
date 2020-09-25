@@ -47,9 +47,7 @@ pub mod cstr {
     ///
     /// [`CStr::from_ptr()`]: https://doc.rust-lang.org/std/ffi/struct.CStr.html#method.from_ptr
     pub unsafe fn raw_to_str<'a>(s: *const c_char) -> &'a str {
-        if s.is_null() {
-            panic!("raw_to_str(): raw input must not be null");
-        }
+        assert!(!s.is_null());
         CStr::from_ptr(s).to_str().unwrap()
     }
 
