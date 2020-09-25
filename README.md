@@ -6,6 +6,8 @@ browse services.
 
 ## Prerequisites
 
+On Linux:
+
 ```bash
 $ sudo apt install xorg-dev libxcb-shape0-dev libxcb-xfixes0-dev clang
 ```
@@ -16,6 +18,12 @@ $ sudo apt install xorg-dev libxcb-shape0-dev libxcb-xfixes0-dev clang
 * Windows support
 * 1-1 mapping with Avahi/Bonjour
 * You tell me...
+
+# Caveats
+
+* Because of conditional compilation, the documentation for `macos` module is not available on
+https://docs.rs/zeroconf. If you would like to browse these docs right now you'll have to build
+them yourself with `cargo doc`.
 
 ## Examples
 
