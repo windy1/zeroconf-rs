@@ -14,6 +14,8 @@ use std::mem;
 /// # Safety
 /// This function is unsafe because of internal Avahi calls and raw pointer dereference.
 pub unsafe fn avahi_address_to_string(addr: *const AvahiAddress) -> String {
+    assert_not_null!(addr);
+
     let addr_str = CString::from_vec_unchecked(vec![0; constants::AVAHI_ADDRESS_STR_MAX]);
 
     avahi_address_snprint(
