@@ -209,15 +209,12 @@ unsafe extern "C" fn entry_group_callback(
     state: AvahiEntryGroupState,
     userdata: *mut c_void,
 ) {
-    match state {
-        avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_ESTABLISHED => {
-            let context = AvahiServiceContext::from_raw(userdata);
-            if let Err(e) = handle_group_established(context) {
-                context.invoke_callback(Err(e));
-            }
+    if let avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_ESTABLISHED = state {
+        let context = AvahiServiceContext::from_raw(userdata);
+        if let Err(e) = handle_group_established(context) {
+            context.invoke_callback(Err(e));
         }
-        _ => {}
-    };
+    }
 }
 
 unsafe fn handle_group_established(context: &AvahiServiceContext) -> Result<()> {

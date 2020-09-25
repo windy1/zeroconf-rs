@@ -8,7 +8,6 @@ use avahi_sys::{
 };
 use libc::{c_char, c_void};
 use std::collections::HashMap;
-use std::ptr;
 
 /// Wraps the `AvahiServiceResolver` type from the raw Avahi bindings.
 ///
@@ -52,7 +51,7 @@ impl ManagedAvahiServiceResolver {
             )
         };
 
-        if resolver == ptr::null_mut() {
+        if resolver.is_null() {
             Err("could not initialize AvahiServiceResolver".into())
         } else {
             Ok(Self { resolver })

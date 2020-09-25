@@ -5,7 +5,6 @@ use crate::Result;
 use avahi_sys::{
     avahi_simple_poll_free, avahi_simple_poll_loop, avahi_simple_poll_new, AvahiSimplePoll,
 };
-use std::ptr;
 
 /// Wraps the `AvahiSimplePoll` type from the raw Avahi bindings.
 ///
@@ -21,7 +20,7 @@ impl ManagedAvahiSimplePoll {
     /// `Err(String)` if unsuccessful
     pub fn new() -> Result<Self> {
         let poll = unsafe { avahi_simple_poll_new() };
-        if poll == ptr::null_mut() {
+        if poll.is_null() {
             Err("could not initialize AvahiSimplePoll".into())
         } else {
             Ok(Self { poll })

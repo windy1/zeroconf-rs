@@ -6,7 +6,7 @@ use libc::c_void;
 pub trait FromRaw<T> {
     /// Converts the specified `*mut c_void` to a `&'a mut T`.
     ///
-    /// # Unsafe
+    /// # Safety
     /// This function is unsafe due to the dereference of the specified raw pointer.
     unsafe fn from_raw<'a>(raw: *mut c_void) -> &'a mut T {
         &mut *(raw as *mut T)
@@ -17,11 +17,11 @@ pub trait FromRaw<T> {
 pub trait CloneRaw<T: FromRaw<T> + Clone> {
     /// Converts and clones the specified `*mut c_void` to a `Box<T>`.
     ///
-    /// # Unsafe
+    /// # Safety
     /// This function is unsafe due to a call to the unsafe function [`FromRaw::from_raw()`].
     ///
     /// [`FromRaw::from_raw()`]: trait.FromRaw.html#method.from_raw
-    unsafe fn clone_raw<'a>(raw: *mut c_void) -> Box<T> {
+    unsafe fn clone_raw(raw: *mut c_void) -> Box<T> {
         Box::new(T::from_raw(raw).clone())
     }
 }
@@ -39,16 +39,15 @@ pub mod cstr {
 
     use libc::c_char;
     use std::ffi::CStr;
-    use std::ptr;
 
     /// Returns the specified `*const c_char` as a `&'a str`. Ownership is not taken.
     ///
-    /// # Unsafe
+    /// # Safety
     /// This function is unsafe due to a call to the unsafe function [`CStr::from_ptr()`].
     ///
     /// [`CStr::from_ptr()`]: https://doc.rust-lang.org/std/ffi/struct.CStr.html#method.from_ptr
     pub unsafe fn raw_to_str<'a>(s: *const c_char) -> &'a str {
-        if s == ptr::null() {
+        if s.is_null() {
             panic!("raw_to_str(): raw input must not be null");
         }
         CStr::from_ptr(s).to_str().unwrap()
@@ -56,7 +55,7 @@ pub mod cstr {
 
     /// Copies the specified `*const c_char` into a `String`.
     ///
-    /// # Unsafe
+    /// # Safety
     /// This function is unsafe due to a call to the unsafe function [`raw_to_str()`].
     ///
     /// [`raw_to_str()`]: fn.raw_to_str.html

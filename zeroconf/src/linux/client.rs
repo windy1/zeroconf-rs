@@ -9,7 +9,6 @@ use avahi_sys::{
     AvahiClient, AvahiClientCallback, AvahiClientFlags,
 };
 use libc::{c_int, c_void};
-use std::ptr;
 
 /// Wraps the `AvahiClient` type from the raw Avahi bindings.
 ///
@@ -43,7 +42,7 @@ impl ManagedAvahiClient {
             )
         };
 
-        if client == ptr::null_mut() {
+        if client.is_null() {
             return Err("could not initialize AvahiClient".into());
         }
 
@@ -86,7 +85,7 @@ pub struct ManagedAvahiClientParams<'a> {
 
 pub(super) unsafe fn get_host_name<'a>(client: *mut AvahiClient) -> Result<&'a str> {
     let host_name = avahi_client_get_host_name(client);
-    if host_name != ptr::null_mut() {
+    if !host_name.is_null() {
         Ok(cstr::raw_to_str(host_name))
     } else {
         Err("could not get host name from AvahiClient".into())

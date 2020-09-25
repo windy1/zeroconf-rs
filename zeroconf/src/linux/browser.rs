@@ -243,7 +243,7 @@ unsafe extern "C" fn resolve_callback(
     context.resolvers.remove_raw(resolver);
 }
 
-fn handle_resolver_found(
+unsafe fn handle_resolver_found(
     context: &AvahiBrowserContext,
     host_name: &str,
     addr: *const AvahiAddress,
@@ -276,8 +276,7 @@ extern "C" fn client_callback(
     state: AvahiClientState,
     _userdata: *mut c_void,
 ) {
-    match state {
-        avahi_sys::AvahiClientState_AVAHI_CLIENT_FAILURE => panic!("client failure"),
-        _ => {}
+    if let avahi_sys::AvahiClientState_AVAHI_CLIENT_FAILURE = state {
+        panic!("client failure");
     }
 }

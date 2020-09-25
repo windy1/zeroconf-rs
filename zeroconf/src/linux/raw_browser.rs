@@ -7,7 +7,6 @@ use avahi_sys::{
     AvahiProtocol, AvahiServiceBrowser, AvahiServiceBrowserCallback,
 };
 use libc::{c_char, c_void};
-use std::ptr;
 
 /// Wraps the `AvahiServiceBrowser` type from the raw Avahi bindings.
 ///
@@ -46,7 +45,7 @@ impl ManagedAvahiServiceBrowser {
             )
         };
 
-        if browser == ptr::null_mut() {
+        if browser.is_null() {
             Err("could not initialize Avahi service browser".into())
         } else {
             Ok(Self { browser })

@@ -10,12 +10,17 @@ use std::mem;
 ///
 /// The new `String` is constructed through allocating a new `CString`, passing it to
 /// `avahi_address_snprint` and then converting it to a Rust-type `String`.
-pub fn avahi_address_to_string(addr: *const AvahiAddress) -> String {
-    let addr_str = unsafe {
-        let str = CString::from_vec_unchecked(vec![0; constants::AVAHI_ADDRESS_STR_MAX]);
-        avahi_address_snprint(str.as_ptr() as *mut c_char, mem::size_of_val(&str), addr);
-        str
-    };
+///
+/// # Safety
+/// This function is unsafe because of internal Avahi calls and raw pointer dereference.
+pub unsafe fn avahi_address_to_string(addr: *const AvahiAddress) -> String {
+    let addr_str = CString::from_vec_unchecked(vec![0; constants::AVAHI_ADDRESS_STR_MAX]);
+
+    avahi_address_snprint(
+        addr_str.as_ptr() as *mut c_char,
+        mem::size_of_val(&addr_str),
+        addr,
+    );
 
     String::from(addr_str.to_str().unwrap())
         .trim_matches(char::from(0))

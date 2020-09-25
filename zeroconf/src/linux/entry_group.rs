@@ -30,7 +30,7 @@ impl ManagedAvahiEntryGroup {
         }: ManagedAvahiEntryGroupParams,
     ) -> Result<Self> {
         let group = unsafe { avahi_entry_group_new(client, callback, userdata) };
-        if group == ptr::null_mut() {
+        if group.is_null() {
             Err("could not initialize AvahiEntryGroup".into())
         } else {
             Ok(Self { group })
