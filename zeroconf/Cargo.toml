@@ -10,6 +10,7 @@ repository = "https://github.com/windy1/zeroconf-rs"
 license-file = "../LICENSE"
 keywords = ["zeroconf", "mdns", "avahi", "bonjour", "dnssd"]
 categories = ["api-bindings", "network-programming", "os", "os::linux-apis", "os::macos-apis"]
+documentation = "https://docs.rs/zeroconf"
 
 [dependencies]
 serde = { version = "1.0.116", features = ["derive"] }
