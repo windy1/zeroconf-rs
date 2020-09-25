@@ -5,6 +5,7 @@
 //! [Bonjour]: https://en.wikipedia.org/wiki/Bonjour_(software)
 
 pub(crate) mod browser;
+pub(crate) mod constants;
 pub(crate) mod service;
 
 pub mod compat;

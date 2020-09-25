@@ -1,10 +1,10 @@
-use super::compat;
 use super::service_ref::{
     BrowseServicesParams, GetAddressInfoParams, ManagedDNSServiceRef, ServiceResolveParams,
 };
+use super::{compat, constants};
 use crate::builder::BuilderDelegate;
 use crate::ffi::{cstr, AsRaw, FromRaw};
-use crate::Result;
+use crate::{NetworkInterface, Result};
 use crate::{ServiceDiscoveredCallback, ServiceDiscovery};
 use bonjour_sys::{sockaddr, DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_uchar, c_void, in_addr, sockaddr_in};
@@ -19,6 +19,7 @@ use std::sync::Arc;
 pub struct BonjourMdnsBrowser {
     service: ManagedDNSServiceRef,
     kind: CString,
+    interface_index: u32,
     context: *mut BonjourBrowserContext,
 }
 
@@ -29,8 +30,17 @@ impl BonjourMdnsBrowser {
         Self {
             service: ManagedDNSServiceRef::default(),
             kind: c_string!(kind),
+            interface_index: constants::BONJOUR_IF_UNSPEC,
             context: Box::into_raw(Box::default()),
         }
+    }
+
+    /// Sets the network interface on which to browse for services on.
+    ///
+    /// Most applications will want to use the default value `NetworkInterface::Unspec` to browse
+    /// on all available interfaces.
+    pub fn set_network_interface(&mut self, interface: NetworkInterface) {
+        self.interface_index = compat::interface_index(interface);
     }
 
     /// Sets the [`ServiceDiscoveredCallback`] that is invoked when the browser has discovered and
@@ -58,7 +68,7 @@ impl BonjourMdnsBrowser {
         self.service.browse_services(
             BrowseServicesParams::builder()
                 .flags(0)
-                .interface_index(0)
+                .interface_index(self.interface_index)
                 .regtype(self.kind.as_ptr())
                 .domain(ptr::null_mut())
                 .callback(Some(browse_callback))

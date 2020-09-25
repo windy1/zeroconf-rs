@@ -1,5 +1,5 @@
-use super::compat;
 use super::service_ref::{ManagedDNSServiceRef, RegisterServiceParams};
+use super::{compat, constants};
 use crate::builder::BuilderDelegate;
 use crate::ffi::{cstr, FromRaw};
 use crate::{NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration};
@@ -9,9 +9,6 @@ use std::any::Any;
 use std::ffi::CString;
 use std::ptr;
 use std::sync::Arc;
-
-const BONJOUR_IF_UNSPEC: u32 = 0;
-const BONJOUR_RENAME_FLAGS: DNSServiceFlags = 0;
 
 /// Interface for interacting with Bonjour's mDNS service registration capabilities.
 #[derive(Debug)]
@@ -33,7 +30,7 @@ impl BonjourMdnsService {
             kind: c_string!(kind),
             port,
             name: None,
-            interface_index: BONJOUR_IF_UNSPEC,
+            interface_index: constants::BONJOUR_IF_UNSPEC,
             context: Box::into_raw(Box::default()),
         }
     }
@@ -49,10 +46,7 @@ impl BonjourMdnsService {
     /// Most applications will want to use the default value `NetworkInterface::Unspec` to bind to
     /// all available interfaces.
     pub fn set_network_interface(&mut self, interface: NetworkInterface) {
-        self.interface_index = match interface {
-            NetworkInterface::Unspec => BONJOUR_IF_UNSPEC,
-            NetworkInterface::AtIndex(i) => i,
-        };
+        self.interface_index = compat::interface_index(interface);
     }
 
     /// Sets the [`ServiceRegisteredCallback`] that is invoked when the service has been
@@ -82,7 +76,7 @@ impl BonjourMdnsService {
 
         self.service.register_service(
             RegisterServiceParams::builder()
-                .flags(BONJOUR_RENAME_FLAGS)
+                .flags(constants::BONJOUR_RENAME_FLAGS)
                 .interface_index(self.interface_index)
                 .name(name)
                 .regtype(self.kind.as_ptr())

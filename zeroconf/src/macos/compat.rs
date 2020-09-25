@@ -1,5 +1,8 @@
 //! Utilities related to compatibility between platforms
 
+use super::constants;
+use crate::NetworkInterface;
+
 /// Normalizes the specified domain `&str` to conform to a standard enforced by this crate.
 ///
 /// Bonjour suffixes domains with a final `'.'` character in some contexts but is not required by
@@ -9,5 +12,12 @@ pub fn normalize_domain(domain: &str) -> String {
         String::from(&domain[..domain.len() - 1])
     } else {
         String::from(domain)
+    }
+}
+
+pub(crate) fn interface_index(interface: NetworkInterface) -> u32 {
+    match interface {
+        NetworkInterface::Unspec => constants::BONJOUR_IF_UNSPEC,
+        NetworkInterface::AtIndex(i) => i,
     }
 }
