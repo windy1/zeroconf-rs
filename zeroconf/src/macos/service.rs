@@ -2,6 +2,7 @@ use super::compat;
 use super::service_ref::{ManagedDNSServiceRef, RegisterServiceParams};
 use crate::builder::BuilderDelegate;
 use crate::ffi::{cstr, FromRaw};
+use crate::Result;
 use crate::{ServiceRegisteredCallback, ServiceRegistration};
 use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_void};
@@ -58,7 +59,7 @@ impl BonjourMdnsService {
 
     /// Registers and start's the service; continuously polling the event loop. This call will
     /// block the current thread.
-    pub fn start(&mut self) -> Result<(), String> {
+    pub fn start(&mut self) -> Result<()> {
         debug!("Registering service: {:?}", self);
 
         let name = self
@@ -97,6 +98,16 @@ struct BonjourServiceContext {
     user_context: Option<Arc<dyn Any>>,
 }
 
+impl BonjourServiceContext {
+    fn invoke_callback(&self, result: Result<ServiceRegistration>) {
+        if let Some(f) = &self.registered_callback {
+            f(result, self.user_context.clone());
+        } else {
+            warn!("attempted to invoke callback but none was set");
+        }
+    }
+}
+
 unsafe extern "C" fn register_callback(
     _sd_ref: DNSServiceRef,
     _flags: DNSServiceFlags,
@@ -121,9 +132,5 @@ unsafe extern "C" fn register_callback(
 
     let context = BonjourServiceContext::from_raw(context);
 
-    if let Some(f) = &mut context.registered_callback {
-        f(result, context.user_context.clone());
-    } else {
-        warn!("Service registered but no callback has been set");
-    }
+    context.invoke_callback(Ok(result));
 }

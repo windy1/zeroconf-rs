@@ -1,5 +1,6 @@
 //! Rust friendly Bonjour wrappers/helpers
 
+use crate::Result;
 use bonjour_sys::{
     DNSServiceBrowse, DNSServiceBrowseReply, DNSServiceFlags, DNSServiceGetAddrInfo,
     DNSServiceGetAddrInfoReply, DNSServiceProcessResult, DNSServiceProtocol, DNSServiceRef,
@@ -42,7 +43,7 @@ impl ManagedDNSServiceRef {
             callback,
             context,
         }: RegisterServiceParams,
-    ) -> Result<(), String> {
+    ) -> Result<()> {
         let err = unsafe {
             DNSServiceRegister(
                 &mut self.service as *mut DNSServiceRef,
@@ -61,7 +62,7 @@ impl ManagedDNSServiceRef {
         };
 
         if err != 0 {
-            return Err(format!("could not register service (code: {})", err).to_string());
+            return Err(format!("could not register service (code: {})", err).into());
         }
 
         loop {
@@ -82,7 +83,7 @@ impl ManagedDNSServiceRef {
             callback,
             context,
         }: BrowseServicesParams,
-    ) -> Result<(), String> {
+    ) -> Result<()> {
         let err = unsafe {
             DNSServiceBrowse(
                 &mut self.service as *mut DNSServiceRef,
@@ -96,7 +97,7 @@ impl ManagedDNSServiceRef {
         };
 
         if err != 0 {
-            return Err(format!("could not browse services (code: {})", err).to_string());
+            return Err(format!("could not browse services (code: {})", err).into());
         }
 
         loop {
@@ -118,7 +119,7 @@ impl ManagedDNSServiceRef {
             callback,
             context,
         }: ServiceResolveParams,
-    ) -> Result<(), String> {
+    ) -> Result<()> {
         let error = unsafe {
             DNSServiceResolve(
                 &mut self.service as *mut DNSServiceRef,
@@ -133,10 +134,7 @@ impl ManagedDNSServiceRef {
         };
 
         if error != 0 {
-            return Err(format!(
-                "DNSServiceResolve() reported error (code: {})",
-                error
-            ));
+            return Err(format!("DNSServiceResolve() reported error (code: {})", error).into());
         }
 
         self.process_result()
@@ -155,7 +153,7 @@ impl ManagedDNSServiceRef {
             callback,
             context,
         }: GetAddressInfoParams,
-    ) -> Result<(), String> {
+    ) -> Result<()> {
         let err = unsafe {
             DNSServiceGetAddrInfo(
                 &mut self.service as *mut DNSServiceRef,
@@ -169,10 +167,7 @@ impl ManagedDNSServiceRef {
         };
 
         if err != 0 {
-            return Err(format!(
-                "DNSServiceGetAddrInfo() reported error (code: {})",
-                err
-            ));
+            return Err(format!("DNSServiceGetAddrInfo() reported error (code: {})", err).into());
         }
 
         self.process_result()
@@ -181,10 +176,10 @@ impl ManagedDNSServiceRef {
     /// Delegate function for [`DNSServiceProcessResult`].
     ///
     /// [`DNSServiceProcessResult`]: https://developer.apple.com/documentation/dnssd/1804696-dnsserviceprocessresult?language=objc
-    fn process_result(&self) -> Result<(), String> {
+    fn process_result(&self) -> Result<()> {
         let err = unsafe { DNSServiceProcessResult(self.service) };
         if err != 0 {
-            Err(format!("could not process service result (code: {})", err))
+            Err(format!("could not process service result (code: {})", err).into())
         } else {
             Ok(())
         }
