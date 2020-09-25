@@ -1,6 +1,7 @@
 //! Utilities related to Avahi
 
 use super::constants;
+use crate::NetworkInterface;
 use avahi_sys::{avahi_address_snprint, avahi_strerror, AvahiAddress};
 use libc::c_char;
 use std::ffi::{CStr, CString};
@@ -35,6 +36,13 @@ pub fn get_error<'a>(code: i32) -> &'a str {
         CStr::from_ptr(avahi_strerror(code))
             .to_str()
             .expect("could not fetch Avahi error string")
+    }
+}
+
+pub(crate) fn interface_index(interface: NetworkInterface) -> i32 {
+    match interface {
+        NetworkInterface::Unspec => constants::AVAHI_IF_UNSPEC,
+        NetworkInterface::AtIndex(i) => i as i32,
     }
 }
 

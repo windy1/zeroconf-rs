@@ -9,7 +9,7 @@ use super::resolver::{
 use crate::builder::BuilderDelegate;
 use crate::ffi::{cstr, AsRaw, FromRaw};
 use crate::Result;
-use crate::{ServiceDiscoveredCallback, ServiceDiscovery};
+use crate::{NetworkInterface, ServiceDiscoveredCallback, ServiceDiscovery};
 use avahi_sys::{
     AvahiAddress, AvahiBrowserEvent, AvahiClient, AvahiClientFlags, AvahiClientState, AvahiIfIndex,
     AvahiLookupResultFlags, AvahiProtocol, AvahiResolverEvent, AvahiServiceBrowser,
@@ -27,6 +27,7 @@ pub struct AvahiMdnsBrowser {
     poll: Option<ManagedAvahiSimplePoll>,
     browser: Option<ManagedAvahiServiceBrowser>,
     kind: CString,
+    interface_index: AvahiIfIndex,
     context: *mut AvahiBrowserContext,
 }
 
@@ -38,7 +39,16 @@ impl AvahiMdnsBrowser {
             browser: None,
             kind: c_string!(kind.to_string()),
             context: Box::into_raw(Box::default()),
+            interface_index: constants::AVAHI_IF_UNSPEC,
         }
+    }
+
+    /// Sets the network interface on which to browse for services on.
+    ///
+    /// Most applications will want to use the default value `NetworkInterface::Unspec` to browse
+    /// on all available interfaces.
+    pub fn set_network_interface(&mut self, interface: NetworkInterface) {
+        self.interface_index = avahi_util::interface_index(interface);
     }
 
     /// Sets the [`ServiceDiscoveredCallback`] that is invoked when the browser has discovered and
@@ -80,7 +90,7 @@ impl AvahiMdnsBrowser {
             self.browser = Some(ManagedAvahiServiceBrowser::new(
                 ManagedAvahiServiceBrowserParams::builder()
                     .client(&(*self.context).client.as_ref().unwrap())
-                    .interface(constants::AVAHI_IF_UNSPEC)
+                    .interface(self.interface_index)
                     .protocol(constants::AVAHI_PROTO_UNSPEC)
                     .kind(self.kind.as_ptr())
                     .domain(ptr::null_mut())
@@ -276,6 +286,7 @@ extern "C" fn client_callback(
     state: AvahiClientState,
     _userdata: *mut c_void,
 ) {
+    // TODO: handle this better
     if let avahi_sys::AvahiClientState_AVAHI_CLIENT_FAILURE = state {
         panic!("client failure");
     }

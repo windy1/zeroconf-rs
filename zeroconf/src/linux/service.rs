@@ -1,3 +1,4 @@
+use super::avahi_util;
 use super::client::{self, ManagedAvahiClient, ManagedAvahiClientParams};
 use super::constants;
 use super::entry_group::{AddServiceParams, ManagedAvahiEntryGroup, ManagedAvahiEntryGroupParams};
@@ -49,12 +50,7 @@ impl AvahiMdnsService {
     /// Most applications will want to use the default value `NetworkInterface::Unspec` to bind to
     /// all available interfaces.
     pub fn set_network_interface(&mut self, interface: NetworkInterface) {
-        let interface_index = match interface {
-            NetworkInterface::Unspec => constants::AVAHI_IF_UNSPEC,
-            NetworkInterface::AtIndex(i) => i as i32,
-        };
-
-        unsafe { (*self.context).interface_index = interface_index };
+        unsafe { (*self.context).interface_index = avahi_util::interface_index(interface) };
     }
 
     /// Sets the [`ServiceRegisteredCallback`] that is invoked when the service has been
