@@ -115,11 +115,11 @@ mod discovery;
 mod registration;
 #[macro_use]
 mod macros;
+mod interface;
 
 pub mod builder;
 pub mod error;
 pub mod ffi;
-pub mod interface;
 
 #[cfg(target_os = "linux")]
 pub mod linux;
