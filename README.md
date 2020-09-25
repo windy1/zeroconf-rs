@@ -19,19 +19,13 @@ $ sudo apt install xorg-dev libxcb-shape0-dev libxcb-xfixes0-dev clang
 * 1-1 mapping with Avahi/Bonjour
 * You tell me...
 
-# Caveats
-
-* Because of conditional compilation, the documentation for `macos` module is not available on
-https://docs.rs/zeroconf. If you would like to browse these docs right now you'll have to build
-them yourself with `cargo doc`.
-
 ## Examples
 
  ## Register a service
 
  When registering a service, you may optionally pass a "context" to pass state through the
- callback. The only requirement is that this context implements the [`Any`] trait, which most
- types will automatically. See [`MdnsService`] for more information about contexts.
+ callback. The only requirement is that this context implements the `Any` trait, which most
+ types will automatically. See `MdnsService` for more information about contexts.
 
 ```rust
 use std::any::Any;
@@ -54,7 +48,12 @@ fn main() {
     service.start().unwrap();
 }
 
-fn on_service_registered(service: ServiceRegistration, context: Option<Arc<dyn Any>>) {
+fn on_service_registered(
+    result: zeroconf::Result<ServiceRegistration>,
+    context: Option<Arc<dyn Any>>,
+) {
+    let service = result.unwrap();
+
     println!("Service registered: {:?}", service);
 
     let context = context
@@ -88,8 +87,11 @@ fn main() {
     browser.start().unwrap()
 }
 
-fn on_service_discovered(service: ServiceDiscovery, _context: Option<Arc<dyn Any>>) {
-    println!("Service discovered: {:?}", &service);
+fn on_service_discovered(
+    result: zeroconf::Result<ServiceDiscovery>,
+    _context: Option<Arc<dyn Any>>,
+) {
+    println!("Service discovered: {:?}", result.unwrap());
 
     // ...
 }
@@ -98,6 +100,4 @@ fn on_service_discovered(service: ServiceDiscovery, _context: Option<Arc<dyn Any
 [ZeroConf/mDNS]: https://en.wikipedia.org/wiki/Zero-configuration_networking
 [Bonjour]: https://en.wikipedia.org/wiki/Bonjour_(software)
 [Avahi]: https://en.wikipedia.org/wiki/Avahi_(software)
-[`MdnsService`]: struct.MdnsService.html
-[`MdnsBrowser`]: struct.MdnsBrowser.html
 [`Any`]: https://doc.rust-lang.org/std/any/trait.Any.html
