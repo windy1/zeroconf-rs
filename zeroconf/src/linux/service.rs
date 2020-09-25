@@ -22,7 +22,6 @@ pub struct AvahiMdnsService {
     client: Option<ManagedAvahiClient>,
     poll: Option<ManagedAvahiSimplePoll>,
     context: *mut AvahiServiceContext,
-    client_flags: AvahiClientFlags,
 }
 
 impl AvahiMdnsService {
@@ -32,7 +31,6 @@ impl AvahiMdnsService {
             client: None,
             poll: None,
             context: Box::into_raw(Box::new(AvahiServiceContext::new(kind, port))),
-            client_flags: AvahiClientFlags(0),
         }
     }
 
@@ -44,16 +42,6 @@ impl AvahiMdnsService {
     /// [`AvahiClient::host_name()`]: client/struct.ManagedAvahiClient.html#method.host_name
     pub fn set_name(&mut self, name: &str) {
         unsafe { (*self.context).name = Some(CString::new(name).unwrap()) };
-    }
-
-    /// Sets the `AvahiClientFlags` supplied to the [`ManagedAvahiClient`] during initialization.
-    ///
-    /// Only set this if you know what you're doing, the default value of `0` is what most users
-    /// will use.
-    ///
-    /// [`ManagedAvahiClient`]: client/struct.ManagedAvahiClient.html
-    pub fn set_client_flags(&mut self, client_flags: u32) {
-        self.client_flags = AvahiClientFlags(client_flags);
     }
 
     /// Sets the [`ServiceRegisteredCallback`] that is invoked when the service has been
@@ -80,7 +68,7 @@ impl AvahiMdnsService {
         self.client = Some(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
                 .poll(self.poll.as_ref().unwrap())
-                .flags(self.client_flags)
+                .flags(AvahiClientFlags(0))
                 .callback(Some(client_callback))
                 .userdata(self.context as *mut c_void)
                 .build()?,
