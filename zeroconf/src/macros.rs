@@ -9,3 +9,26 @@ macro_rules! c_string {
         ::std::ffi::CString::new($x).unwrap()
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use libc::c_char;
+    use std::ffi::CString;
+    use std::ptr;
+
+    #[test]
+    fn assert_not_null_non_null_success() {
+        assert_not_null!(c_string!("foo").as_ptr());
+    }
+
+    #[test]
+    #[should_panic]
+    fn assert_not_null_null_panics() {
+        assert_not_null!(ptr::null() as *const c_char);
+    }
+
+    #[test]
+    fn c_string_success() {
+        assert_eq!(c_string!("foo"), CString::new("foo").unwrap());
+    }
+}

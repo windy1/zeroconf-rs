@@ -13,7 +13,7 @@ use std::sync::{Arc, Mutex};
 /// Interface for interacting with Bonjour's mDNS service registration capabilities.
 #[derive(Debug)]
 pub struct BonjourMdnsService {
-    service: Arc<Mutex<ManagedDNSServiceRef>>,
+    pub service: Arc<Mutex<ManagedDNSServiceRef>>, // TODO: debug visibility
     kind: CString,
     port: u16,
     name: Option<CString>,

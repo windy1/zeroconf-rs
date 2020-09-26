@@ -21,7 +21,7 @@ use std::ptr;
 /// it is preferable to only call one delegate function per-instance.
 #[derive(Debug)]
 pub struct ManagedDNSServiceRef {
-    service: DNSServiceRef,
+    pub service: DNSServiceRef, // TODO: debug visibility
 }
 
 impl ManagedDNSServiceRef {

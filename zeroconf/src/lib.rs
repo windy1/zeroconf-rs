@@ -33,8 +33,12 @@
 //!     service.set_registered_callback(Box::new(on_service_registered));
 //!     service.set_context(Box::new(context));
 //!
-//!     // blocks current thread, must keep-alive to keep service active
-//!     service.start().unwrap();
+//!     let event_loop = service.register().unwrap();
+//!
+//!     loop {
+//!         // calling `poll()` will keep this service alive
+//!         event_loop.poll().unwrap();
+//!     }
 //! }
 //!
 //! fn on_service_registered(
@@ -61,7 +65,6 @@
 //! ```
 //!
 //! ## Browsing services
-//!
 //! ```no_run
 //! use std::any::Any;
 //! use std::sync::Arc;
@@ -72,8 +75,12 @@
 //!
 //!     browser.set_service_discovered_callback(Box::new(on_service_discovered));
 //!
-//!     // blocks current thread, must keep-alive to keep browser active
-//!     browser.start().unwrap()
+//!     let event_loop = browser.browse_services().unwrap();
+//!
+//!     loop {
+//!         // calling `poll()` will keep this browser alive
+//!         event_loop.poll().unwrap();
+//!     }
 //! }
 //!
 //! fn on_service_discovered(
@@ -117,6 +124,8 @@ mod registration;
 #[macro_use]
 mod macros;
 mod interface;
+#[cfg(test)]
+mod tests;
 
 pub mod builder;
 pub mod error;
