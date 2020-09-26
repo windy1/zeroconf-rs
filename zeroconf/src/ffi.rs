@@ -1,6 +1,9 @@
 //! Utilities related to FFI bindings
 
-use libc::c_void;
+use crate::Result;
+use libc::{c_void, fd_set, timeval};
+use std::time::Duration;
+use std::{mem, ptr};
 
 /// Helper trait to convert a raw `*mut c_void` to it's rust type
 pub trait FromRaw<T> {
@@ -33,6 +36,32 @@ pub trait AsRaw {
     /// Converts self to a raw `*mut c_void` by cast.
     fn as_raw(&mut self) -> *mut c_void {
         self as *mut _ as *mut c_void
+    }
+}
+
+pub unsafe fn read_select(sock_fd: i32, timeout: Duration) -> Result<u32> {
+    let mut read_flags: fd_set = mem::zeroed();
+
+    libc::FD_ZERO(&mut read_flags);
+    libc::FD_SET(sock_fd, &mut read_flags);
+
+    let mut timeout = timeval {
+        tv_sec: timeout.as_secs() as i64,
+        tv_usec: timeout.subsec_micros() as i32,
+    };
+
+    let result = libc::select(
+        sock_fd + 1,
+        &mut read_flags,
+        ptr::null_mut(),
+        ptr::null_mut(),
+        &mut timeout,
+    );
+
+    if result < 0 {
+        Err("select(): returned error status".into())
+    } else {
+        Ok(result as u32)
     }
 }
 

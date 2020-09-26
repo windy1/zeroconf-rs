@@ -1,5 +1,6 @@
 use std::any::Any;
 use std::sync::Arc;
+use std::time::Duration;
 use zeroconf::{MdnsBrowser, ServiceDiscovery};
 
 fn main() {
@@ -11,7 +12,7 @@ fn main() {
 
     loop {
         // calling `poll()` will keep this browser alive
-        event_loop.poll().unwrap();
+        event_loop.poll(Duration::from_secs(0)).unwrap();
     }
 }
 

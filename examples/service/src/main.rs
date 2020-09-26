@@ -1,5 +1,6 @@
 use std::any::Any;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use zeroconf::{MdnsService, ServiceRegistration};
 
 #[derive(Default, Debug)]
@@ -18,7 +19,7 @@ fn main() {
 
     loop {
         // calling `poll()` will keep this service alive
-        event_loop.poll().unwrap();
+        event_loop.poll(Duration::from_secs(0)).unwrap();
     }
 }
 

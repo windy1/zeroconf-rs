@@ -4,8 +4,8 @@ use crate::Result;
 use bonjour_sys::{
     DNSServiceBrowse, DNSServiceBrowseReply, DNSServiceFlags, DNSServiceGetAddrInfo,
     DNSServiceGetAddrInfoReply, DNSServiceProcessResult, DNSServiceProtocol, DNSServiceRef,
-    DNSServiceRefDeallocate, DNSServiceRegister, DNSServiceRegisterReply, DNSServiceResolve,
-    DNSServiceResolveReply,
+    DNSServiceRefDeallocate, DNSServiceRefSockFD, DNSServiceRegister, DNSServiceRegisterReply,
+    DNSServiceResolve, DNSServiceResolveReply,
 };
 use libc::{c_char, c_void};
 use std::ptr;
@@ -179,6 +179,10 @@ impl ManagedDNSServiceRef {
         } else {
             Ok(())
         }
+    }
+
+    pub fn sock_fd(&self) -> i32 {
+        unsafe { DNSServiceRefSockFD(self.service) }
     }
 }
 
