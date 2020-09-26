@@ -507,6 +507,7 @@ dependencies = [
  "derive-getters",
  "derive-new",
  "derive_builder",
+ "env_logger",
  "libc",
  "log",
  "serde",

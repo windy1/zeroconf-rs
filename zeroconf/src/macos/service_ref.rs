@@ -65,9 +65,7 @@ impl ManagedDNSServiceRef {
             return Err(format!("could not register service (code: {})", err).into());
         }
 
-        loop {
-            self.process_result()?
-        }
+        Ok(())
     }
 
     /// Delegate function for [`DNSServiceBrowse`].
@@ -176,7 +174,7 @@ impl ManagedDNSServiceRef {
     /// Delegate function for [`DNSServiceProcessResult`].
     ///
     /// [`DNSServiceProcessResult`]: https://developer.apple.com/documentation/dnssd/1804696-dnsserviceprocessresult?language=objc
-    fn process_result(&self) -> Result<()> {
+    pub fn process_result(&self) -> Result<()> {
         let err = unsafe { DNSServiceProcessResult(self.service) };
         if err != 0 {
             Err(format!("could not process service result (code: {})", err).into())

@@ -2,18 +2,18 @@ use super::service_ref::{ManagedDNSServiceRef, RegisterServiceParams};
 use super::{compat, constants};
 use crate::builder::BuilderDelegate;
 use crate::ffi::{cstr, FromRaw};
-use crate::{NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration};
+use crate::{EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration};
 use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_void};
 use std::any::Any;
 use std::ffi::CString;
 use std::ptr;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// Interface for interacting with Bonjour's mDNS service registration capabilities.
 #[derive(Debug)]
 pub struct BonjourMdnsService {
-    service: ManagedDNSServiceRef,
+    service: Arc<Mutex<ManagedDNSServiceRef>>,
     kind: CString,
     port: u16,
     name: Option<CString>,
@@ -26,7 +26,7 @@ impl BonjourMdnsService {
     /// `port`.
     pub fn new(kind: &str, port: u16) -> Self {
         Self {
-            service: ManagedDNSServiceRef::default(),
+            service: Arc::default(),
             kind: c_string!(kind),
             port,
             name: None,
@@ -63,9 +63,9 @@ impl BonjourMdnsService {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
-    /// Registers and start's the service; continuously polling the event loop. This call will
-    /// block the current thread.
-    pub fn start(&mut self) -> Result<()> {
+    /// Registers and start's the service. Returns an [`EventLoop`] which can be called to keep
+    /// the service alive.
+    pub fn register(&mut self) -> Result<EventLoop> {
         debug!("Registering service: {:?}", self);
 
         let name = self
@@ -74,7 +74,7 @@ impl BonjourMdnsService {
             .map(|s| s.as_ptr() as *const c_char)
             .unwrap_or_else(|| ptr::null() as *const c_char);
 
-        self.service.register_service(
+        self.service.lock().unwrap().register_service(
             RegisterServiceParams::builder()
                 .flags(constants::BONJOUR_RENAME_FLAGS)
                 .interface_index(self.interface_index)
@@ -88,7 +88,9 @@ impl BonjourMdnsService {
                 .callback(Some(register_callback))
                 .context(self.context as *mut c_void)
                 .build()?,
-        )
+        )?;
+
+        Ok(EventLoop::new(self.service.clone()))
     }
 }
 

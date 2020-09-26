@@ -9,4 +9,5 @@ pub(crate) mod constants;
 pub(crate) mod service;
 
 pub mod compat;
+pub mod event_loop;
 pub mod service_ref;

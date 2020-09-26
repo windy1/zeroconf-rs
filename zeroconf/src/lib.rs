@@ -144,3 +144,6 @@ pub type MdnsBrowser = macos::browser::BonjourMdnsBrowser;
 /// Type alias for the platform-specific mDNS service implementation
 #[cfg(target_os = "macos")]
 pub type MdnsService = macos::service::BonjourMdnsService;
+/// Type alias for the platform-specific structure responsible for polling the mDNS event loop
+#[cfg(target_os = "macos")]
+pub type EventLoop = macos::event_loop::BonjourEventLoop;
