@@ -98,9 +98,7 @@ impl ManagedDNSServiceRef {
             return Err(format!("could not browse services (code: {})", err).into());
         }
 
-        loop {
-            self.process_result()?
-        }
+        Ok(())
     }
 
     /// Delegate function fro [`DNSServiceResolve`].

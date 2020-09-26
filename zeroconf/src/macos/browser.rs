@@ -4,7 +4,7 @@ use super::service_ref::{
 use super::{compat, constants};
 use crate::builder::BuilderDelegate;
 use crate::ffi::{cstr, AsRaw, FromRaw};
-use crate::{NetworkInterface, Result};
+use crate::{EventLoop, NetworkInterface, Result};
 use crate::{ServiceDiscoveredCallback, ServiceDiscovery};
 use bonjour_sys::{sockaddr, DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_uchar, c_void, in_addr, sockaddr_in};
@@ -12,12 +12,12 @@ use std::any::Any;
 use std::ffi::CString;
 use std::fmt::{self, Formatter};
 use std::ptr;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// Interface for interacting with Bonjour's mDNS service browsing capabilities.
 #[derive(Debug)]
 pub struct BonjourMdnsBrowser {
-    service: ManagedDNSServiceRef,
+    service: Arc<Mutex<ManagedDNSServiceRef>>,
     kind: CString,
     interface_index: u32,
     context: *mut BonjourBrowserContext,
@@ -28,7 +28,7 @@ impl BonjourMdnsBrowser {
     /// (e.g. `_http._tcp`).
     pub fn new(kind: &str) -> Self {
         Self {
-            service: ManagedDNSServiceRef::default(),
+            service: Arc::default(),
             kind: c_string!(kind),
             interface_index: constants::BONJOUR_IF_UNSPEC,
             context: Box::into_raw(Box::default()),
@@ -60,12 +60,11 @@ impl BonjourMdnsBrowser {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
-    /// Starts the browser; continuously polling the event loop. This call will block the current
-    /// thread.
-    pub fn start(&mut self) -> Result<()> {
+    /// Starts the browser. Returns an [`EventLoop`] which can be called to keep the browser alive.
+    pub fn browse_services(&mut self) -> Result<EventLoop> {
         debug!("Browsing services: {:?}", self);
 
-        self.service.browse_services(
+        self.service.lock().unwrap().browse_services(
             BrowseServicesParams::builder()
                 .flags(0)
                 .interface_index(self.interface_index)
@@ -74,7 +73,9 @@ impl BonjourMdnsBrowser {
                 .callback(Some(browse_callback))
                 .context(self.context as *mut c_void)
                 .build()?,
-        )
+        )?;
+
+        Ok(EventLoop::new(self.service.clone()))
     }
 }
 
