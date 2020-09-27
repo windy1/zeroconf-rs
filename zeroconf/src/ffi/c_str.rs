@@ -1,5 +1,17 @@
 use libc::c_char;
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
+
+/// Helper trait to map to `Option<*const c_char>`.
+pub trait AsCChars {
+    /// Maps the type to a `Option<*const c_char>`.
+    fn as_c_chars(&self) -> Option<*const c_char>;
+}
+
+impl AsCChars for Option<&CString> {
+    fn as_c_chars(&self) -> Option<*const c_char> {
+        self.map(|s| s.as_ptr() as *const c_char)
+    }
+}
 
 /// Returns the specified `*const c_char` as a `&'a str`. Ownership is not taken.
 ///

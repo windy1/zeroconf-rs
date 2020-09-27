@@ -75,6 +75,18 @@ pub unsafe fn read_select(sock_fd: i32, timeout: Duration) -> Result<u32> {
     }
 }
 
+/// Helper trait to unwrap a type to a `*const T` or a null-pointer if not present.
+pub trait UnwrapOrNull<T> {
+    /// Unwraps this type to `*const T` or `ptr::null()` if not present.
+    fn unwrap_or_null(&self) -> *const T;
+}
+
+impl<T> UnwrapOrNull<T> for Option<*const T> {
+    fn unwrap_or_null(&self) -> *const T {
+        self.unwrap_or_else(|| ptr::null() as *const T)
+    }
+}
+
 /// Returns a human-readable address of the specified raw address
 ///
 /// # Safety

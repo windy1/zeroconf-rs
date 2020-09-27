@@ -1,7 +1,8 @@
 use super::service_ref::{ManagedDNSServiceRef, RegisterServiceParams};
 use super::{bonjour_util, constants};
 use crate::builder::BuilderDelegate;
-use crate::ffi::{c_str, FromRaw};
+use crate::ffi::c_str::{self, AsCChars};
+use crate::ffi::{FromRaw, UnwrapOrNull};
 use crate::{EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration};
 use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_void};
@@ -17,6 +18,7 @@ pub struct BonjourMdnsService {
     kind: CString,
     port: u16,
     name: Option<CString>,
+    domain: Option<CString>,
     interface_index: u32,
     context: *mut BonjourServiceContext,
 }
@@ -30,6 +32,7 @@ impl BonjourMdnsService {
             kind: c_string!(kind),
             port,
             name: None,
+            domain: None,
             interface_index: constants::BONJOUR_IF_UNSPEC,
             context: Box::into_raw(Box::default()),
         }
@@ -47,6 +50,10 @@ impl BonjourMdnsService {
     /// all available interfaces.
     pub fn set_network_interface(&mut self, interface: NetworkInterface) {
         self.interface_index = bonjour_util::interface_index(interface);
+    }
+
+    pub fn set_domain(&mut self, domain: &str) {
+        self.domain = Some(c_string!(domain));
     }
 
     /// Sets the [`ServiceRegisteredCallback`] that is invoked when the service has been
@@ -68,11 +75,7 @@ impl BonjourMdnsService {
     pub fn register(&mut self) -> Result<EventLoop> {
         debug!("Registering service: {:?}", self);
 
-        let name = self
-            .name
-            .as_ref()
-            .map(|s| s.as_ptr() as *const c_char)
-            .unwrap_or_else(|| ptr::null() as *const c_char);
+        let name = self.name.as_ref().as_c_chars().unwrap_or_null();
 
         self.service.lock().unwrap().register_service(
             RegisterServiceParams::builder()
