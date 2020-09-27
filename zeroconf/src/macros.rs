@@ -13,6 +13,17 @@ macro_rules! c_string {
     };
 }
 
+macro_rules! bonjour {
+    ($call:expr, $msg:expr) => {{
+        let err = unsafe { $call };
+        if err != 0 {
+            crate::Result::Err(format!("{}", format!("{} (code: {})", $msg, err)).into())
+        } else {
+            Ok(())
+        }
+    }};
+}
+
 #[cfg(test)]
 mod tests {
     use libc::c_char;

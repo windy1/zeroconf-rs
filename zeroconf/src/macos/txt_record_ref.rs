@@ -7,9 +7,13 @@ use bonjour_sys::{
 use libc::{c_char, c_void};
 use std::{fmt, mem, ptr};
 
+/// Wraps the `ManagedTXTRecordRef` type from the raw Bonjour bindings.
+///
+/// `zeroconf::TxtRecord` provides the cross-platform bindings for this functionality.
 pub struct ManagedTXTRecordRef(TXTRecordRef);
 
 impl ManagedTXTRecordRef {
+    /// Creates a new empty TXT record
     pub fn new() -> Self {
         let record = unsafe {
             let mut record: TXTRecordRef = mem::zeroed();
@@ -20,21 +24,28 @@ impl ManagedTXTRecordRef {
         Self(record)
     }
 
+    /// Delegate function for [`TXTRecordGetBytes()`].
+    ///
+    /// [`TXTRecordGetBytes()`]: https://developer.apple.com/documentation/dnssd/1804717-txtrecordgetbytesptr?language=objc
     pub fn get_bytes_ptr(&self) -> *const c_void {
         unsafe { TXTRecordGetBytesPtr(&self.0) }
     }
 
+    /// Delegate function for [`TXTRecordGetLength()`].
+    ///
+    /// [`TXTRecordGetLength()`]: https://developer.apple.com/documentation/dnssd/1804720-txtrecordgetlength?language=objc
     pub fn get_length(&self) -> u16 {
         unsafe { TXTRecordGetLength(&self.0) }
     }
 
+    /// Delegate function for [`TXTRecordRemoveValue()`].
+    ///
+    /// [`TXTRecordRemoveValue()`]: https://developer.apple.com/documentation/dnssd/1804721-txtrecordremovevalue?language=objc
     pub fn remove_value(&mut self, key: *const c_char) -> Result<()> {
-        let err = unsafe { TXTRecordRemoveValue(&mut self.0, key) };
-        if err != 0 {
-            Err(format!("could not remove TXT record value (code: {})", err).into())
-        } else {
-            Ok(())
-        }
+        bonjour!(
+            TXTRecordRemoveValue(&mut self.0, key),
+            "could not remove TXT record value"
+        )
     }
 
     pub fn set_value(
@@ -43,12 +54,10 @@ impl ManagedTXTRecordRef {
         value_size: u8,
         value: *const c_void,
     ) -> Result<()> {
-        let err = unsafe { TXTRecordSetValue(&mut self.0, key, value_size, value) };
-        if err != 0 {
-            Err(format!("could not set TXT record value (code: {})", err).into())
-        } else {
-            Ok(())
-        }
+        bonjour!(
+            TXTRecordSetValue(&mut self.0, key, value_size, value),
+            "could not set TXT record value"
+        )
     }
 
     pub fn contains_key(&self, key: *const c_char) -> bool {
@@ -67,7 +76,7 @@ impl ManagedTXTRecordRef {
         value_len: *mut u8,
         value: *mut *const c_void,
     ) -> Result<()> {
-        let err = unsafe {
+        bonjour!(
             TXTRecordGetItemAtIndex(
                 self.get_length(),
                 self.get_bytes_ptr(),
@@ -76,14 +85,9 @@ impl ManagedTXTRecordRef {
                 key,
                 value_len,
                 value,
-            )
-        };
-
-        if err != 0 {
-            Err(format!("could get item at index for TXT record (code: {})", err).into())
-        } else {
-            Ok(())
-        }
+            ),
+            "could get item at index for TXT record"
+        )
     }
 
     pub fn get_value_ptr(&self, key: *const c_char, value_len: *mut u8) -> *const c_void {
