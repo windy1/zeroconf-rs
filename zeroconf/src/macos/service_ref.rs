@@ -20,9 +20,7 @@ use std::ptr;
 /// using an already initialized `DNSServiceRef` in one of these functions is undefined. Therefore,
 /// it is preferable to only call one delegate function per-instance.
 #[derive(Debug)]
-pub struct ManagedDNSServiceRef {
-    service: DNSServiceRef,
-}
+pub struct ManagedDNSServiceRef(DNSServiceRef);
 
 impl ManagedDNSServiceRef {
     /// Delegate function for [`DNSServiceRegister`].
@@ -46,7 +44,7 @@ impl ManagedDNSServiceRef {
     ) -> Result<()> {
         let err = unsafe {
             DNSServiceRegister(
-                &mut self.service as *mut DNSServiceRef,
+                &mut self.0 as *mut DNSServiceRef,
                 flags,
                 interface_index,
                 name,
@@ -84,7 +82,7 @@ impl ManagedDNSServiceRef {
     ) -> Result<()> {
         let err = unsafe {
             DNSServiceBrowse(
-                &mut self.service as *mut DNSServiceRef,
+                &mut self.0 as *mut DNSServiceRef,
                 flags,
                 interface_index,
                 regtype,
@@ -118,7 +116,7 @@ impl ManagedDNSServiceRef {
     ) -> Result<()> {
         let error = unsafe {
             DNSServiceResolve(
-                &mut self.service as *mut DNSServiceRef,
+                &mut self.0 as *mut DNSServiceRef,
                 flags,
                 interface_index,
                 name,
@@ -152,7 +150,7 @@ impl ManagedDNSServiceRef {
     ) -> Result<()> {
         let err = unsafe {
             DNSServiceGetAddrInfo(
-                &mut self.service as *mut DNSServiceRef,
+                &mut self.0 as *mut DNSServiceRef,
                 flags,
                 interface_index,
                 protocol,
@@ -173,7 +171,7 @@ impl ManagedDNSServiceRef {
     ///
     /// [`DNSServiceProcessResult`]: https://developer.apple.com/documentation/dnssd/1804696-dnsserviceprocessresult?language=objc
     pub fn process_result(&self) -> Result<()> {
-        let err = unsafe { DNSServiceProcessResult(self.service) };
+        let err = unsafe { DNSServiceProcessResult(self.0) };
         if err != 0 {
             Err(format!("could not process service result (code: {})", err).into())
         } else {
@@ -185,23 +183,21 @@ impl ManagedDNSServiceRef {
     ///
     /// [`DNSServiceRefSockFD`]: https://developer.apple.com/documentation/dnssd/1804698-dnsservicerefsockfd?language=objc
     pub fn sock_fd(&self) -> i32 {
-        unsafe { DNSServiceRefSockFD(self.service) }
+        unsafe { DNSServiceRefSockFD(self.0) }
     }
 }
 
 impl Default for ManagedDNSServiceRef {
     fn default() -> Self {
-        Self {
-            service: ptr::null_mut(),
-        }
+        Self(ptr::null_mut())
     }
 }
 
 impl Drop for ManagedDNSServiceRef {
     fn drop(&mut self) {
         unsafe {
-            if !self.service.is_null() {
-                DNSServiceRefDeallocate(self.service);
+            if !self.0.is_null() {
+                DNSServiceRefDeallocate(self.0);
             }
         }
     }
