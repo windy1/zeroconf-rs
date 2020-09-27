@@ -1,4 +1,5 @@
 use crate::TxtRecord;
+use std::collections::HashMap;
 
 #[test]
 fn insert_get_success() {
@@ -89,4 +90,26 @@ fn values_success() {
     for value in record.values() {
         debug!("{:?}", value);
     }
+}
+
+#[test]
+fn from_hashmap_success() {
+    super::setup();
+
+    let mut map = HashMap::new();
+    map.insert("foo", "bar");
+
+    let record: TxtRecord = map.into();
+
+    assert_eq!(&record["foo"], "bar");
+}
+
+#[test]
+fn clone_success() {
+    super::setup();
+
+    let mut record = TxtRecord::new();
+    record.insert("foo", "bar").unwrap();
+
+    assert_eq!(record.clone(), record);
 }

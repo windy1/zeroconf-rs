@@ -5,7 +5,7 @@ use bonjour_sys::{
     TXTRecordRef, TXTRecordRemoveValue, TXTRecordSetValue,
 };
 use libc::{c_char, c_void};
-use std::{mem, ptr};
+use std::{fmt, mem, ptr};
 
 pub struct ManagedTXTRecordRef(TXTRecordRef);
 
@@ -94,6 +94,12 @@ impl ManagedTXTRecordRef {
 impl Drop for ManagedTXTRecordRef {
     fn drop(&mut self) {
         unsafe { TXTRecordDeallocate(&mut self.0) };
+    }
+}
+
+impl fmt::Debug for ManagedTXTRecordRef {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("ManagedTXTRecordRef").finish()
     }
 }
 

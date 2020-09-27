@@ -2,9 +2,11 @@ use super::txt_record_ref::ManagedTXTRecordRef;
 use crate::ffi::c_str;
 use crate::Result;
 use libc::{c_char, c_void};
+use std::collections::HashMap;
 use std::ffi::CString;
 use std::{mem, ptr};
 
+#[derive(Debug)]
 pub struct BonjourTxtRecord(ManagedTXTRecordRef);
 
 impl BonjourTxtRecord {
@@ -65,6 +67,14 @@ impl BonjourTxtRecord {
 
     pub fn values(&self) -> Values {
         Values(Iter::new(self))
+    }
+
+    pub fn as_map(&self) -> HashMap<String, String> {
+        let mut m = HashMap::new();
+        for (key, value) in self.iter() {
+            m.insert(key, value.to_string());
+        }
+        m
     }
 }
 
@@ -135,6 +145,39 @@ impl<'a> Iterator for Values<'a> {
         self.0.next().map(|e| e.1)
     }
 }
+
+impl From<HashMap<String, String>> for BonjourTxtRecord {
+    fn from(map: HashMap<String, String>) -> BonjourTxtRecord {
+        let mut record = BonjourTxtRecord::new();
+        for (key, value) in map {
+            record.insert(&key, &value).unwrap();
+        }
+        record
+    }
+}
+
+impl From<HashMap<&str, &str>> for BonjourTxtRecord {
+    fn from(map: HashMap<&str, &str>) -> BonjourTxtRecord {
+        map.iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect::<HashMap<String, String>>()
+            .into()
+    }
+}
+
+impl Clone for BonjourTxtRecord {
+    fn clone(&self) -> Self {
+        self.as_map().into()
+    }
+}
+
+impl PartialEq for BonjourTxtRecord {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_map() == other.as_map()
+    }
+}
+
+impl Eq for BonjourTxtRecord {}
 
 impl ToString for BonjourTxtRecord {
     fn to_string(&self) -> String {
