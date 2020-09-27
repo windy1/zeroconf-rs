@@ -21,7 +21,7 @@ use std::ptr;
 /// it is preferable to only call one delegate function per-instance.
 #[derive(Debug)]
 pub struct ManagedDNSServiceRef {
-    pub service: DNSServiceRef, // TODO: debug visibility
+    service: DNSServiceRef,
 }
 
 impl ManagedDNSServiceRef {
@@ -181,6 +181,9 @@ impl ManagedDNSServiceRef {
         }
     }
 
+    /// Delegate function for [`DNSServiceRefSockFD`].
+    ///
+    /// [`DNSServiceRefSockFD`]: https://developer.apple.com/documentation/dnssd/1804698-dnsservicerefsockfd?language=objc
     pub fn sock_fd(&self) -> i32 {
         unsafe { DNSServiceRefSockFD(self.service) }
     }
