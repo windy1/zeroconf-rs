@@ -4,8 +4,8 @@ use std::sync::Arc;
 /// Callback invoked from [`MdnsService`] once it has successfully registered.
 ///
 /// # Arguments
-/// `service` - The service information that was registered
-/// `context` - The optional user context passed through
+/// * `service` - The service information that was registered
+/// * `context` - The optional user context passed through
 ///
 /// [`MdnsService`]: type.MdnsService.html
 pub type ServiceRegisteredCallback =
