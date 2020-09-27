@@ -1,11 +1,11 @@
 //! Utilities related to FFI bindings
 
 use crate::Result;
-use libc::{c_void, fd_set, timeval};
+use libc::{c_char, c_void, fd_set, in_addr, sockaddr_in, timeval};
 use std::time::Duration;
 use std::{mem, ptr};
 
-pub mod cstr;
+pub mod c_str;
 
 /// Helper trait to convert a raw `*mut c_void` to it's rust type
 pub trait FromRaw<T> {
@@ -70,4 +70,17 @@ pub unsafe fn read_select(sock_fd: i32, timeout: Duration) -> Result<u32> {
     } else {
         Ok(result as u32)
     }
+}
+
+/// Returns a human-readable address of the specified raw address
+///
+/// # Safety
+/// This function is unsafe because of calls to C-library system calls
+pub unsafe fn get_ip(address: *const sockaddr_in) -> String {
+    let raw = inet_ntoa(&(*address).sin_addr as *const in_addr);
+    String::from(c_str::raw_to_str(raw))
+}
+
+extern "C" {
+    fn inet_ntoa(addr: *const in_addr) -> *const c_char;
 }

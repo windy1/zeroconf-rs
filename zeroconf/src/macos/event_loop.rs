@@ -16,6 +16,11 @@ pub struct BonjourEventLoop {
 }
 
 impl BonjourEventLoop {
+    /// Polls for new events.
+    ///
+    /// Prior to calling `ManagedDNSServiceRef::process_result()`, this function performs a unix
+    /// `select()` on the underlying socket with the specified timeout. If the socket contains no
+    /// new data, the blocking call is not made.
     pub fn poll(&self, timeout: Duration) -> Result<()> {
         let service = self.service.lock().unwrap();
         let select = unsafe { ffi::read_select(service.sock_fd(), timeout)? };

@@ -15,7 +15,10 @@ pub fn normalize_domain(domain: &str) -> String {
     }
 }
 
-pub(crate) fn interface_index(interface: NetworkInterface) -> u32 {
+/// Converts the specified [`NetworkInterface`] to the Bonjour expected value.
+///
+/// [`NetworkInterface`]: ../../enum.NetworkInterface.html
+pub fn interface_index(interface: NetworkInterface) -> u32 {
     match interface {
         NetworkInterface::Unspec => constants::BONJOUR_IF_UNSPEC,
         NetworkInterface::AtIndex(i) => i,

@@ -1,7 +1,7 @@
 use super::service_ref::{ManagedDNSServiceRef, RegisterServiceParams};
 use super::{compat, constants};
 use crate::builder::BuilderDelegate;
-use crate::ffi::{cstr, FromRaw};
+use crate::ffi::{c_str, FromRaw};
 use crate::{EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration};
 use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_void};
@@ -142,11 +142,11 @@ unsafe fn handle_register(
         return Err(format!("register_callback() reported error (code: {0})", error).into());
     }
 
-    let domain = compat::normalize_domain(cstr::raw_to_str(domain));
+    let domain = compat::normalize_domain(c_str::raw_to_str(domain));
 
     let result = ServiceRegistration::builder()
-        .name(cstr::copy_raw(name))
-        .kind(cstr::copy_raw(regtype))
+        .name(c_str::copy_raw(name))
+        .kind(c_str::copy_raw(regtype))
         .domain(domain)
         .build()
         .expect("could not build ServiceRegistration");

@@ -3,11 +3,11 @@ use super::service_ref::{
 };
 use super::{compat, constants};
 use crate::builder::BuilderDelegate;
-use crate::ffi::{cstr, AsRaw, FromRaw};
+use crate::ffi::{self, c_str, AsRaw, FromRaw};
 use crate::{EventLoop, NetworkInterface, Result};
 use crate::{ServiceDiscoveredCallback, ServiceDiscovery};
 use bonjour_sys::{sockaddr, DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
-use libc::{c_char, c_uchar, c_void, in_addr, sockaddr_in};
+use libc::{c_char, c_uchar, c_void, sockaddr_in};
 use std::any::Any;
 use std::ffi::CString;
 use std::fmt::{self, Formatter};
@@ -144,9 +144,9 @@ unsafe fn handle_browse(
         return Err(format!("browse_callback() reported error (code: {})", error).into());
     }
 
-    ctx.resolved_name = Some(cstr::copy_raw(name));
-    ctx.resolved_kind = Some(cstr::copy_raw(regtype));
-    ctx.resolved_domain = Some(cstr::copy_raw(domain));
+    ctx.resolved_name = Some(c_str::copy_raw(name));
+    ctx.resolved_kind = Some(c_str::copy_raw(regtype));
+    ctx.resolved_domain = Some(c_str::copy_raw(domain));
 
     ManagedDNSServiceRef::default().resolve_service(
         ServiceResolveParams::builder()
@@ -239,8 +239,8 @@ unsafe fn handle_get_address_info(
         .into());
     }
 
-    let ip = get_ip(address as *const sockaddr_in);
-    let hostname = cstr::copy_raw(hostname);
+    let ip = ffi::get_ip(address as *const sockaddr_in);
+    let hostname = c_str::copy_raw(hostname);
     let domain = compat::normalize_domain(&ctx.resolved_domain.take().unwrap());
 
     let result = ServiceDiscovery::builder()
@@ -256,13 +256,4 @@ unsafe fn handle_get_address_info(
     ctx.invoke_callback(Ok(result));
 
     Ok(())
-}
-
-extern "C" {
-    fn inet_ntoa(addr: *const libc::in_addr) -> *const c_char;
-}
-
-unsafe fn get_ip(address: *const sockaddr_in) -> String {
-    let raw = inet_ntoa(&(*address).sin_addr as *const in_addr);
-    String::from(cstr::raw_to_str(raw))
 }

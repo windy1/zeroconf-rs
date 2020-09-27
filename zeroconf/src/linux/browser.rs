@@ -7,7 +7,7 @@ use super::resolver::{
     ManagedAvahiServiceResolver, ManagedAvahiServiceResolverParams, ServiceResolverSet,
 };
 use crate::builder::BuilderDelegate;
-use crate::ffi::{cstr, AsRaw, FromRaw};
+use crate::ffi::{c_str, AsRaw, FromRaw};
 use crate::Result;
 use crate::{NetworkInterface, ServiceDiscoveredCallback, ServiceDiscovery};
 use avahi_sys::{
@@ -218,9 +218,9 @@ unsafe extern "C" fn resolve_callback(
     _flags: AvahiLookupResultFlags,
     userdata: *mut c_void,
 ) {
-    let name = cstr::raw_to_str(name);
-    let kind = cstr::raw_to_str(kind);
-    let domain = cstr::raw_to_str(domain);
+    let name = c_str::raw_to_str(name);
+    let kind = c_str::raw_to_str(kind);
+    let domain = c_str::raw_to_str(domain);
 
     let context = AvahiBrowserContext::from_raw(userdata);
 
@@ -235,7 +235,7 @@ unsafe extern "C" fn resolve_callback(
         avahi_sys::AvahiResolverEvent_AVAHI_RESOLVER_FOUND => {
             let result = handle_resolver_found(
                 context,
-                cstr::raw_to_str(host_name),
+                c_str::raw_to_str(host_name),
                 addr,
                 name,
                 kind,
