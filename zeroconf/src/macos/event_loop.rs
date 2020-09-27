@@ -7,6 +7,9 @@ use std::time::Duration;
 
 /// A handle on the underlying Bonjour implementation to poll the event loop. Typically, `poll()`
 /// is called in a loop to keep a [`MdnsService`] or [`MdnsBrowser`] running.
+///
+/// [`MdnsService`]: ../../type.MdnsService.html
+/// [`MdnsBrowser`]: ../../type.MdnsBrowser.html
 #[derive(new)]
 pub struct BonjourEventLoop {
     service: Arc<Mutex<ManagedDNSServiceRef>>,

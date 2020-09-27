@@ -5,16 +5,15 @@ use std::sync::Arc;
 ///
 /// # Arguments
 /// `service` - The service information that was registered
-/// `context` - The optional user context passed through using [`MdnsService::set_context()`]
+/// `context` - The optional user context passed through
 ///
-/// [`MdnsService`]: struct.MdnsService.html
-/// [`MdnsService::set_context()`]: struct.MdnsService.html#method.set_context
+/// [`MdnsService`]: type.MdnsService.html
 pub type ServiceRegisteredCallback =
     dyn Fn(Result<ServiceRegistration, super::error::Error>, Option<Arc<dyn Any>>);
 
 /// Represents a registration event for a [`MdnsService`].
 ///
-/// [`MdnsService`]: struct.MdnsService.html
+/// [`MdnsService`]: type.MdnsService.html
 #[derive(Builder, BuilderDelegate, Debug, Getters)]
 pub struct ServiceRegistration {
     name: String,

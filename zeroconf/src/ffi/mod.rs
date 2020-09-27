@@ -43,6 +43,9 @@ pub trait AsRaw {
 
 /// Performs a unix `select()` on the specified `sock_fd` and `timeout`. Returns the select result
 /// or `Err` if the result is negative.
+///
+/// # Safety
+/// This function is unsafe because it directly interfaces with C-library system calls.
 pub unsafe fn read_select(sock_fd: i32, timeout: Duration) -> Result<u32> {
     let mut read_flags: fd_set = mem::zeroed();
 

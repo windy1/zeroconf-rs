@@ -1,3 +1,5 @@
+//! Utilities regarding error handling
+
 use std::fmt;
 
 /// For when something goes wrong when interfacing with mDNS implementations
@@ -25,5 +27,3 @@ impl From<String> for Error {
         Error::new(s)
     }
 }
-
-pub type Result<T> = std::result::Result<T, Error>;

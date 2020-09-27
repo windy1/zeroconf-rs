@@ -1,4 +1,4 @@
-use super::error::Result;
+use super::Result;
 use std::any::Any;
 use std::sync::Arc;
 
@@ -6,15 +6,14 @@ use std::sync::Arc;
 ///
 /// # Arguments
 /// * `discovered_service` - The service that was disovered
-/// * `context` - The optional user context passed through using [`MdnsBrowser::set_context()`]
+/// * `context` - The optional user context passed through
 ///
-/// [`MdnsBrowser`]: struct.MdnsBrowser.html
-/// [`MdnsBrowser::set_context()`]: struct.MdnsBrowser.html#method.set_context
+/// [`MdnsBrowser`]: type.MdnsBrowser.html
 pub type ServiceDiscoveredCallback = dyn Fn(Result<ServiceDiscovery>, Option<Arc<dyn Any>>);
 
 /// Represents a service that has been discovered by a [`MdnsBrowser`].
 ///
-/// [`MdnsBrowser`]: struct.MdnsBrowser.html
+/// [`MdnsBrowser`]: type.MdnsBrowser.html
 #[derive(Debug, Getters, Builder, BuilderDelegate, Serialize, Deserialize)]
 pub struct ServiceDiscovery {
     name: String,

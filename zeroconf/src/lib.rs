@@ -98,8 +98,8 @@
 //! [ZeroConf/mDNS]: https://en.wikipedia.org/wiki/Zero-configuration_networking
 //! [Bonjour]: https://en.wikipedia.org/wiki/Bonjour_(software)
 //! [Avahi]: https://en.wikipedia.org/wiki/Avahi_(software)
-//! [`MdnsService`]: struct.MdnsService.html
-//! [`MdnsBrowser`]: struct.MdnsBrowser.html
+//! [`MdnsService`]: type.MdnsService.html
+//! [`MdnsBrowser`]: type.MdnsBrowser.html
 //! [`Any`]: https://doc.rust-lang.org/std/any/trait.Any.html
 
 #![allow(clippy::needless_doctest_main)]
@@ -139,7 +139,6 @@ pub mod linux;
 pub mod macos;
 
 pub use discovery::*;
-pub use error::Result;
 pub use interface::*;
 pub use registration::*;
 
@@ -158,3 +157,6 @@ pub type MdnsService = macos::service::BonjourMdnsService;
 /// Type alias for the platform-specific structure responsible for polling the mDNS event loop
 #[cfg(target_os = "macos")]
 pub type EventLoop = macos::event_loop::BonjourEventLoop;
+
+/// Result type for this library
+pub type Result<T> = std::result::Result<T, error::Error>;
