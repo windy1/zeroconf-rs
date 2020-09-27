@@ -80,6 +80,7 @@ pub unsafe fn read_select(sock_fd: i32, timeout: Duration) -> Result<u32> {
 /// # Safety
 /// This function is unsafe because of calls to C-library system calls
 pub unsafe fn get_ip(address: *const sockaddr_in) -> String {
+    assert_not_null!(address);
     let raw = inet_ntoa(&(*address).sin_addr as *const in_addr);
     String::from(c_str::raw_to_str(raw))
 }
