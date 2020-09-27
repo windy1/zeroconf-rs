@@ -52,6 +52,10 @@ impl BonjourMdnsService {
         self.interface_index = bonjour_util::interface_index(interface);
     }
 
+    /// Sets the domain on which to advertise the service.
+    ///
+    /// Most applications will want to use the default value of `ptr::null()` to register to the
+    /// default domain.
     pub fn set_domain(&mut self, domain: &str) {
         self.domain = Some(c_string!(domain));
     }
@@ -75,15 +79,13 @@ impl BonjourMdnsService {
     pub fn register(&mut self) -> Result<EventLoop> {
         debug!("Registering service: {:?}", self);
 
-        let name = self.name.as_ref().as_c_chars().unwrap_or_null();
-
         self.service.lock().unwrap().register_service(
             RegisterServiceParams::builder()
                 .flags(constants::BONJOUR_RENAME_FLAGS)
                 .interface_index(self.interface_index)
-                .name(name)
+                .name(self.name.as_ref().as_c_chars().unwrap_or_null())
                 .regtype(self.kind.as_ptr())
-                .domain(ptr::null())
+                .domain(self.domain.as_ref().as_c_chars().unwrap_or_null())
                 .host(ptr::null())
                 .port(self.port)
                 .txt_len(0)
