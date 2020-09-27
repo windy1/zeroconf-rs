@@ -39,7 +39,10 @@ pub fn get_error<'a>(code: i32) -> &'a str {
     }
 }
 
-pub(crate) fn interface_index(interface: NetworkInterface) -> i32 {
+/// Converts the specified [`NetworkInterface`] to the Avahi expected value.
+///
+/// [`NetworkInterface`]: ../../enum.NetworkInterface.html
+pub fn interface_index(interface: NetworkInterface) -> i32 {
     match interface {
         NetworkInterface::Unspec => constants::AVAHI_IF_UNSPEC,
         NetworkInterface::AtIndex(i) => i as i32,
