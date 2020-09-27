@@ -14,7 +14,7 @@ pub type ServiceRegisteredCallback =
 /// Represents a registration event for a [`MdnsService`].
 ///
 /// [`MdnsService`]: type.MdnsService.html
-#[derive(Builder, BuilderDelegate, Debug, Getters)]
+#[derive(Builder, BuilderDelegate, Debug, Getters, Clone, Default, PartialEq, Eq)]
 pub struct ServiceRegistration {
     name: String,
     kind: String,

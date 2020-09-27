@@ -3,7 +3,7 @@
 use std::fmt;
 
 /// For when something goes wrong when interfacing with mDNS implementations
-#[derive(Debug, new)]
+#[derive(new, Debug, Clone, PartialEq, Eq)]
 pub struct Error {
     description: String,
 }

@@ -1,4 +1,5 @@
 /// Represents a network interface for mDNS services
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum NetworkInterface {
     /// No interface specified, bind to all available interfaces
     Unspec,
