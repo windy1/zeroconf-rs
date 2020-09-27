@@ -1,4 +1,4 @@
-//! Utilities related to compatibility between platforms
+//! Utilities related to Bonjour
 
 use super::constants;
 use crate::NetworkInterface;

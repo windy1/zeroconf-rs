@@ -1,7 +1,7 @@
 use super::service_ref::{
     BrowseServicesParams, GetAddressInfoParams, ManagedDNSServiceRef, ServiceResolveParams,
 };
-use super::{compat, constants};
+use super::{bonjour_util, constants};
 use crate::builder::BuilderDelegate;
 use crate::ffi::{self, c_str, AsRaw, FromRaw};
 use crate::{EventLoop, NetworkInterface, Result};
@@ -40,7 +40,7 @@ impl BonjourMdnsBrowser {
     /// Most applications will want to use the default value `NetworkInterface::Unspec` to browse
     /// on all available interfaces.
     pub fn set_network_interface(&mut self, interface: NetworkInterface) {
-        self.interface_index = compat::interface_index(interface);
+        self.interface_index = bonjour_util::interface_index(interface);
     }
 
     /// Sets the [`ServiceDiscoveredCallback`] that is invoked when the browser has discovered and
@@ -241,7 +241,7 @@ unsafe fn handle_get_address_info(
 
     let ip = ffi::get_ip(address as *const sockaddr_in);
     let hostname = c_str::copy_raw(hostname);
-    let domain = compat::normalize_domain(&ctx.resolved_domain.take().unwrap());
+    let domain = bonjour_util::normalize_domain(&ctx.resolved_domain.take().unwrap());
 
     let result = ServiceDiscovery::builder()
         .name(ctx.resolved_name.take().unwrap())

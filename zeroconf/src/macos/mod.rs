@@ -8,6 +8,6 @@ pub(crate) mod browser;
 pub(crate) mod constants;
 pub(crate) mod service;
 
-pub mod compat;
+pub mod bonjour_util;
 pub mod event_loop;
 pub mod service_ref;

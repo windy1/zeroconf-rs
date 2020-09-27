@@ -1,5 +1,5 @@
 use super::service_ref::{ManagedDNSServiceRef, RegisterServiceParams};
-use super::{compat, constants};
+use super::{bonjour_util, constants};
 use crate::builder::BuilderDelegate;
 use crate::ffi::{c_str, FromRaw};
 use crate::{EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration};
@@ -46,7 +46,7 @@ impl BonjourMdnsService {
     /// Most applications will want to use the default value `NetworkInterface::Unspec` to bind to
     /// all available interfaces.
     pub fn set_network_interface(&mut self, interface: NetworkInterface) {
-        self.interface_index = compat::interface_index(interface);
+        self.interface_index = bonjour_util::interface_index(interface);
     }
 
     /// Sets the [`ServiceRegisteredCallback`] that is invoked when the service has been
@@ -142,7 +142,7 @@ unsafe fn handle_register(
         return Err(format!("register_callback() reported error (code: {0})", error).into());
     }
 
-    let domain = compat::normalize_domain(c_str::raw_to_str(domain));
+    let domain = bonjour_util::normalize_domain(c_str::raw_to_str(domain));
 
     let result = ServiceRegistration::builder()
         .name(c_str::copy_raw(name))
