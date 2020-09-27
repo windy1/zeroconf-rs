@@ -13,9 +13,7 @@ use libc::{c_char, c_void};
 /// This struct allocates a new `*mut AvahiServiceBrowser` when `ManagedAvahiServiceBrowser::new()`
 /// is invoked and calls the Avahi function responsible for freeing the client on `trait Drop`.
 #[derive(Debug)]
-pub struct ManagedAvahiServiceBrowser {
-    browser: *mut AvahiServiceBrowser,
-}
+pub struct ManagedAvahiServiceBrowser(*mut AvahiServiceBrowser);
 
 impl ManagedAvahiServiceBrowser {
     /// Intializes the underlying `*mut AvahiClient` and verifies it was created; returning
@@ -34,28 +32,21 @@ impl ManagedAvahiServiceBrowser {
     ) -> Result<Self> {
         let browser = unsafe {
             avahi_service_browser_new(
-                client.client,
-                interface,
-                protocol,
-                kind,
-                domain,
-                flags,
-                callback,
-                userdata,
+                client.0, interface, protocol, kind, domain, flags, callback, userdata,
             )
         };
 
         if browser.is_null() {
             Err("could not initialize Avahi service browser".into())
         } else {
-            Ok(Self { browser })
+            Ok(Self(browser))
         }
     }
 }
 
 impl Drop for ManagedAvahiServiceBrowser {
     fn drop(&mut self) {
-        unsafe { avahi_service_browser_free(self.browser) };
+        unsafe { avahi_service_browser_free(self.0) };
     }
 }
 

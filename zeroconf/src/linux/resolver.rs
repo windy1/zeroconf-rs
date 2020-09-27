@@ -15,9 +15,7 @@ use std::collections::HashMap;
 /// `ManagedAvahiServiceResolver::new()` is invoked and calls the Avahi function responsible for
 /// freeing the client on `trait Drop`.
 #[derive(Debug)]
-pub struct ManagedAvahiServiceResolver {
-    resolver: *mut AvahiServiceResolver,
-}
+pub struct ManagedAvahiServiceResolver(*mut AvahiServiceResolver);
 
 impl ManagedAvahiServiceResolver {
     /// Intializes the underlying `*mut AvahiServiceResolver` and verifies it was created;
@@ -38,15 +36,7 @@ impl ManagedAvahiServiceResolver {
     ) -> Result<Self> {
         let resolver = unsafe {
             avahi_service_resolver_new(
-                client.client,
-                interface,
-                protocol,
-                name,
-                kind,
-                domain,
-                aprotocol,
-                flags,
-                callback,
+                client.0, interface, protocol, name, kind, domain, aprotocol, flags, callback,
                 userdata,
             )
         };
@@ -54,14 +44,14 @@ impl ManagedAvahiServiceResolver {
         if resolver.is_null() {
             Err("could not initialize AvahiServiceResolver".into())
         } else {
-            Ok(Self { resolver })
+            Ok(Self(resolver))
         }
     }
 }
 
 impl Drop for ManagedAvahiServiceResolver {
     fn drop(&mut self) {
-        unsafe { avahi_service_resolver_free(self.resolver) };
+        unsafe { avahi_service_resolver_free(self.0) };
     }
 }
 
@@ -92,7 +82,7 @@ pub(crate) struct ServiceResolverSet {
 
 impl ServiceResolverSet {
     pub fn insert(&mut self, resolver: ManagedAvahiServiceResolver) {
-        self.resolvers.insert(resolver.resolver, resolver);
+        self.resolvers.insert(resolver.0, resolver);
     }
 
     pub fn remove_raw(&mut self, raw: *mut AvahiServiceResolver) {

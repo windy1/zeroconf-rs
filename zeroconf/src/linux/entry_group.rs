@@ -15,9 +15,7 @@ use std::ptr;
 /// This struct allocates a new `*mut AvahiEntryGroup` when `ManagedAvahiEntryGroup::new()` is
 /// invoked and calls the Avahi function responsible for freeing the group on `trait Drop`.
 #[derive(Debug)]
-pub struct ManagedAvahiEntryGroup {
-    group: *mut AvahiEntryGroup,
-}
+pub struct ManagedAvahiEntryGroup(*mut AvahiEntryGroup);
 
 impl ManagedAvahiEntryGroup {
     /// Intiializes the underlying `*mut AvahiEntryGroup` and verifies it was created; returning
@@ -33,7 +31,7 @@ impl ManagedAvahiEntryGroup {
         if group.is_null() {
             Err("could not initialize AvahiEntryGroup".into())
         } else {
-            Ok(Self { group })
+            Ok(Self(group))
         }
     }
 
@@ -41,7 +39,7 @@ impl ManagedAvahiEntryGroup {
     ///
     /// [`avahi_entry_group_is_empty()`]: https://avahi.org/doxygen/html/publish_8h.html#af5a78ee1fda6678970536889d459d85c
     pub fn is_empty(&self) -> bool {
-        unsafe { avahi_entry_group_is_empty(self.group) != 0 }
+        unsafe { avahi_entry_group_is_empty(self.0) != 0 }
     }
 
     /// Delgate function for [`avahi_entry_group_add_service()`].
@@ -64,7 +62,7 @@ impl ManagedAvahiEntryGroup {
     ) -> Result<()> {
         let err = unsafe {
             avahi_entry_group_add_service(
-                self.group,
+                self.0,
                 interface,
                 protocol,
                 flags,
@@ -85,7 +83,7 @@ impl ManagedAvahiEntryGroup {
             .into());
         }
 
-        let err = unsafe { avahi_entry_group_commit(self.group) };
+        let err = unsafe { avahi_entry_group_commit(self.0) };
 
         if err < 0 {
             Err(format!("could not commit service: `{}`", avahi_util::get_error(err)).into())
@@ -98,13 +96,13 @@ impl ManagedAvahiEntryGroup {
     ///
     /// [`avahi_entry_group_reset()`]: https://avahi.org/doxygen/html/publish_8h.html#a1293bbccf878dbeb9916660022bc71b2
     pub fn reset(&mut self) {
-        unsafe { avahi_entry_group_reset(self.group) };
+        unsafe { avahi_entry_group_reset(self.0) };
     }
 }
 
 impl Drop for ManagedAvahiEntryGroup {
     fn drop(&mut self) {
-        unsafe { avahi_entry_group_free(self.group) };
+        unsafe { avahi_entry_group_free(self.0) };
     }
 }
 

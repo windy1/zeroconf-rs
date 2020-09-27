@@ -15,9 +15,7 @@ use libc::{c_int, c_void};
 /// This struct allocates a new `*mut AvahiClient` when `ManagedAvahiClient::new()` is invoked and
 /// calls the Avahi function responsible for freeing the client on `trait Drop`.
 #[derive(Debug)]
-pub struct ManagedAvahiClient {
-    pub(super) client: *mut AvahiClient,
-}
+pub struct ManagedAvahiClient(pub(super) *mut AvahiClient);
 
 impl ManagedAvahiClient {
     /// Initializes the underlying `*mut AvahiClient` and verifies it was created; returning
@@ -34,7 +32,7 @@ impl ManagedAvahiClient {
 
         let client = unsafe {
             avahi_client_new(
-                avahi_simple_poll_get(poll.poll),
+                avahi_simple_poll_get(poll.0),
                 flags,
                 callback,
                 userdata,
@@ -47,7 +45,7 @@ impl ManagedAvahiClient {
         }
 
         match err {
-            0 => Ok(Self { client }),
+            0 => Ok(Self(client)),
             _ => Err(format!(
                 "could not initialize AvahiClient: {}",
                 avahi_util::get_error(err)
@@ -60,13 +58,13 @@ impl ManagedAvahiClient {
     ///
     /// [`avahi_client_get_host_name()`]: https://avahi.org/doxygen/html/client_8h.html#a89378618c3c592a255551c308ba300bf
     pub fn host_name<'a>(&self) -> Result<&'a str> {
-        unsafe { get_host_name(self.client) }
+        unsafe { get_host_name(self.0) }
     }
 }
 
 impl Drop for ManagedAvahiClient {
     fn drop(&mut self) {
-        unsafe { avahi_client_free(self.client) };
+        unsafe { avahi_client_free(self.0) };
     }
 }
 
