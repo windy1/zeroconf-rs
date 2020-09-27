@@ -19,6 +19,7 @@ pub struct BonjourMdnsService {
     port: u16,
     name: Option<CString>,
     domain: Option<CString>,
+    host: Option<CString>,
     interface_index: u32,
     context: *mut BonjourServiceContext,
 }
@@ -33,6 +34,7 @@ impl BonjourMdnsService {
             port,
             name: None,
             domain: None,
+            host: None,
             interface_index: constants::BONJOUR_IF_UNSPEC,
             context: Box::into_raw(Box::default()),
         }
@@ -58,6 +60,14 @@ impl BonjourMdnsService {
     /// default domain.
     pub fn set_domain(&mut self, domain: &str) {
         self.domain = Some(c_string!(domain));
+    }
+
+    /// Sets the SRV target host name.
+    ///
+    /// Most applications will want to use the default value of `ptr::null()` to use the machine's
+    // default host name.
+    pub fn set_host(&mut self, host: &str) {
+        self.host = Some(c_string!(host));
     }
 
     /// Sets the [`ServiceRegisteredCallback`] that is invoked when the service has been
@@ -86,7 +96,7 @@ impl BonjourMdnsService {
                 .name(self.name.as_ref().as_c_chars().unwrap_or_null())
                 .regtype(self.kind.as_ptr())
                 .domain(self.domain.as_ref().as_c_chars().unwrap_or_null())
-                .host(ptr::null())
+                .host(self.host.as_ref().as_c_chars().unwrap_or_null())
                 .port(self.port)
                 .txt_len(0)
                 .txt_record(ptr::null())
