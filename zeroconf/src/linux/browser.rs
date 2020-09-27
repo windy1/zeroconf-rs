@@ -86,7 +86,7 @@ impl AvahiMdnsBrowser {
         )?));
 
         unsafe {
-            (*self.context).client = Some(self.client.as_ref().unwrap().clone());
+            (*self.context).client = self.client.clone();
 
             self.browser = Some(ManagedAvahiServiceBrowser::new(
                 ManagedAvahiServiceBrowserParams::builder()
