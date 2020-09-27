@@ -9,7 +9,7 @@ use super::resolver::{
 use crate::builder::BuilderDelegate;
 use crate::ffi::{c_str, AsRaw, FromRaw};
 use crate::Result;
-use crate::{NetworkInterface, ServiceDiscoveredCallback, ServiceDiscovery};
+use crate::{EventLoop, NetworkInterface, ServiceDiscoveredCallback, ServiceDiscovery};
 use avahi_sys::{
     AvahiAddress, AvahiBrowserEvent, AvahiClient, AvahiClientFlags, AvahiClientState, AvahiIfIndex,
     AvahiLookupResultFlags, AvahiProtocol, AvahiResolverEvent, AvahiServiceBrowser,
@@ -24,7 +24,8 @@ use std::{fmt, ptr};
 /// Interface for interacting with Avahi's mDNS service browsing capabilities.
 #[derive(Debug)]
 pub struct AvahiMdnsBrowser {
-    poll: Option<ManagedAvahiSimplePoll>,
+    client: Option<Arc<ManagedAvahiClient>>,
+    poll: Option<Arc<ManagedAvahiSimplePoll>>,
     browser: Option<ManagedAvahiServiceBrowser>,
     kind: CString,
     interface_index: AvahiIfIndex,
@@ -35,6 +36,7 @@ impl AvahiMdnsBrowser {
     /// Creates a new `AvahiMdnsBrowser` that browses for the specified `kind` (e.g. `_http._tcp`)
     pub fn new(kind: &str) -> Self {
         Self {
+            client: None,
             poll: None,
             browser: None,
             kind: c_string!(kind.to_string()),
@@ -68,24 +70,23 @@ impl AvahiMdnsBrowser {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
-    /// Starts the browser; continuously polling the event loop. This call will block the current
-    /// thread.
-    pub fn start(&mut self) -> Result<()> {
+    /// Starts the browser. Returns an `EventLoop` which can be called to keep the browser alive.
+    pub fn browse_services(&mut self) -> Result<EventLoop> {
         debug!("Browsing services: {:?}", self);
 
-        self.poll = Some(ManagedAvahiSimplePoll::new()?);
+        self.poll = Some(Arc::new(ManagedAvahiSimplePoll::new()?));
 
-        let client = ManagedAvahiClient::new(
+        self.client = Some(Arc::new(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
                 .poll(self.poll.as_ref().unwrap())
                 .flags(AvahiClientFlags(0))
                 .callback(Some(client_callback))
                 .userdata(ptr::null_mut())
                 .build()?,
-        )?;
+        )?));
 
         unsafe {
-            (*self.context).client = Some(client);
+            (*self.context).client = Some(self.client.as_ref().unwrap().clone());
 
             self.browser = Some(ManagedAvahiServiceBrowser::new(
                 ManagedAvahiServiceBrowserParams::builder()
@@ -101,21 +102,21 @@ impl AvahiMdnsBrowser {
             )?);
         }
 
-        self.poll.as_ref().unwrap().start_loop()
+        Ok(EventLoop::new(self.poll.as_ref().unwrap().clone()))
     }
 }
 
 impl Drop for AvahiMdnsBrowser {
     fn drop(&mut self) {
-        unsafe {
-            Box::from_raw(self.context);
-        }
+        unsafe { Box::from_raw(self.context) };
+        // browser must be freed first
+        self.browser = None;
     }
 }
 
 #[derive(FromRaw, AsRaw)]
 struct AvahiBrowserContext {
-    client: Option<ManagedAvahiClient>,
+    client: Option<Arc<ManagedAvahiClient>>,
     resolvers: ServiceResolverSet,
     service_discovered_callback: Option<Box<ServiceDiscoveredCallback>>,
     user_context: Option<Arc<dyn Any>>,

@@ -63,7 +63,7 @@ impl BonjourMdnsService {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
-    /// Registers and start's the service. Returns an [`EventLoop`] which can be called to keep
+    /// Registers and start's the service. Returns an `EventLoop` which can be called to keep
     /// the service alive.
     pub fn register(&mut self) -> Result<EventLoop> {
         debug!("Registering service: {:?}", self);

@@ -13,6 +13,7 @@ pub(crate) mod service;
 pub mod avahi_util;
 pub mod client;
 pub mod entry_group;
+pub mod event_loop;
 pub mod poll;
 pub mod raw_browser;
 pub mod resolver;

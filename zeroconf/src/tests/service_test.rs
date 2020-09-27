@@ -42,6 +42,7 @@ fn service_register_is_browsable() {
                     .lock()
                     .unwrap()
                     .is_discovered = true;
+                debug!("Service discovered");
             }
         }));
 

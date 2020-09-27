@@ -4,8 +4,8 @@ use super::constants;
 use super::entry_group::{AddServiceParams, ManagedAvahiEntryGroup, ManagedAvahiEntryGroupParams};
 use super::poll::ManagedAvahiSimplePoll;
 use crate::builder::BuilderDelegate;
-use crate::ffi::{cstr, AsRaw, FromRaw};
-use crate::{NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration};
+use crate::ffi::{c_str, AsRaw, FromRaw};
+use crate::{EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration};
 use avahi_sys::{
     AvahiClient, AvahiClientFlags, AvahiClientState, AvahiEntryGroup, AvahiEntryGroupState,
     AvahiIfIndex,
@@ -21,7 +21,7 @@ use std::sync::Arc;
 #[derive(Debug)]
 pub struct AvahiMdnsService {
     client: Option<ManagedAvahiClient>,
-    poll: Option<ManagedAvahiSimplePoll>,
+    poll: Option<Arc<ManagedAvahiSimplePoll>>,
     context: *mut AvahiServiceContext,
 }
 
@@ -67,12 +67,12 @@ impl AvahiMdnsService {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
-    /// Registers and start's the service; continuously polling the event loop. This call will
-    /// block the current thread.
-    pub fn start(&mut self) -> Result<()> {
+    /// Registers and start's the service. Returns an `EventLoop` which can be called to keep
+    /// the service alive.
+    pub fn register(&mut self) -> Result<EventLoop> {
         debug!("Registering service: {:?}", self);
 
-        self.poll = Some(ManagedAvahiSimplePoll::new()?);
+        self.poll = Some(Arc::new(ManagedAvahiSimplePoll::new()?));
 
         self.client = Some(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
@@ -83,7 +83,7 @@ impl AvahiMdnsService {
                 .build()?,
         )?);
 
-        self.poll.as_ref().unwrap().start_loop()
+        Ok(EventLoop::new(self.poll.as_ref().unwrap().clone()))
     }
 }
 
@@ -167,7 +167,9 @@ unsafe fn create_service(
     client: *mut AvahiClient,
     context: &mut AvahiServiceContext,
 ) -> Result<()> {
-    context.name = Some(c_string!(client::get_host_name(client)?.to_string()));
+    if context.name.is_none() {
+        context.name = Some(c_string!(client::get_host_name(client)?.to_string()));
+    }
 
     if context.group.is_none() {
         debug!("Creating group");
@@ -220,8 +222,8 @@ unsafe fn handle_group_established(context: &AvahiServiceContext) -> Result<()> 
     debug!("Group established");
 
     let result = ServiceRegistration::builder()
-        .name(cstr::copy_raw(context.name.as_ref().unwrap().as_ptr()))
-        .kind(cstr::copy_raw(context.kind.as_ptr()))
+        .name(c_str::copy_raw(context.name.as_ref().unwrap().as_ptr()))
+        .kind(c_str::copy_raw(context.kind.as_ptr()))
         .domain("local".to_string())
         .build()?;
 

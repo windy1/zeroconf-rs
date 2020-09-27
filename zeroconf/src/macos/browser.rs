@@ -60,7 +60,7 @@ impl BonjourMdnsBrowser {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
-    /// Starts the browser. Returns an [`EventLoop`] which can be called to keep the browser alive.
+    /// Starts the browser. Returns an `EventLoop` which can be called to keep the browser alive.
     pub fn browse_services(&mut self) -> Result<EventLoop> {
         debug!("Browsing services: {:?}", self);
 

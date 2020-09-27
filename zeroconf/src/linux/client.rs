@@ -2,7 +2,7 @@
 
 use super::avahi_util;
 use super::poll::ManagedAvahiSimplePoll;
-use crate::ffi::cstr;
+use crate::ffi::c_str;
 use crate::Result;
 use avahi_sys::{
     avahi_client_free, avahi_client_get_host_name, avahi_client_new, avahi_simple_poll_get,
@@ -87,7 +87,7 @@ pub(super) unsafe fn get_host_name<'a>(client: *mut AvahiClient) -> Result<&'a s
     assert_not_null!(client);
     let host_name = avahi_client_get_host_name(client);
     if !host_name.is_null() {
-        Ok(cstr::raw_to_str(host_name))
+        Ok(c_str::raw_to_str(host_name))
     } else {
         Err("could not get host name from AvahiClient".into())
     }

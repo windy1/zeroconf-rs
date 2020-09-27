@@ -3,7 +3,8 @@
 use super::avahi_util;
 use crate::Result;
 use avahi_sys::{
-    avahi_simple_poll_free, avahi_simple_poll_loop, avahi_simple_poll_new, AvahiSimplePoll,
+    avahi_simple_poll_free, avahi_simple_poll_iterate, avahi_simple_poll_loop,
+    avahi_simple_poll_new, AvahiSimplePoll,
 };
 
 /// Wraps the `AvahiSimplePoll` type from the raw Avahi bindings.
@@ -41,6 +42,13 @@ impl ManagedAvahiSimplePoll {
         } else {
             Ok(())
         }
+    }
+
+    /// Delegate function for [`avahi_simple_poll_iterate()`].
+    ///
+    /// [`avahi_simple_poll_iterate()`]: https://avahi.org/doxygen/html/simple-watch_8h.html#ad5b7c9d3b7a6584d609241ee6f472a2e
+    pub fn iterate(&self, sleep_time: i32) {
+        unsafe { avahi_simple_poll_iterate(self.poll, sleep_time) };
     }
 }
 

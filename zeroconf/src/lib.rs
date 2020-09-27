@@ -157,6 +157,9 @@ pub type MdnsService = macos::service::BonjourMdnsService;
 /// Type alias for the platform-specific structure responsible for polling the mDNS event loop
 #[cfg(target_os = "macos")]
 pub type EventLoop = macos::event_loop::BonjourEventLoop;
+/// Type alias for the platform-specific structure responsible for polling the mDNS event loop
+#[cfg(target_os = "linux")]
+pub type EventLoop = linux::event_loop::AvahiEventLoop;
 
 /// Result type for this library
 pub type Result<T> = std::result::Result<T, error::Error>;

@@ -52,10 +52,13 @@ pub unsafe fn read_select(sock_fd: i32, timeout: Duration) -> Result<u32> {
     libc::FD_ZERO(&mut read_flags);
     libc::FD_SET(sock_fd, &mut read_flags);
 
-    let mut timeout = timeval {
-        tv_sec: timeout.as_secs() as i64,
-        tv_usec: timeout.subsec_micros() as i32,
-    };
+    let tv_sec = timeout.as_secs() as i64;
+    #[cfg(target_os = "macos")]
+    let tv_usec = timeout.subsec_micros() as i32;
+    #[cfg(target_os = "linux")]
+    let tv_usec = timeout.subsec_micros() as i64;
+
+    let mut timeout = timeval { tv_sec, tv_usec };
 
     let result = libc::select(
         sock_fd + 1,
