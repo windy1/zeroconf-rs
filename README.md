@@ -16,20 +16,20 @@ $ sudo apt install xorg-dev libxcb-shape0-dev libxcb-xfixes0-dev clang
 
 * TXT Record support
 * Windows support
-* 1-1 mapping with Avahi/Bonjour
 * You tell me...
 
-## Examples
+# Examples
 
- ## Register a service
+## Register a service
 
- When registering a service, you may optionally pass a "context" to pass state through the
- callback. The only requirement is that this context implements the `Any` trait, which most
- types will automatically. See `MdnsService` for more information about contexts.
+When registering a service, you may optionally pass a "context" to pass state through the
+callback. The only requirement is that this context implements the [`Any`] trait, which most
+types will automatically. See `MdnsService` for more information about contexts.
 
 ```rust
 use std::any::Any;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use zeroconf::{MdnsService, ServiceRegistration};
 
 #[derive(Default, Debug)]
@@ -44,8 +44,12 @@ fn main() {
     service.set_registered_callback(Box::new(on_service_registered));
     service.set_context(Box::new(context));
 
-    // blocks current thread, must keep-alive to keep service active
-    service.start().unwrap();
+    let event_loop = service.register().unwrap();
+
+    loop {
+        // calling `poll()` will keep this service alive
+        event_loop.poll(Duration::from_secs(0)).unwrap();
+    }
 }
 
 fn on_service_registered(
@@ -76,6 +80,7 @@ fn on_service_registered(
 ```rust
 use std::any::Any;
 use std::sync::Arc;
+use std::time::Duration;
 use zeroconf::{MdnsBrowser, ServiceDiscovery};
 
 fn main() {
@@ -83,8 +88,12 @@ fn main() {
 
     browser.set_service_discovered_callback(Box::new(on_service_discovered));
 
-    // blocks current thread, must keep-alive to keep browser active
-    browser.start().unwrap()
+    let event_loop = browser.browse_services().unwrap();
+
+    loop {
+        // calling `poll()` will keep this browser alive
+        event_loop.poll(Duration::from_secs(0)).unwrap();
+    }
 }
 
 fn on_service_discovered(
