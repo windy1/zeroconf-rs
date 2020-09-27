@@ -127,6 +127,7 @@ mod macros;
 mod interface;
 #[cfg(test)]
 mod tests;
+mod txt_record;
 
 pub mod builder;
 pub mod error;
@@ -159,6 +160,8 @@ pub type EventLoop = macos::event_loop::BonjourEventLoop;
 /// Type alias for the platform-specific structure responsible for polling the mDNS event loop
 #[cfg(target_os = "linux")]
 pub type EventLoop = linux::event_loop::AvahiEventLoop;
+#[cfg(target_os = "macos")]
+pub type TxtRecord = macos::txt_record::BonjourTxtRecord;
 
 /// Result type for this library
 pub type Result<T> = std::result::Result<T, error::Error>;

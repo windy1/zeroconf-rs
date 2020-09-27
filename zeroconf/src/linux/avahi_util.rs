@@ -17,7 +17,7 @@ use std::mem;
 pub unsafe fn avahi_address_to_string(addr: *const AvahiAddress) -> String {
     assert_not_null!(addr);
 
-    let addr_str = CString::from_vec_unchecked(vec![0; constants::AVAHI_ADDRESS_STR_MAX]);
+    let addr_str = c_string!(alloc(constants::AVAHI_ADDRESS_STR_MAX));
 
     avahi_address_snprint(
         addr_str.as_ptr() as *mut c_char,

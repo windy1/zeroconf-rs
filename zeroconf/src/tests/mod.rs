@@ -7,3 +7,4 @@ pub(self) fn setup() {
 }
 
 mod service_test;
+mod txt_record_test;

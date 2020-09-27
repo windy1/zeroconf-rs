@@ -60,10 +60,10 @@ impl ManagedDNSServiceRef {
         };
 
         if err != 0 {
-            return Err(format!("could not register service (code: {})", err).into());
+            Err(format!("could not register service (code: {})", err).into())
+        } else {
+            Ok(())
         }
-
-        Ok(())
     }
 
     /// Delegate function for [`DNSServiceBrowse`].
@@ -93,10 +93,10 @@ impl ManagedDNSServiceRef {
         };
 
         if err != 0 {
-            return Err(format!("could not browse services (code: {})", err).into());
+            Err(format!("could not browse services (code: {})", err).into())
+        } else {
+            Ok(())
         }
-
-        Ok(())
     }
 
     /// Delegate function fro [`DNSServiceResolve`].
@@ -128,10 +128,10 @@ impl ManagedDNSServiceRef {
         };
 
         if error != 0 {
-            return Err(format!("DNSServiceResolve() reported error (code: {})", error).into());
+            Err(format!("DNSServiceResolve() reported error (code: {})", error).into())
+        } else {
+            self.process_result()
         }
-
-        self.process_result()
     }
 
     /// Delegate function for [`DNSServiceGetAddrInfo`].
@@ -161,10 +161,10 @@ impl ManagedDNSServiceRef {
         };
 
         if err != 0 {
-            return Err(format!("DNSServiceGetAddrInfo() reported error (code: {})", err).into());
+            Err(format!("DNSServiceGetAddrInfo() reported error (code: {})", err).into())
+        } else {
+            self.process_result()
         }
-
-        self.process_result()
     }
 
     /// Delegate function for [`DNSServiceProcessResult`].
