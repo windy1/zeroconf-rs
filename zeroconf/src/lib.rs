@@ -119,7 +119,6 @@ extern crate derive_getters;
 extern crate log;
 #[macro_use]
 extern crate derive_new;
-extern crate libc;
 
 mod discovery;
 mod registration;
