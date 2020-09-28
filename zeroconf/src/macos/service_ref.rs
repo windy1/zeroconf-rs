@@ -116,7 +116,9 @@ impl ManagedDNSServiceRef {
                 context,
             ),
             "DNSServiceResolve() reported error"
-        )
+        )?;
+
+        self.process_result()
     }
 
     /// Delegate function for [`DNSServiceGetAddrInfo`].
@@ -144,7 +146,9 @@ impl ManagedDNSServiceRef {
                 context,
             ),
             "DNSServiceGetAddrInfo() reported error"
-        )
+        )?;
+
+        self.process_result()
     }
 
     /// Delegate function for [`DNSServiceProcessResult`].

@@ -3,7 +3,6 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 #[test]
-#[ignore]
 fn service_register_is_browsable() {
     super::setup();
 
@@ -60,6 +59,7 @@ fn service_register_is_browsable() {
     let event_loop = service.register().unwrap();
 
     loop {
+        debug!("POLL");
         event_loop.poll(Duration::from_secs(0)).unwrap();
         if context.lock().unwrap().is_discovered {
             break;
