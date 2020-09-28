@@ -1,3 +1,5 @@
+//! Low level interface for interacting with `TXTRecordRef`
+
 use crate::Result;
 use bonjour_sys::{
     TXTRecordContainsKey, TXTRecordCreate, TXTRecordDeallocate, TXTRecordGetBytesPtr,

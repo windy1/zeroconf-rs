@@ -1,4 +1,4 @@
-//! Rust friendly Bonjour wrappers/helpers
+//! Low level interface for interacting with `DNSserviceRef`
 
 use crate::Result;
 use bonjour_sys::{

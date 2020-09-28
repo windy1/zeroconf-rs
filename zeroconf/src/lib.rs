@@ -148,26 +148,26 @@ pub use registration::*;
 
 /// Type alias for the platform-specific mDNS browser implementation
 #[cfg(target_os = "linux")]
-pub type MdnsBrowser = linux::browser::AvahiMdnsBrowser;
+pub type MdnsBrowser = linux::AvahiMdnsBrowser;
 /// Type alias for the platform-specific mDNS service implementation
 #[cfg(target_os = "linux")]
-pub type MdnsService = linux::service::AvahiMdnsService;
+pub type MdnsService = linux::AvahiMdnsService;
 /// Type alias for the platform-specific mDNS browser implementation
 #[cfg(target_os = "macos")]
-pub type MdnsBrowser = macos::browser::BonjourMdnsBrowser;
+pub type MdnsBrowser = macos::BonjourMdnsBrowser;
 /// Type alias for the platform-specific mDNS service implementation
 #[cfg(target_os = "macos")]
-pub type MdnsService = macos::service::BonjourMdnsService;
+pub type MdnsService = macos::BonjourMdnsService;
 /// Type alias for the platform-specific structure responsible for polling the mDNS event loop
 #[cfg(target_os = "macos")]
-pub type EventLoop = macos::event_loop::BonjourEventLoop;
+pub type EventLoop = macos::BonjourEventLoop;
 /// Type alias for the platform-specific structure responsible for polling the mDNS event loop
 #[cfg(target_os = "linux")]
-pub type EventLoop = linux::event_loop::AvahiEventLoop;
+pub type EventLoop = linux::AvahiEventLoop;
 /// Type alias for the platform-specific structure responsible for storing and accessing TXT
 /// record data
 #[cfg(target_os = "macos")]
-pub type TxtRecord = macos::txt_record::BonjourTxtRecord;
+pub type TxtRecord = macos::BonjourTxtRecord;
 
 /// Result type for this library
 pub type Result<T> = std::result::Result<T, error::Error>;

@@ -17,3 +17,6 @@ pub mod event_loop;
 pub mod poll;
 pub mod raw_browser;
 pub mod resolver;
+
+pub use browser::*;
+pub use service::*;
