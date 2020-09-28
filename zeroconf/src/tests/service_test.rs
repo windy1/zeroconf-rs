@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 #[test]
+#[ignore]
 fn service_register_is_browsable() {
     super::setup();
 

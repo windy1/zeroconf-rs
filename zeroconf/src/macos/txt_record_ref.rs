@@ -254,19 +254,26 @@ mod tests {
             )
             .unwrap();
 
+        let mut key = unsafe { c_string!(alloc(256)) };
         let mut value_len: u8 = 0;
         let mut value: *const c_void = ptr::null_mut();
 
         record
             .get_item_at_index(
                 0,
-                mem::size_of_val(&key) as u16,
+                256,
                 key.as_ptr() as *mut c_char,
                 &mut value_len,
                 &mut value,
             )
             .unwrap();
 
-        assert_eq!(unsafe { c_str::raw_to_str(value as *const c_char) }, "bar");
+        unsafe {
+            let key = c_str::raw_to_str(key.as_ptr() as *const c_char);
+            let value = c_str::raw_to_str(value as *const c_char);
+
+            assert_eq!(key, "foo");
+            assert_eq!(value, "bar");
+        }
     }
 }
