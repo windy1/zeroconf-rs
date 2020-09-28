@@ -87,11 +87,6 @@ impl BonjourTxtRecord {
         Box::new(Values(Iter::new(self)))
     }
 
-    /// Returns the size of the raw bytes in the TXT record.
-    pub fn size(&self) -> u16 {
-        self.0.get_length()
-    }
-
     /// Returns a new `HashMap` with this record's keys and values.
     pub fn to_map(&self) -> HashMap<String, String> {
         let mut m = HashMap::new();

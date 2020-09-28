@@ -97,6 +97,12 @@ impl BonjourMdnsService {
     pub fn register(&mut self) -> Result<EventLoop> {
         debug!("Registering service: {:?}", self);
 
+        let txt_len = self
+            .txt_record
+            .as_ref()
+            .map(|t| t.0.get_length())
+            .unwrap_or(0);
+
         let txt_record = self
             .txt_record
             .as_ref()
@@ -112,7 +118,7 @@ impl BonjourMdnsService {
                 .domain(self.domain.as_ref().as_c_chars().unwrap_or_null())
                 .host(self.host.as_ref().as_c_chars().unwrap_or_null())
                 .port(self.port)
-                .txt_len(self.txt_record.as_ref().map(|t| t.size()).unwrap_or(0))
+                .txt_len(txt_len)
                 .txt_record(txt_record)
                 .callback(Some(register_callback))
                 .context(self.context as *mut c_void)
