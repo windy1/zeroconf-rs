@@ -73,6 +73,7 @@ impl BonjourMdnsService {
         self.host = Some(c_string!(host));
     }
 
+    /// Sets the optional `TxtRecord` to register this service with.
     pub fn set_txt_record(&mut self, txt_record: TxtRecord) {
         self.txt_record = Some(txt_record);
     }
