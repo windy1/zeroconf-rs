@@ -128,33 +128,35 @@ mod tests {
         let key1 = c_string!("foo");
         let value1 = c_string!("bar");
 
-        list.add_pair(
-            key1.as_ptr() as *const c_char,
-            value1.as_ptr() as *const c_char,
-        );
+        unsafe {
+            list.add_pair(
+                key1.as_ptr() as *const c_char,
+                value1.as_ptr() as *const c_char,
+            );
 
-        let key2 = c_string!("hello");
-        let value2 = c_string!("world");
+            let key2 = c_string!("hello");
+            let value2 = c_string!("world");
 
-        list.add_pair(
-            key2.as_ptr() as *const c_char,
-            value2.as_ptr() as *const c_char,
-        );
+            list.add_pair(
+                key2.as_ptr() as *const c_char,
+                value2.as_ptr() as *const c_char,
+            );
 
-        let pair1 = list
-            .find(key1.as_ptr() as *const c_char)
-            .unwrap()
-            .get_pair();
+            let pair1 = list
+                .find(key1.as_ptr() as *const c_char)
+                .unwrap()
+                .get_pair();
 
-        let pair2 = list
-            .find(key2.as_ptr() as *const c_char)
-            .unwrap()
-            .get_pair();
+            let pair2 = list
+                .find(key2.as_ptr() as *const c_char)
+                .unwrap()
+                .get_pair();
 
-        assert_eq!(pair1.key().as_str(), "foo");
-        assert_eq!(pair1.value().as_str(), "bar");
-        assert_eq!(pair2.key().as_str(), "hello");
-        assert_eq!(pair2.value().as_str(), "world");
+            assert_eq!(pair1.key().as_str(), "foo");
+            assert_eq!(pair1.value().as_str(), "bar");
+            assert_eq!(pair2.key().as_str(), "hello");
+            assert_eq!(pair2.value().as_str(), "world");
+        }
     }
 
     #[test]
@@ -165,25 +167,27 @@ mod tests {
         let key = c_string!("foo");
         let value = c_string!("bar");
 
-        list.add_pair(
-            key.as_ptr() as *const c_char,
-            value.as_ptr() as *const c_char,
-        );
+        unsafe {
+            list.add_pair(
+                key.as_ptr() as *const c_char,
+                value.as_ptr() as *const c_char,
+            );
 
-        let pair = list.find(key.as_ptr() as *const c_char).unwrap().get_pair();
+            let pair = list.find(key.as_ptr() as *const c_char).unwrap().get_pair();
 
-        assert_eq!(pair.value().as_str(), "bar");
+            assert_eq!(pair.value().as_str(), "bar");
 
-        let value = c_string!("baz");
+            let value = c_string!("baz");
 
-        list.add_pair(
-            key.as_ptr() as *const c_char,
-            value.as_ptr() as *const c_char,
-        );
+            list.add_pair(
+                key.as_ptr() as *const c_char,
+                value.as_ptr() as *const c_char,
+            );
 
-        let pair = list.find(key.as_ptr() as *const c_char).unwrap().get_pair();
+            let pair = list.find(key.as_ptr() as *const c_char).unwrap().get_pair();
 
-        assert_eq!(pair.value().as_str(), "baz");
+            assert_eq!(pair.value().as_str(), "baz");
+        }
     }
 
     #[test]
@@ -194,12 +198,14 @@ mod tests {
         let key = c_string!("foo");
         let value = c_string!("bar");
 
-        list.add_pair(
-            key.as_ptr() as *const c_char,
-            value.as_ptr() as *const c_char,
-        );
+        unsafe {
+            list.add_pair(
+                key.as_ptr() as *const c_char,
+                value.as_ptr() as *const c_char,
+            );
 
-        assert_eq!(list.length(), 1);
+            assert_eq!(list.length(), 1);
+        }
     }
 
     #[test]
@@ -210,12 +216,14 @@ mod tests {
         let key = c_string!("foo");
         let value = c_string!("bar");
 
-        list.add_pair(
-            key.as_ptr() as *const c_char,
-            value.as_ptr() as *const c_char,
-        );
+        unsafe {
+            list.add_pair(
+                key.as_ptr() as *const c_char,
+                value.as_ptr() as *const c_char,
+            );
 
-        assert_eq!(list.to_string().as_str(), "\"foo=bar\"");
+            assert_eq!(list.to_string().as_str(), "\"foo=bar\"");
+        }
     }
 
     #[test]
@@ -226,11 +234,13 @@ mod tests {
         let key = c_string!("foo");
         let value = c_string!("bar");
 
-        list.add_pair(
-            key.as_ptr() as *const c_char,
-            value.as_ptr() as *const c_char,
-        );
+        unsafe {
+            list.add_pair(
+                key.as_ptr() as *const c_char,
+                value.as_ptr() as *const c_char,
+            );
 
-        assert_eq!(list.clone(), list);
+            assert_eq!(list.clone(), list);
+        }
     }
 }

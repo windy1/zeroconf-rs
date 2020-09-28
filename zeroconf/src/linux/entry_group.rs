@@ -1,6 +1,5 @@
 //! Rust friendly `AvahiEntryGroup` wrappers/helpers
 
-use super::avahi_util;
 use crate::Result;
 use avahi_sys::{
     avahi_entry_group_add_service, avahi_entry_group_commit, avahi_entry_group_free,
@@ -60,7 +59,7 @@ impl ManagedAvahiEntryGroup {
             port,
         }: AddServiceParams,
     ) -> Result<()> {
-        let err = unsafe {
+        avahi!(
             avahi_entry_group_add_service(
                 self.0,
                 interface,
@@ -72,24 +71,11 @@ impl ManagedAvahiEntryGroup {
                 host,
                 port,
                 ptr::null_mut() as *const c_char, // null terminated txt record list
-            )
-        };
+            ),
+            "could not register service"
+        )?;
 
-        if err < 0 {
-            return Err(format!(
-                "could not register service: `{}`",
-                avahi_util::get_error(err)
-            )
-            .into());
-        }
-
-        let err = unsafe { avahi_entry_group_commit(self.0) };
-
-        if err < 0 {
-            Err(format!("could not commit service: `{}`", avahi_util::get_error(err)).into())
-        } else {
-            Ok(())
-        }
+        avahi!(avahi_entry_group_commit(self.0), "could not commit service")
     }
 
     /// Delegate function for [`avahi_entry_group_reset()`].

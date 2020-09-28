@@ -1,6 +1,5 @@
 //! Rust friendly `AvahiSimplePoll` wrappers/helpers
 
-use super::avahi_util;
 use crate::Result;
 use avahi_sys::{
     avahi_simple_poll_free, avahi_simple_poll_iterate, avahi_simple_poll_loop,
@@ -30,16 +29,10 @@ impl ManagedAvahiSimplePoll {
     ///
     /// [`avahi_simple_poll_loop()`]: https://avahi.org/doxygen/html/simple-watch_8h.html#a14b4cb29832e8c3de609d4c4e5611985
     pub fn start_loop(&self) -> Result<()> {
-        let err = unsafe { avahi_simple_poll_loop(self.0) };
-        if err != 0 {
-            Err(format!(
-                "could not start AvahiSimplePoll: {}",
-                avahi_util::get_error(err)
-            )
-            .into())
-        } else {
-            Ok(())
-        }
+        avahi!(
+            avahi_simple_poll_loop(self.0),
+            "could not start AvahiSimplePoll"
+        )
     }
 
     /// Delegate function for [`avahi_simple_poll_iterate()`].

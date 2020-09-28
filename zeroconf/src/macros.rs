@@ -21,7 +21,26 @@ macro_rules! bonjour {
         if err != 0 {
             crate::Result::Err(format!("{}", format!("{} (code: {})", $msg, err)).into())
         } else {
-            Ok(())
+            crate::Result::Ok(())
+        }
+    }};
+}
+
+#[cfg(target_os = "linux")]
+macro_rules! avahi {
+    ($call:expr, $msg:expr) => {{
+        #[allow(unused_unsafe)]
+        let err = unsafe { $call };
+        if err < 0 {
+            crate::Result::Err(
+                format!(
+                    "{}",
+                    format!("{}: `{}`", $msg, crate::linux::avahi_util::get_error(err))
+                )
+                .into(),
+            )
+        } else {
+            crate::Result::Ok(())
         }
     }};
 }
