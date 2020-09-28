@@ -3,12 +3,13 @@ use super::{bonjour_util, constants};
 use crate::builder::BuilderDelegate;
 use crate::ffi::c_str::{self, AsCChars};
 use crate::ffi::{FromRaw, UnwrapOrNull};
-use crate::{EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration};
+use crate::{
+    EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration, TxtRecord,
+};
 use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_void};
 use std::any::Any;
 use std::ffi::CString;
-use std::ptr;
 use std::sync::{Arc, Mutex};
 
 /// Interface for interacting with Bonjour's mDNS service registration capabilities.
@@ -21,6 +22,7 @@ pub struct BonjourMdnsService {
     domain: Option<CString>,
     host: Option<CString>,
     interface_index: u32,
+    txt_record: Option<TxtRecord>,
     context: *mut BonjourServiceContext,
 }
 
@@ -36,6 +38,7 @@ impl BonjourMdnsService {
             domain: None,
             host: None,
             interface_index: constants::BONJOUR_IF_UNSPEC,
+            txt_record: None,
             context: Box::into_raw(Box::default()),
         }
     }
@@ -70,6 +73,10 @@ impl BonjourMdnsService {
         self.host = Some(c_string!(host));
     }
 
+    pub fn set_txt_record(&mut self, txt_record: TxtRecord) {
+        self.txt_record = Some(txt_record);
+    }
+
     /// Sets the [`ServiceRegisteredCallback`] that is invoked when the service has been
     /// registered.
     ///
@@ -89,6 +96,12 @@ impl BonjourMdnsService {
     pub fn register(&mut self) -> Result<EventLoop> {
         debug!("Registering service: {:?}", self);
 
+        let txt_record = self
+            .txt_record
+            .as_ref()
+            .map(|t| t.as_ptr())
+            .unwrap_or_null();
+
         self.service.lock().unwrap().register_service(
             RegisterServiceParams::builder()
                 .flags(constants::BONJOUR_RENAME_FLAGS)
@@ -98,8 +111,8 @@ impl BonjourMdnsService {
                 .domain(self.domain.as_ref().as_c_chars().unwrap_or_null())
                 .host(self.host.as_ref().as_c_chars().unwrap_or_null())
                 .port(self.port)
-                .txt_len(0)
-                .txt_record(ptr::null())
+                .txt_len(self.txt_record.as_ref().map(|t| t.size()).unwrap_or(0))
+                .txt_record(txt_record)
                 .callback(Some(register_callback))
                 .context(self.context as *mut c_void)
                 .build()?,

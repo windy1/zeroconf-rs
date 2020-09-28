@@ -80,6 +80,16 @@ impl BonjourTxtRecord {
         Values(Iter::new(self))
     }
 
+    /// Returns a raw pointer to the underlying TXT data.
+    pub fn as_ptr(&self) -> *const c_void {
+        self.0.get_bytes_ptr()
+    }
+
+    /// Returns the size of the raw bytes in the TXT record.
+    pub fn size(&self) -> u16 {
+        self.0.get_length()
+    }
+
     /// Returns a new `HashMap` with this record's keys and values.
     pub fn as_map(&self) -> HashMap<String, String> {
         let mut m = HashMap::new();

@@ -254,7 +254,7 @@ mod tests {
             )
             .unwrap();
 
-        let mut key = unsafe { c_string!(alloc(256)) };
+        let key = unsafe { c_string!(alloc(256)) };
         let mut value_len: u8 = 0;
         let mut value: *const c_void = ptr::null_mut();
 
