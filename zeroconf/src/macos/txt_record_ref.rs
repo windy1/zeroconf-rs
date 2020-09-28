@@ -48,6 +48,9 @@ impl ManagedTXTRecordRef {
         )
     }
 
+    /// Delegate function for [`TXTRecordSetValue`].
+    ///
+    /// [`TXTRecordSetValue`]: https://developer.apple.com/documentation/dnssd/1804723-txtrecordsetvalue?language=objc
     pub fn set_value(
         &mut self,
         key: *const c_char,
@@ -60,14 +63,23 @@ impl ManagedTXTRecordRef {
         )
     }
 
+    /// Delegate function for [`TXTRecordContainsKey`].
+    ///
+    /// [`TXTRecordContainsKey`]: https://developer.apple.com/documentation/dnssd/1804705-txtrecordcontainskey?language=objc
     pub fn contains_key(&self, key: *const c_char) -> bool {
         unsafe { TXTRecordContainsKey(self.get_length(), self.get_bytes_ptr(), key) == 1 }
     }
 
+    /// Delegate function for [`TXTRecordGetCount`].
+    ///
+    /// [`TXTRecordGetCount`]: https://developer.apple.com/documentation/dnssd/1804706-txtrecordgetcount?language=objc
     pub fn get_count(&self) -> u16 {
         unsafe { TXTRecordGetCount(self.get_length(), self.get_bytes_ptr()) }
     }
 
+    /// Delegate function for [`TXTRecordGetItemAtIndex`].
+    ///
+    /// [`TXTRecordGetItemAtIndex`]: https://developer.apple.com/documentation/dnssd/1804708-txtrecordgetitematindex?language=objc
     pub fn get_item_at_index(
         &self,
         item_index: u16,
@@ -90,6 +102,9 @@ impl ManagedTXTRecordRef {
         )
     }
 
+    /// Delegate function for [`TXTRecordGetValuePtr`].
+    ///
+    /// [`TXTRecordGetValuePtr`]: https://developer.apple.com/documentation/dnssd/1804709-txtrecordgetvalueptr?language=objc
     pub fn get_value_ptr(&self, key: *const c_char, value_len: *mut u8) -> *const c_void {
         unsafe { TXTRecordGetValuePtr(self.get_length(), self.get_bytes_ptr(), key, value_len) }
     }
