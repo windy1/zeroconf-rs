@@ -6,14 +6,17 @@ use std::collections::HashMap;
 use std::ffi::CString;
 use std::{mem, ptr};
 
+/// Interface for interfacting with Bonjour's TXT record capabilities.
 #[derive(Debug)]
 pub struct BonjourTxtRecord(ManagedTXTRecordRef);
 
 impl BonjourTxtRecord {
+    /// Constructs a new TXT recoord
     pub fn new() -> Self {
         Self(ManagedTXTRecordRef::new())
     }
 
+    /// Inserts the specified value at the specified key.
     pub fn insert(&mut self, key: &str, value: &str) -> Result<()> {
         let key = c_string!(key);
         let value = c_string!(value);
@@ -25,6 +28,7 @@ impl BonjourTxtRecord {
         )
     }
 
+    /// Returns the value at the specified key or `None` if no such key exists.
     pub fn get(&self, key: &str) -> Option<&str> {
         let mut value_len: u8 = 0;
 
@@ -39,36 +43,44 @@ impl BonjourTxtRecord {
         }
     }
 
+    /// Removes the value at the specified key. Returns `Err` if no such key exists.
     pub fn remove(&mut self, key: &str) -> Result<()> {
         self.0
             .remove_value(c_string!(key).as_ptr() as *const c_char)
     }
 
+    /// Returns true if the TXT record contains the specified key.
     pub fn contains_key(&self, key: &str) -> bool {
         self.0
             .contains_key(c_string!(key).as_ptr() as *const c_char)
     }
 
+    /// Returns the amount of entries in the TXT record.
     pub fn len(&self) -> usize {
         self.0.get_count() as usize
     }
 
+    /// Returns true if there are no entries in the record.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    /// Returns a new `txt_record::Iter` for iterating over the record as you would a `HashMap`.
     pub fn iter(&self) -> Iter {
         Iter::new(self)
     }
 
+    /// Returns a new `txt_record::Iter` over the records keys.
     pub fn keys(&self) -> Keys {
         Keys(Iter::new(self))
     }
 
+    /// Returns a new `txt_record::Iter` over the records values.
     pub fn values(&self) -> Values {
         Values(Iter::new(self))
     }
 
+    /// Returns a new `HashMap` with this record's keys and values.
     pub fn as_map(&self) -> HashMap<String, String> {
         let mut m = HashMap::new();
         for (key, value) in self.iter() {
@@ -78,6 +90,7 @@ impl BonjourTxtRecord {
     }
 }
 
+/// An `Iterator` that allows iteration over a [`BonjourTxtRecord`] similar to a `HashMap`.
 #[derive(new)]
 pub struct Iter<'a> {
     record: &'a BonjourTxtRecord,
@@ -126,6 +139,7 @@ impl<'a> Iterator for Iter<'a> {
     }
 }
 
+/// An `Iterator` that allows iteration over a [`BonjourTxtRecord`]'s keys.
 pub struct Keys<'a>(Iter<'a>);
 
 impl Iterator for Keys<'_> {
@@ -136,6 +150,7 @@ impl Iterator for Keys<'_> {
     }
 }
 
+/// An `Iterator` that allows iteration over a [`BonjourTxtRecord`]'s values.
 pub struct Values<'a>(Iter<'a>);
 
 impl<'a> Iterator for Values<'a> {
