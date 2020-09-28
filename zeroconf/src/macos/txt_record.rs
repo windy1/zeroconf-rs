@@ -98,7 +98,7 @@ impl BonjourTxtRecord {
     }
 
     /// Returns a new `HashMap` with this record's keys and values.
-    pub fn as_map(&self) -> HashMap<String, String> {
+    pub fn to_map(&self) -> HashMap<String, String> {
         let mut m = HashMap::new();
         for (key, value) in self.iter() {
             m.insert(key, value.to_string());
@@ -201,13 +201,13 @@ impl From<HashMap<&str, &str>> for BonjourTxtRecord {
 
 impl Clone for BonjourTxtRecord {
     fn clone(&self) -> Self {
-        self.as_map().into()
+        self.to_map().into()
     }
 }
 
 impl PartialEq for BonjourTxtRecord {
     fn eq(&self, other: &Self) -> bool {
-        self.as_map() == other.as_map()
+        self.to_map() == other.to_map()
     }
 }
 
