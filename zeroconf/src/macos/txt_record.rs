@@ -73,17 +73,17 @@ impl BonjourTxtRecord {
     }
 
     /// Returns a new `txt_record::Iter` for iterating over the record as you would a `HashMap`.
-    pub fn iter(&self) -> Box<crate::txt_record::Iter> {
+    pub fn iter<'a>(&'a self) -> Box<dyn Iterator<Item = (String, &'a str)> + 'a> {
         Box::new(Iter::new(self))
     }
 
     /// Returns a new `txt_record::Iter` over the records keys.
-    pub fn keys(&self) -> Box<crate::txt_record::Keys> {
+    pub fn keys<'a>(&'a self) -> Box<dyn Iterator<Item = String> + 'a> {
         Box::new(Keys(Iter::new(self)))
     }
 
     /// Returns a new `txt_record::Iter` over the records values.
-    pub fn values(&self) -> Box<crate::txt_record::Values> {
+    pub fn values<'a>(&'a self) -> Box<dyn Iterator<Item = &'a str> + 'a> {
         Box::new(Values(Iter::new(self)))
     }
 
