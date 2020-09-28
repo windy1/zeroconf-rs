@@ -6,17 +6,14 @@
 //! [Bonjour]: https://en.wikipedia.org/wiki/Bonjour_(software)
 //! [Avahi]: https://en.wikipedia.org/wiki/Avahi_(software)
 
-pub(crate) mod browser;
 pub(crate) mod constants;
-pub(crate) mod service;
 
 pub mod avahi_util;
+pub mod browser;
 pub mod client;
 pub mod entry_group;
 pub mod event_loop;
 pub mod poll;
 pub mod raw_browser;
 pub mod resolver;
-
-pub use browser::*;
-pub use service::*;
+pub mod service;
