@@ -23,6 +23,11 @@ use std::ptr;
 pub struct ManagedDNSServiceRef(DNSServiceRef);
 
 impl ManagedDNSServiceRef {
+    /// Constructs a new `ManagedDNSServiceRef`.
+    pub fn new() -> Self {
+        Self(ptr::null_mut())
+    }
+
     /// Delegate function for [`DNSServiceRegister`].
     ///
     /// [`DNSServiceRegister`]: https://developer.apple.com/documentation/dnssd/1804733-dnsserviceregister?language=objc
@@ -171,7 +176,7 @@ impl ManagedDNSServiceRef {
 
 impl Default for ManagedDNSServiceRef {
     fn default() -> Self {
-        Self(ptr::null_mut())
+        Self::new()
     }
 }
 

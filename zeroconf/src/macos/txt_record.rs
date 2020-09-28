@@ -21,20 +21,23 @@ impl BonjourTxtRecord {
         let key = c_string!(key);
         let value = c_string!(value);
         let value_size = mem::size_of_val(&value) as u8;
-        self.0.set_value(
-            key.as_ptr() as *const c_char,
-            value_size,
-            value.as_ptr() as *const c_void,
-        )
+        unsafe {
+            self.0.set_value(
+                key.as_ptr() as *const c_char,
+                value_size,
+                value.as_ptr() as *const c_void,
+            )
+        }
     }
 
     /// Returns the value at the specified key or `None` if no such key exists.
     pub fn get(&self, key: &str) -> Option<&str> {
         let mut value_len: u8 = 0;
 
-        let value_raw = self
-            .0
-            .get_value_ptr(c_string!(key).as_ptr() as *const c_char, &mut value_len);
+        let value_raw = unsafe {
+            self.0
+                .get_value_ptr(c_string!(key).as_ptr() as *const c_char, &mut value_len)
+        };
 
         if value_raw.is_null() {
             None
@@ -45,14 +48,18 @@ impl BonjourTxtRecord {
 
     /// Removes the value at the specified key. Returns `Err` if no such key exists.
     pub fn remove(&mut self, key: &str) -> Result<()> {
-        self.0
-            .remove_value(c_string!(key).as_ptr() as *const c_char)
+        unsafe {
+            self.0
+                .remove_value(c_string!(key).as_ptr() as *const c_char)
+        }
     }
 
     /// Returns true if the TXT record contains the specified key.
     pub fn contains_key(&self, key: &str) -> bool {
-        self.0
-            .contains_key(c_string!(key).as_ptr() as *const c_char)
+        unsafe {
+            self.0
+                .contains_key(c_string!(key).as_ptr() as *const c_char)
+        }
     }
 
     /// Returns the amount of entries in the TXT record.
@@ -124,16 +131,18 @@ impl<'a> Iterator for Iter<'a> {
         let mut value_len: u8 = 0;
         let mut value: *const c_void = ptr::null_mut();
 
-        self.record
-            .0
-            .get_item_at_index(
-                self.index as u16,
-                Iter::KEY_LEN,
-                raw_key.as_ptr() as *mut c_char,
-                &mut value_len,
-                &mut value,
-            )
-            .unwrap();
+        unsafe {
+            self.record
+                .0
+                .get_item_at_index(
+                    self.index as u16,
+                    Iter::KEY_LEN,
+                    raw_key.as_ptr() as *mut c_char,
+                    &mut value_len,
+                    &mut value,
+                )
+                .unwrap();
+        }
 
         assert_not_null!(value);
 
@@ -203,6 +212,12 @@ impl PartialEq for BonjourTxtRecord {
 }
 
 impl Eq for BonjourTxtRecord {}
+
+impl Default for BonjourTxtRecord {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl ToString for BonjourTxtRecord {
     fn to_string(&self) -> String {
