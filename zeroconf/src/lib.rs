@@ -169,6 +169,10 @@ pub type EventLoop = macos::event_loop::BonjourEventLoop;
 
 /// Type alias for the platform-specific structure responsible for storing and accessing TXT
 /// record data
+#[cfg(target_os = "linux")]
+pub type TxtRecord = linux::txt_record::AvahiTxtRecord;
+/// Type alias for the platform-specific structure responsible for storing and accessing TXT
+/// record data
 #[cfg(target_os = "macos")]
 pub type TxtRecord = macos::txt_record::BonjourTxtRecord;
 
