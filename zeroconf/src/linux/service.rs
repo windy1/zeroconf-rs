@@ -5,7 +5,9 @@ use super::entry_group::{AddServiceParams, ManagedAvahiEntryGroup, ManagedAvahiE
 use super::poll::ManagedAvahiSimplePoll;
 use crate::builder::BuilderDelegate;
 use crate::ffi::{c_str, AsRaw, FromRaw};
-use crate::{EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration};
+use crate::{
+    EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration, TxtRecord,
+};
 use avahi_sys::{
     AvahiClient, AvahiClientFlags, AvahiClientState, AvahiEntryGroup, AvahiEntryGroupState,
     AvahiIfIndex,
@@ -22,6 +24,7 @@ use std::sync::Arc;
 pub struct AvahiMdnsService {
     client: Option<ManagedAvahiClient>,
     poll: Option<Arc<ManagedAvahiSimplePoll>>,
+    txt_record: Option<TxtRecord>,
     context: *mut AvahiServiceContext,
 }
 
@@ -31,6 +34,7 @@ impl AvahiMdnsService {
         Self {
             client: None,
             poll: None,
+            txt_record: None,
             context: Box::into_raw(Box::new(AvahiServiceContext::new(kind, port))),
         }
     }
@@ -51,6 +55,27 @@ impl AvahiMdnsService {
     /// all available interfaces.
     pub fn set_network_interface(&mut self, interface: NetworkInterface) {
         unsafe { (*self.context).interface_index = avahi_util::interface_index(interface) };
+    }
+
+    /// Sets the domain on which to advertise the service.
+    ///
+    /// Most applications will want to use the default value of `ptr::null()` to register to the
+    /// default domain.
+    pub fn set_domain(&mut self, _domain: &str) {
+        todo!()
+    }
+
+    /// Sets the SRV target host name.
+    ///
+    /// Most applications will want to use the default value of `ptr::null()` to use the machine's
+    // default host name.
+    pub fn set_host(&mut self, _host: &str) {
+        todo!()
+    }
+
+    /// Sets the optional `TxtRecord` to register this service with.
+    pub fn set_txt_record(&mut self, txt_record: TxtRecord) {
+        self.txt_record = Some(txt_record);
     }
 
     /// Sets the [`ServiceRegisteredCallback`] that is invoked when the service has been

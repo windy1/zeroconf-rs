@@ -4,7 +4,7 @@ use super::constants;
 use crate::NetworkInterface;
 use avahi_sys::{avahi_address_snprint, avahi_strerror, AvahiAddress};
 use libc::c_char;
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 use std::mem;
 
 /// Converts the specified `*const AvahiAddress` to a `String`.

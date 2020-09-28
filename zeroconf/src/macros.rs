@@ -13,6 +13,7 @@ macro_rules! c_string {
     };
 }
 
+#[cfg(target_os = "macos")]
 macro_rules! bonjour {
     ($call:expr, $msg:expr) => {{
         #[allow(unused_unsafe)]

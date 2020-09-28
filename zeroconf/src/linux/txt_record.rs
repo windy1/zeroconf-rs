@@ -1,7 +1,7 @@
 use crate::Result;
-use std::collections::{hash_map, HashMap};
+use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct AvahiTxtRecord(HashMap<String, String>);
 
 impl AvahiTxtRecord {
@@ -42,5 +42,31 @@ impl AvahiTxtRecord {
     /// Returns true if there are no entries in the record.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+
+    /// Returns a new `txt_record::Iter` for iterating over the record as you would a `HashMap`.
+    pub fn iter<'a>(&'a self) -> Box<dyn Iterator<Item = (String, &'a str)> + 'a> {
+        Box::new(self.0.iter().map(|(k, v)| (k.to_string(), v.as_str())))
+    }
+
+    /// Returns a new `txt_record::Iter` over the records keys.
+    pub fn keys<'a>(&'a self) -> Box<dyn Iterator<Item = String> + 'a> {
+        Box::new(self.0.keys().map(|k| k.to_string()))
+    }
+
+    /// Returns a new `txt_record::Iter` over the records values.
+    pub fn values<'a>(&'a self) -> Box<dyn Iterator<Item = &'a str> + 'a> {
+        Box::new(self.0.values().map(|v| v.as_str()))
+    }
+
+    /// Returns a new `HashMap` with this record's keys and values.
+    pub fn to_map(&self) -> HashMap<String, String> {
+        self.0.clone()
+    }
+}
+
+impl From<HashMap<String, String>> for AvahiTxtRecord {
+    fn from(map: HashMap<String, String>) -> AvahiTxtRecord {
+        Self(map)
     }
 }

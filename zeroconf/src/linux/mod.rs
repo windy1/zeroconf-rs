@@ -17,4 +17,5 @@ pub mod poll;
 pub mod raw_browser;
 pub mod resolver;
 pub mod service;
+pub mod string_list;
 pub mod txt_record;

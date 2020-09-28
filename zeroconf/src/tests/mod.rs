@@ -2,7 +2,7 @@ use std::sync::Once;
 
 static INIT: Once = Once::new();
 
-pub(self) fn setup() {
+pub(crate) fn setup() {
     INIT.call_once(|| env_logger::init());
 }
 

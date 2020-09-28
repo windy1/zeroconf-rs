@@ -97,6 +97,36 @@ impl BonjourTxtRecord {
     }
 }
 
+impl From<HashMap<String, String>> for BonjourTxtRecord {
+    fn from(map: HashMap<String, String>) -> BonjourTxtRecord {
+        let mut record = BonjourTxtRecord::new();
+        for (key, value) in map {
+            record.insert(&key, &value).unwrap();
+        }
+        record
+    }
+}
+
+impl Clone for BonjourTxtRecord {
+    fn clone(&self) -> Self {
+        self.to_map().into()
+    }
+}
+
+impl PartialEq for BonjourTxtRecord {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_map() == other.to_map()
+    }
+}
+
+impl Eq for BonjourTxtRecord {}
+
+impl Default for BonjourTxtRecord {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// An `Iterator` that allows iteration over a [`BonjourTxtRecord`] similar to a `HashMap`.
 #[derive(new)]
 pub struct Iter<'a> {
@@ -167,50 +197,5 @@ impl<'a> Iterator for Values<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|e| e.1)
-    }
-}
-
-impl From<HashMap<String, String>> for BonjourTxtRecord {
-    fn from(map: HashMap<String, String>) -> BonjourTxtRecord {
-        let mut record = BonjourTxtRecord::new();
-        for (key, value) in map {
-            record.insert(&key, &value).unwrap();
-        }
-        record
-    }
-}
-
-impl From<HashMap<&str, &str>> for BonjourTxtRecord {
-    fn from(map: HashMap<&str, &str>) -> BonjourTxtRecord {
-        map.iter()
-            .map(|(k, v)| (k.to_string(), v.to_string()))
-            .collect::<HashMap<String, String>>()
-            .into()
-    }
-}
-
-impl Clone for BonjourTxtRecord {
-    fn clone(&self) -> Self {
-        self.to_map().into()
-    }
-}
-
-impl PartialEq for BonjourTxtRecord {
-    fn eq(&self, other: &Self) -> bool {
-        self.to_map() == other.to_map()
-    }
-}
-
-impl Eq for BonjourTxtRecord {}
-
-impl Default for BonjourTxtRecord {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl ToString for BonjourTxtRecord {
-    fn to_string(&self) -> String {
-        unsafe { c_str::raw_to_str(self.0.get_bytes_ptr() as *const c_char).to_string() }
     }
 }

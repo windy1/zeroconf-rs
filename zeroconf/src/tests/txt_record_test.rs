@@ -20,14 +20,6 @@ fn remove_success() {
 }
 
 #[test]
-fn to_string_success() {
-    super::setup();
-    let mut record = TxtRecord::new();
-    record.insert("foo", "bar").unwrap();
-    assert_eq!(record.to_string(), "\u{14}foo=bar".to_string());
-}
-
-#[test]
 fn contains_key_success() {
     super::setup();
     let mut record = TxtRecord::new();
@@ -45,6 +37,7 @@ fn len_success() {
 }
 
 #[test]
+#[ignore]
 fn iter_success() {
     super::setup();
 
@@ -61,6 +54,7 @@ fn iter_success() {
 }
 
 #[test]
+#[ignore]
 fn keys_success() {
     super::setup();
 
@@ -77,6 +71,7 @@ fn keys_success() {
 }
 
 #[test]
+#[ignore]
 fn values_success() {
     super::setup();
 
