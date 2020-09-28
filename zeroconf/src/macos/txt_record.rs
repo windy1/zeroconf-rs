@@ -8,7 +8,7 @@ use std::{mem, ptr};
 
 /// Interface for interfacting with Bonjour's TXT record capabilities.
 #[derive(Debug)]
-pub struct BonjourTxtRecord(ManagedTXTRecordRef);
+pub struct BonjourTxtRecord(pub(crate) ManagedTXTRecordRef);
 
 impl BonjourTxtRecord {
     /// Constructs a new TXT recoord
@@ -85,11 +85,6 @@ impl BonjourTxtRecord {
     /// Returns a new `txt_record::Iter` over the records values.
     pub fn values<'a>(&'a self) -> Box<dyn Iterator<Item = &'a str> + 'a> {
         Box::new(Values(Iter::new(self)))
-    }
-
-    /// Returns a raw pointer to the underlying TXT data.
-    pub fn as_ptr(&self) -> *const c_void {
-        self.0.get_bytes_ptr()
     }
 
     /// Returns the size of the raw bytes in the TXT record.

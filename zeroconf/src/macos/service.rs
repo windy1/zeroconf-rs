@@ -100,7 +100,7 @@ impl BonjourMdnsService {
         let txt_record = self
             .txt_record
             .as_ref()
-            .map(|t| t.as_ptr())
+            .map(|t| t.0.get_bytes_ptr())
             .unwrap_or_null();
 
         self.service.lock().unwrap().register_service(
