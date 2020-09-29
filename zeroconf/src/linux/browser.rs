@@ -5,13 +5,16 @@ use super::client::{ManagedAvahiClient, ManagedAvahiClientParams};
 use super::constants;
 use super::poll::ManagedAvahiSimplePoll;
 use super::raw_browser::{ManagedAvahiServiceBrowser, ManagedAvahiServiceBrowserParams};
-use super::resolver::{
-    ManagedAvahiServiceResolver, ManagedAvahiServiceResolverParams, ServiceResolverSet,
+use super::{
+    resolver::{
+        ManagedAvahiServiceResolver, ManagedAvahiServiceResolverParams, ServiceResolverSet,
+    },
+    string_list::ManagedAvahiStringList,
 };
 use crate::ffi::{c_str, AsRaw, FromRaw};
 use crate::prelude::*;
 use crate::Result;
-use crate::{EventLoop, NetworkInterface, ServiceDiscoveredCallback, ServiceDiscovery};
+use crate::{EventLoop, NetworkInterface, ServiceDiscoveredCallback, ServiceDiscovery, TxtRecord};
 use avahi_sys::{
     AvahiAddress, AvahiBrowserEvent, AvahiClient, AvahiClientFlags, AvahiClientState, AvahiIfIndex,
     AvahiLookupResultFlags, AvahiProtocol, AvahiResolverEvent, AvahiServiceBrowser,
@@ -256,6 +259,12 @@ unsafe fn handle_resolver_found(
 ) -> Result<()> {
     let address = avahi_util::avahi_address_to_string(addr);
 
+    let txt = if txt.is_null() {
+        None
+    } else {
+        Some(TxtRecord::from(ManagedAvahiStringList::clone_raw(txt)))
+    };
+
     let result = ServiceDiscovery::builder()
         .name(name.to_string())
         .kind(kind.to_string())
@@ -263,7 +272,7 @@ unsafe fn handle_resolver_found(
         .host_name(host_name.to_string())
         .address(address)
         .port(port)
-        .txt(None) // TODO
+        .txt(txt)
         .build()
         .unwrap();
 

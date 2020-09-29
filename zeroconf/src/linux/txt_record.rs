@@ -135,3 +135,9 @@ impl Iterator for Values<'_> {
         self.0.next().map(|e| e.1)
     }
 }
+
+impl From<ManagedAvahiStringList> for AvahiTxtRecord {
+    fn from(list: ManagedAvahiStringList) -> Self {
+        Self(UnsafeCell::new(list))
+    }
+}
