@@ -68,11 +68,15 @@ impl ManagedAvahiStringList {
     pub fn head(&mut self) -> AvahiStringListNode {
         AvahiStringListNode::new(self.0)
     }
+
+    pub(crate) fn clone_raw(raw: *mut AvahiStringList) -> Self {
+        Self(unsafe { avahi_string_list_copy(raw) })
+    }
 }
 
 impl Clone for ManagedAvahiStringList {
     fn clone(&self) -> Self {
-        Self(unsafe { avahi_string_list_copy(self.0) })
+        Self::clone_raw(self.0)
     }
 }
 

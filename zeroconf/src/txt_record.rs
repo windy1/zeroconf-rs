@@ -1,7 +1,12 @@
 //! TxtRecord utilities common to all platforms
 
 use crate::{Result, TxtRecord};
+use serde::de::{MapAccess, Visitor};
+use serde::ser::SerializeMap;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::HashMap;
+use std::fmt;
+use std::marker::PhantomData;
 
 /// Interface for interacting with underlying mDNS implementation TXT record capabilities
 pub trait TTxtRecord {
@@ -86,5 +91,71 @@ impl Eq for TxtRecord {}
 impl Default for TxtRecord {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Serialize for TxtRecord {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(self.len()))?;
+        for (key, value) in self.iter() {
+            map.serialize_entry(&key, &value)?;
+        }
+        map.end()
+    }
+}
+
+#[derive(new)]
+struct TxtRecordVisitor {
+    marker: PhantomData<fn() -> TxtRecord>,
+}
+
+impl<'de> Visitor<'de> for TxtRecordVisitor {
+    type Value = TxtRecord;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("map containing TXT record data")
+    }
+
+    fn visit_map<M>(self, mut access: M) -> std::result::Result<Self::Value, M::Error>
+    where
+        M: MapAccess<'de>,
+    {
+        let mut map = TxtRecord::new();
+
+        while let Some((key, value)) = access.next_entry()? {
+            map.insert(key, value).unwrap();
+        }
+
+        Ok(map)
+    }
+}
+
+impl<'de> Deserialize<'de> for TxtRecord {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_map(TxtRecordVisitor::new())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn serialize_success() {
+        crate::tests::setup();
+
+        let mut txt = TxtRecord::new();
+        txt.insert("foo", "bar").unwrap();
+
+        let json = serde_json::to_string(&txt).unwrap();
+        let txt_de: TxtRecord = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(txt, txt_de);
     }
 }

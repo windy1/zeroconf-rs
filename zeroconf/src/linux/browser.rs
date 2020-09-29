@@ -204,7 +204,7 @@ unsafe extern "C" fn resolve_callback(
     host_name: *const c_char,
     addr: *const AvahiAddress,
     port: u16,
-    _txt: *mut AvahiStringList,
+    txt: *mut AvahiStringList,
     _flags: AvahiLookupResultFlags,
     userdata: *mut c_void,
 ) {
@@ -231,6 +231,7 @@ unsafe extern "C" fn resolve_callback(
                 kind,
                 domain,
                 port,
+                txt,
             );
 
             if let Err(e) = result {
@@ -251,6 +252,7 @@ unsafe fn handle_resolver_found(
     kind: &str,
     domain: &str,
     port: u16,
+    txt: *mut AvahiStringList,
 ) -> Result<()> {
     let address = avahi_util::avahi_address_to_string(addr);
 
@@ -261,6 +263,7 @@ unsafe fn handle_resolver_found(
         .host_name(host_name.to_string())
         .address(address)
         .port(port)
+        .txt(None) // TODO
         .build()
         .unwrap();
 

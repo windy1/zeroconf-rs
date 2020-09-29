@@ -1,6 +1,6 @@
 //! Trait definition for cross-platform browser
 
-use crate::{EventLoop, NetworkInterface, Result};
+use crate::{EventLoop, NetworkInterface, Result, TxtRecord};
 use std::any::Any;
 use std::sync::Arc;
 
@@ -52,4 +52,5 @@ pub struct ServiceDiscovery {
     host_name: String,
     address: String,
     port: u16,
+    txt: Option<TxtRecord>,
 }

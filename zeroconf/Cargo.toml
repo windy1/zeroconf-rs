@@ -18,12 +18,13 @@ derive-getters = "0.2.0"
 derive_builder = "0.9.0"
 derive-new = "0.5.8"
 log = "0.4.11"
-maplit = "1.0.2"
 libc = "0.2.77"
 zeroconf-macros = { path = "../zeroconf-macros", version = "0.1.1" }
 
 [dev-dependencies]
 env_logger = "0.7.1"
+maplit = "1.0.2"
+serde_json = "1.0.57"
 
 [target.'cfg(unix)'.dependencies]
 avahi-sys = "0.10.0"
