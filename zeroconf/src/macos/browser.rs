@@ -195,7 +195,7 @@ unsafe fn handle_resolve(
 
     ctx.resolved_port = port;
 
-    ctx.resolved_txt = if txt_len > 0 && !txt_record.is_null() {
+    ctx.resolved_txt = if txt_len > 1 {
         Some(TxtRecord::from(ManagedTXTRecordRef::clone_raw(
             txt_record, txt_len,
         )?))
