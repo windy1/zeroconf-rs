@@ -164,6 +164,14 @@ impl Default for ManagedTXTRecordRef {
     }
 }
 
+impl Clone for ManagedTXTRecordRef {
+    fn clone(&self) -> Self {
+        unsafe {
+            Self::clone_raw(self.get_bytes_ptr() as *const c_uchar, self.get_length()).unwrap()
+        }
+    }
+}
+
 impl Drop for ManagedTXTRecordRef {
     fn drop(&mut self) {
         unsafe { TXTRecordDeallocate(&mut self.0) };

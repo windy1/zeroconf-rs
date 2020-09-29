@@ -9,7 +9,7 @@ use std::ffi::CString;
 use std::{mem, ptr};
 
 /// Interface for interfacting with Bonjour's TXT record capabilities.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BonjourTxtRecord(pub(crate) ManagedTXTRecordRef);
 
 impl TTxtRecord for BonjourTxtRecord {
@@ -79,6 +79,12 @@ impl TTxtRecord for BonjourTxtRecord {
 impl From<ManagedTXTRecordRef> for BonjourTxtRecord {
     fn from(txt: ManagedTXTRecordRef) -> Self {
         Self(txt)
+    }
+}
+
+impl PartialEq for BonjourTxtRecord {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_map() == other.to_map()
     }
 }
 

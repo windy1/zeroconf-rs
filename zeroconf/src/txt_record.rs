@@ -9,7 +9,7 @@ use std::fmt;
 use std::marker::PhantomData;
 
 /// Interface for interacting with underlying mDNS implementation TXT record capabilities
-pub trait TTxtRecord {
+pub trait TTxtRecord: Clone + PartialEq + Eq {
     /// Constructs a new TXT record
     fn new() -> Self;
 
@@ -18,7 +18,7 @@ pub trait TTxtRecord {
 
     /// Returns the value at the specified key or `None` if no such key exists.
     ///
-    /// This function returns a owned `String` because there are no guarantees that the
+    /// This function returns an owned `String` because there are no guarantees that the
     /// implementation provides access to the underlying value pointer.
     fn get(&self, key: &str) -> Option<String>;
 
@@ -71,18 +71,6 @@ impl From<HashMap<&str, &str>> for TxtRecord {
             .map(|(k, v)| (k.to_string(), v.to_string()))
             .collect::<HashMap<String, String>>()
             .into()
-    }
-}
-
-impl Clone for TxtRecord {
-    fn clone(&self) -> Self {
-        self.to_map().into()
-    }
-}
-
-impl PartialEq for TxtRecord {
-    fn eq(&self, other: &Self) -> bool {
-        self.to_map() == other.to_map()
     }
 }
 

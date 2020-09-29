@@ -91,6 +91,24 @@ impl AvahiTxtRecord {
     }
 }
 
+impl From<ManagedAvahiStringList> for AvahiTxtRecord {
+    fn from(list: ManagedAvahiStringList) -> Self {
+        Self(UnsafeCell::new(list))
+    }
+}
+
+impl Clone for AvahiTxtRecord {
+    fn clone(&self) -> Self {
+        Self::from(self.inner().clone())
+    }
+}
+
+impl PartialEq for AvahiTxtRecord {
+    fn eq(&self, other: &Self) -> bool {
+        self.inner() == other.inner()
+    }
+}
+
 pub struct Iter<'a> {
     node: Option<AvahiStringListNode<'a>>,
 }
@@ -133,11 +151,5 @@ impl Iterator for Values<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|e| e.1)
-    }
-}
-
-impl From<ManagedAvahiStringList> for AvahiTxtRecord {
-    fn from(list: ManagedAvahiStringList) -> Self {
-        Self(UnsafeCell::new(list))
     }
 }
