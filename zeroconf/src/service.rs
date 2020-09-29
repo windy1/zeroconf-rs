@@ -1,3 +1,5 @@
+//! Trait definition for cross-platform service.
+
 use crate::{EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, TxtRecord};
 use std::any::Any;
 

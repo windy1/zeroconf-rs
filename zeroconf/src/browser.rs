@@ -1,3 +1,5 @@
+//! Trait definition for cross-platform browser
+
 use crate::{EventLoop, NetworkInterface, Result, ServiceDiscoveredCallback};
 use std::any::Any;
 

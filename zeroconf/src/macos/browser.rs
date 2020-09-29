@@ -2,6 +2,7 @@ use super::service_ref::{
     BrowseServicesParams, GetAddressInfoParams, ManagedDNSServiceRef, ServiceResolveParams,
 };
 use super::{bonjour_util, constants};
+use crate::browser::TMdnsBrowser;
 use crate::builder::BuilderDelegate;
 use crate::ffi::{self, c_str, AsRaw, FromRaw};
 use crate::{EventLoop, NetworkInterface, Result};
@@ -23,10 +24,8 @@ pub struct BonjourMdnsBrowser {
     context: *mut BonjourBrowserContext,
 }
 
-impl BonjourMdnsBrowser {
-    /// Creates a new `BonjourMdnsBrowser` that browses for the specified `kind`
-    /// (e.g. `_http._tcp`).
-    pub fn new(kind: &str) -> Self {
+impl TMdnsBrowser for BonjourMdnsBrowser {
+    fn new(kind: &str) -> Self {
         Self {
             service: Arc::default(),
             kind: c_string!(kind),
@@ -35,33 +34,22 @@ impl BonjourMdnsBrowser {
         }
     }
 
-    /// Sets the network interface on which to browse for services on.
-    ///
-    /// Most applications will want to use the default value `NetworkInterface::Unspec` to browse
-    /// on all available interfaces.
-    pub fn set_network_interface(&mut self, interface: NetworkInterface) {
+    fn set_network_interface(&mut self, interface: NetworkInterface) {
         self.interface_index = bonjour_util::interface_index(interface);
     }
 
-    /// Sets the [`ServiceDiscoveredCallback`] that is invoked when the browser has discovered and
-    /// resolved a service.
-    ///
-    /// [`ServiceDiscoveredCallback`]: ../type.ServiceDiscoveredCallback.html
-    pub fn set_service_discovered_callback(
+    fn set_service_discovered_callback(
         &self,
         service_discovered_callback: Box<ServiceDiscoveredCallback>,
     ) {
         unsafe { (*self.context).service_discovered_callback = Some(service_discovered_callback) };
     }
 
-    /// Sets the optional user context to pass through to the callback. This is useful if you need
-    /// to share state between pre and post-callback. The context type must implement `Any`.
-    pub fn set_context(&mut self, context: Box<dyn Any>) {
+    fn set_context(&mut self, context: Box<dyn Any>) {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
-    /// Starts the browser. Returns an `EventLoop` which can be called to keep the browser alive.
-    pub fn browse_services(&mut self) -> Result<EventLoop> {
+    fn browse_services(&mut self) -> Result<EventLoop> {
         debug!("Browsing services: {:?}", self);
 
         self.service.lock().unwrap().browse_services(

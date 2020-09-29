@@ -1,3 +1,5 @@
+//! Low level interface for interacting with `AvahiStringList`.
+
 use crate::ffi::c_str;
 use avahi_sys::{
     avahi_free, avahi_string_list_add_pair, avahi_string_list_copy, avahi_string_list_equal,
@@ -9,18 +11,36 @@ use libc::{c_char, c_void};
 use std::marker::PhantomData;
 use std::ptr;
 
+/// Wraps the `AvahiStringList` pointer from the raw Avahi bindings.
+///
+/// `zeroconf::TxtRecord` provides the cross-platform bindings for this functionality.
 #[derive(Debug)]
 pub struct ManagedAvahiStringList(*mut AvahiStringList);
 
 impl ManagedAvahiStringList {
+    /// Creates a new empty TXT record
     pub fn new() -> Self {
         Self(unsafe { avahi_string_list_new(ptr::null()) })
     }
 
+    /// Delegate function for [`avahi_string_list_add_pair()`].
+    ///
+    /// # Safety
+    /// This function is unsafe because it provides no guarantees about the given pointers that are
+    /// dereferenced.
+    ///
+    /// [`avahi_string_list_add_pair()`]: https://avahi.org/doxygen/html/strlst_8h.html#a72e1b0f724f0c29b5e3c8792f385223f
     pub unsafe fn add_pair(&mut self, key: *const c_char, value: *const c_char) {
         self.0 = avahi_string_list_add_pair(self.0, key, value);
     }
 
+    /// Delegate function for [`avahi_string_list_find()`]. Returns a new `AvahiStringListNode`.
+    ///
+    /// # Safety
+    /// This function is unsafe because it provides no guarantees about the given pointers that are
+    /// dereferenced.
+    ///
+    /// [`avahi_string_list_find()`]: https://avahi.org/doxygen/html/strlst_8h.html#aafc54c009a2a1608b517c15a7cf29944
     pub unsafe fn find(&mut self, key: *const c_char) -> Option<AvahiStringListNode> {
         let node = avahi_string_list_find(self.0, key);
         if !node.is_null() {
@@ -30,16 +50,23 @@ impl ManagedAvahiStringList {
         }
     }
 
-    pub fn head(&mut self) -> AvahiStringListNode {
-        AvahiStringListNode::new(self.0)
-    }
-
+    /// Delegate function for [`avahi_string_list_length()`].
+    ///
+    /// [`avahi_string_list_length()`]: https://avahi.org/doxygen/html/strlst_8h.html#a806c571b338e882390a180b1360c1456
     pub fn length(&self) -> u32 {
         unsafe { avahi_string_list_length(self.0) }
     }
 
+    /// Delegate function for [`avahi_string_list_to_string()`].
+    ///
+    /// [`avahi_string_list_to_string()`]: https://avahi.org/doxygen/html/strlst_8h.html#a5c4b9ab709f22f7741c165ca3756a78b
     pub fn to_string(&self) -> AvahiString {
         unsafe { avahi_string_list_to_string(self.0).into() }
+    }
+
+    /// Returns the first node in the list.
+    pub fn head(&mut self) -> AvahiStringListNode {
+        AvahiStringListNode::new(self.0)
     }
 }
 
@@ -69,6 +96,9 @@ impl Drop for ManagedAvahiStringList {
     }
 }
 
+/// Represents a node or sub-list in an `AvahiStringList`. This struct is similar to it's parent,
+/// but it does not free the `AvahiStringList` once dropped and is bound to the lifetime of it's
+/// parent.
 #[derive(new)]
 pub struct AvahiStringListNode<'a> {
     list: *mut AvahiStringList,
@@ -76,6 +106,7 @@ pub struct AvahiStringListNode<'a> {
 }
 
 impl<'a> AvahiStringListNode<'a> {
+    /// Returns the next node in the list, or `None` if last node.
     pub fn next(self) -> Option<AvahiStringListNode<'a>> {
         let next = unsafe { avahi_string_list_get_next(self.list) };
         if next.is_null() {
@@ -85,6 +116,7 @@ impl<'a> AvahiStringListNode<'a> {
         }
     }
 
+    /// Returns the `AvahiPair` for this list.
     pub fn get_pair(&mut self) -> AvahiPair {
         let mut key: *mut c_char = ptr::null_mut();
         let mut value: *mut c_char = ptr::null_mut();
@@ -98,6 +130,7 @@ impl<'a> AvahiStringListNode<'a> {
     }
 }
 
+/// Represents a key-value pair in an `AvahiStringList`.
 #[derive(new, Getters)]
 pub struct AvahiPair {
     key: AvahiString,
@@ -105,10 +138,13 @@ pub struct AvahiPair {
     value_size: usize,
 }
 
+/// Represents a string value returned by `AvahiStringList`. The underlying `*mut c_char` is freed
+/// using the appropriate Avahi function.
 #[derive(new)]
 pub struct AvahiString(*mut c_char);
 
 impl AvahiString {
+    /// Returns this `AvahiStr` as a `&str` or `None` if null.
     pub fn as_str(&self) -> Option<&str> {
         if self.0.is_null() {
             None
