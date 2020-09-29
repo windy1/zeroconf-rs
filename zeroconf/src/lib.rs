@@ -125,9 +125,8 @@ extern crate derive_getters;
 extern crate log;
 #[macro_use]
 extern crate derive_new;
-
-#[cfg(test)]
 #[macro_use]
+#[allow(unused_imports)]
 extern crate maplit;
 
 mod discovery;

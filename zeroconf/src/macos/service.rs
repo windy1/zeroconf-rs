@@ -1,3 +1,5 @@
+//! Bonjour implementation for cross-platform service.
+
 use super::service_ref::{ManagedDNSServiceRef, RegisterServiceParams};
 use super::{bonjour_util, constants};
 use crate::builder::BuilderDelegate;

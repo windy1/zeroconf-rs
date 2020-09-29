@@ -1,9 +1,10 @@
+//! Bonjour implementation for cross-platform TXT record.
+
 use super::txt_record_ref::ManagedTXTRecordRef;
 use crate::ffi::c_str;
 use crate::txt_record::TTxtRecord;
 use crate::Result;
 use libc::{c_char, c_void};
-use std::collections::HashMap;
 use std::ffi::CString;
 use std::{mem, ptr};
 

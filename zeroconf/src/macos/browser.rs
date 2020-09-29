@@ -1,3 +1,5 @@
+//! Bonjour implementation for cross-platform browser
+
 use super::service_ref::{
     BrowseServicesParams, GetAddressInfoParams, ManagedDNSServiceRef, ServiceResolveParams,
 };
@@ -38,7 +40,7 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
     }
 
     fn set_service_discovered_callback(
-        &self,
+        &mut self,
         service_discovered_callback: Box<ServiceDiscoveredCallback>,
     ) {
         unsafe { (*self.context).service_discovered_callback = Some(service_discovered_callback) };
