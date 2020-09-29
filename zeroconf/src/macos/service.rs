@@ -2,10 +2,9 @@
 
 use super::service_ref::{ManagedDNSServiceRef, RegisterServiceParams};
 use super::{bonjour_util, constants};
-use crate::builder::BuilderDelegate;
 use crate::ffi::c_str::{self, AsCChars};
 use crate::ffi::{FromRaw, UnwrapOrNull};
-use crate::service::TMdnsService;
+use crate::prelude::*;
 use crate::{
     EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration, TxtRecord,
 };

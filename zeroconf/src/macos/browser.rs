@@ -3,11 +3,11 @@
 use super::service_ref::{
     BrowseServicesParams, GetAddressInfoParams, ManagedDNSServiceRef, ServiceResolveParams,
 };
+use super::txt_record_ref::ManagedTXTRecordRef;
 use super::{bonjour_util, constants};
-use crate::browser::TMdnsBrowser;
-use crate::builder::BuilderDelegate;
 use crate::ffi::{self, c_str, AsRaw, FromRaw};
-use crate::{EventLoop, NetworkInterface, Result};
+use crate::prelude::*;
+use crate::{EventLoop, NetworkInterface, Result, TxtRecord};
 use crate::{ServiceDiscoveredCallback, ServiceDiscovery};
 use bonjour_sys::{sockaddr, DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_uchar, c_void, sockaddr_in};
@@ -81,6 +81,7 @@ struct BonjourBrowserContext {
     resolved_kind: Option<String>,
     resolved_domain: Option<String>,
     resolved_port: u16,
+    resolved_txt: Option<TxtRecord>,
     user_context: Option<Arc<dyn Any>>,
 }
 
@@ -158,28 +159,49 @@ unsafe extern "C" fn resolve_callback(
     _fullname: *const c_char,
     host_target: *const c_char,
     port: u16,
-    _txt_len: u16,
-    _txt_record: *const c_uchar,
+    txt_len: u16,
+    txt_record: *const c_uchar,
     context: *mut c_void,
 ) {
     let ctx = BonjourBrowserContext::from_raw(context);
-    if let Err(e) = handle_resolve(ctx, error, port, interface_index, host_target) {
+
+    let result = handle_resolve(
+        ctx,
+        error,
+        port,
+        interface_index,
+        host_target,
+        txt_len,
+        txt_record,
+    );
+
+    if let Err(e) = result {
         ctx.invoke_callback(Err(e));
     }
 }
 
-fn handle_resolve(
+unsafe fn handle_resolve(
     ctx: &mut BonjourBrowserContext,
     error: DNSServiceErrorType,
     port: u16,
     interface_index: u32,
     host_target: *const c_char,
+    txt_len: u16,
+    txt_record: *const c_uchar,
 ) -> Result<()> {
     if error != 0 {
         return Err(format!("error reported by resolve_callback: (code: {})", error).into());
     }
 
     ctx.resolved_port = port;
+
+    ctx.resolved_txt = if txt_len > 0 && !txt_record.is_null() {
+        Some(TxtRecord::from(ManagedTXTRecordRef::clone_raw(
+            txt_record, txt_len,
+        )?))
+    } else {
+        None
+    };
 
     ManagedDNSServiceRef::default().get_address_info(
         GetAddressInfoParams::builder()
@@ -239,6 +261,7 @@ unsafe fn handle_get_address_info(
         .host_name(hostname)
         .address(ip)
         .port(ctx.resolved_port)
+        .txt(ctx.resolved_txt.take())
         .build()
         .expect("could not build ServiceResolution");
 

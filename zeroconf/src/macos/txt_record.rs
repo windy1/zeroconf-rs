@@ -76,6 +76,12 @@ impl TTxtRecord for BonjourTxtRecord {
     }
 }
 
+impl From<ManagedTXTRecordRef> for BonjourTxtRecord {
+    fn from(txt: ManagedTXTRecordRef) -> Self {
+        Self(txt)
+    }
+}
+
 /// An `Iterator` that allows iteration over a [`BonjourTxtRecord`] similar to a `HashMap`.
 #[derive(new)]
 pub struct Iter<'a> {

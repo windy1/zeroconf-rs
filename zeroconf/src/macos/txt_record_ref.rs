@@ -6,7 +6,8 @@ use bonjour_sys::{
     TXTRecordGetCount, TXTRecordGetItemAtIndex, TXTRecordGetLength, TXTRecordGetValuePtr,
     TXTRecordRef, TXTRecordRemoveValue, TXTRecordSetValue,
 };
-use libc::{c_char, c_void};
+use libc::{c_char, c_uchar, c_void};
+use std::ffi::CString;
 use std::{fmt, mem, ptr};
 
 /// Wraps the `ManagedTXTRecordRef` type from the raw Bonjour bindings.
@@ -88,7 +89,7 @@ impl ManagedTXTRecordRef {
     ///
     /// [`TXTRecordGetCount`]: https://developer.apple.com/documentation/dnssd/1804706-txtrecordgetcount?language=objc
     pub fn get_count(&self) -> u16 {
-        unsafe { TXTRecordGetCount(self.get_length(), self.get_bytes_ptr()) }
+        _get_count(self.get_length(), self.get_bytes_ptr())
     }
 
     /// Delegate function for [`TXTRecordGetItemAtIndex`].
@@ -106,17 +107,14 @@ impl ManagedTXTRecordRef {
         value_len: *mut u8,
         value: *mut *const c_void,
     ) -> Result<()> {
-        bonjour!(
-            TXTRecordGetItemAtIndex(
-                self.get_length(),
-                self.get_bytes_ptr(),
-                item_index,
-                key_buf_len,
-                key,
-                value_len,
-                value,
-            ),
-            "could get item at index for TXT record"
+        _get_item_at_index(
+            self.get_length(),
+            self.get_bytes_ptr(),
+            item_index,
+            key_buf_len,
+            key,
+            value_len,
+            value,
         )
     }
 
@@ -129,6 +127,34 @@ impl ManagedTXTRecordRef {
     /// [`TXTRecordGetValuePtr`]: https://developer.apple.com/documentation/dnssd/1804709-txtrecordgetvalueptr?language=objc
     pub unsafe fn get_value_ptr(&self, key: *const c_char, value_len: *mut u8) -> *const c_void {
         TXTRecordGetValuePtr(self.get_length(), self.get_bytes_ptr(), key, value_len)
+    }
+
+    pub(crate) unsafe fn clone_raw(raw: *const c_uchar, size: u16) -> Result<Self> {
+        let chars = c_string!(alloc(size as usize)).into_raw() as *mut c_uchar;
+        ptr::copy(raw, chars, size as usize);
+        let chars = CString::from_raw(chars as *mut c_char);
+
+        let mut record = Self::new();
+
+        for i in 0.._get_count(size, chars.as_ptr() as *const c_void) {
+            let key = c_string!(alloc(256));
+            let mut value_len: u8 = 0;
+            let mut value: *const c_void = ptr::null_mut();
+
+            _get_item_at_index(
+                size,
+                chars.as_ptr() as *const c_void,
+                i,
+                256,
+                key.as_ptr() as *mut c_char,
+                &mut value_len,
+                &mut value,
+            )?;
+
+            record.set_value(key.as_ptr() as *mut c_char, value_len, value)?;
+        }
+
+        Ok(record)
     }
 }
 
@@ -148,6 +174,25 @@ impl fmt::Debug for ManagedTXTRecordRef {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("ManagedTXTRecordRef").finish()
     }
+}
+
+fn _get_count(length: u16, data: *const c_void) -> u16 {
+    unsafe { TXTRecordGetCount(length, data) }
+}
+
+fn _get_item_at_index(
+    length: u16,
+    data: *const c_void,
+    item_index: u16,
+    key_buf_len: u16,
+    key: *mut c_char,
+    value_len: *mut u8,
+    value: *mut *const c_void,
+) -> Result<()> {
+    bonjour!(
+        TXTRecordGetItemAtIndex(length, data, item_index, key_buf_len, key, value_len, value),
+        "could get item at index for TXT record"
+    )
 }
 
 #[cfg(test)]
