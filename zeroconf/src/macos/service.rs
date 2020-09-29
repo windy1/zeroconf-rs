@@ -3,6 +3,7 @@ use super::{bonjour_util, constants};
 use crate::builder::BuilderDelegate;
 use crate::ffi::c_str::{self, AsCChars};
 use crate::ffi::{FromRaw, UnwrapOrNull};
+use crate::service::TMdnsService;
 use crate::{
     EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration, TxtRecord,
 };
@@ -26,10 +27,8 @@ pub struct BonjourMdnsService {
     context: *mut BonjourServiceContext,
 }
 
-impl BonjourMdnsService {
-    /// Creates a new `BonjourMdnsService` with the specified `kind` (e.g. `_http._tcp`) and
-    /// `port`.
-    pub fn new(kind: &str, port: u16) -> Self {
+impl TMdnsService for BonjourMdnsService {
+    fn new(kind: &str, port: u16) -> Self {
         Self {
             service: Arc::default(),
             kind: c_string!(kind),
@@ -45,56 +44,35 @@ impl BonjourMdnsService {
 
     /// Sets the name to register this service under. If no name is set, Bonjour will
     /// automatically assign one (usually to the name of the machine).
-    pub fn set_name(&mut self, name: &str) {
+    fn set_name(&mut self, name: &str) {
         self.name = Some(c_string!(name));
     }
 
-    /// Sets the network interface to bind this service to.
-    ///
-    /// Most applications will want to use the default value `NetworkInterface::Unspec` to bind to
-    /// all available interfaces.
-    pub fn set_network_interface(&mut self, interface: NetworkInterface) {
+    fn set_network_interface(&mut self, interface: NetworkInterface) {
         self.interface_index = bonjour_util::interface_index(interface);
     }
 
-    /// Sets the domain on which to advertise the service.
-    ///
-    /// Most applications will want to use the default value of `ptr::null()` to register to the
-    /// default domain.
-    pub fn set_domain(&mut self, domain: &str) {
+    fn set_domain(&mut self, domain: &str) {
         self.domain = Some(c_string!(domain));
     }
 
-    /// Sets the SRV target host name.
-    ///
-    /// Most applications will want to use the default value of `ptr::null()` to use the machine's
-    // default host name.
-    pub fn set_host(&mut self, host: &str) {
+    fn set_host(&mut self, host: &str) {
         self.host = Some(c_string!(host));
     }
 
-    /// Sets the optional `TxtRecord` to register this service with.
-    pub fn set_txt_record(&mut self, txt_record: TxtRecord) {
+    fn set_txt_record(&mut self, txt_record: TxtRecord) {
         self.txt_record = Some(txt_record);
     }
 
-    /// Sets the [`ServiceRegisteredCallback`] that is invoked when the service has been
-    /// registered.
-    ///
-    /// [`ServiceRegisteredCallback`]: ../type.ServiceRegisteredCallback.html
-    pub fn set_registered_callback(&mut self, registered_callback: Box<ServiceRegisteredCallback>) {
+    fn set_registered_callback(&mut self, registered_callback: Box<ServiceRegisteredCallback>) {
         unsafe { (*self.context).registered_callback = Some(registered_callback) };
     }
 
-    /// Sets the optional user context to pass through to the callback. This is useful if you need
-    /// to share state between pre and post-callback. The context type must implement `Any`.
-    pub fn set_context(&mut self, context: Box<dyn Any>) {
+    fn set_context(&mut self, context: Box<dyn Any>) {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
-    /// Registers and start's the service. Returns an `EventLoop` which can be called to keep
-    /// the service alive.
-    pub fn register(&mut self) -> Result<EventLoop> {
+    fn register(&mut self) -> Result<EventLoop> {
         debug!("Registering service: {:?}", self);
 
         let txt_len = self

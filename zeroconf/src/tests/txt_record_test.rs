@@ -59,8 +59,6 @@ fn iter_success() {
 fn keys_success() {
     super::setup();
 
-    debug!("keys_success()");
-
     let mut record = TxtRecord::new();
     record.insert("foo", "bar").unwrap();
     record.insert("baz", "qux").unwrap();
@@ -75,8 +73,6 @@ fn keys_success() {
 #[ignore]
 fn values_success() {
     super::setup();
-
-    debug!("values_success()");
 
     let mut record = TxtRecord::new();
     record.insert("foo", "bar").unwrap();

@@ -2,6 +2,7 @@ use std::any::Any;
 use std::sync::Arc;
 use std::time::Duration;
 use zeroconf::{MdnsBrowser, ServiceDiscovery};
+use zeroconf::prelude::*;
 
 fn main() {
     let mut browser = MdnsBrowser::new("_http._tcp");

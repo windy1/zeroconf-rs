@@ -29,7 +29,6 @@ pub struct AvahiMdnsService {
 }
 
 impl AvahiMdnsService {
-    /// Creates a new `AvahiMdnsService` with the specified `kind` (e.g. `_http._tcp`) and `port`.
     pub fn new(kind: &str, port: u16) -> Self {
         Self {
             client: None,
@@ -49,51 +48,30 @@ impl AvahiMdnsService {
         unsafe { (*self.context).name = Some(c_string!(name)) };
     }
 
-    /// Sets the network interface to bind this service to.
-    ///
-    /// Most applications will want to use the default value `NetworkInterface::Unspec` to bind to
-    /// all available interfaces.
     pub fn set_network_interface(&mut self, interface: NetworkInterface) {
         unsafe { (*self.context).interface_index = avahi_util::interface_index(interface) };
     }
 
-    /// Sets the domain on which to advertise the service.
-    ///
-    /// Most applications will want to use the default value of `ptr::null()` to register to the
-    /// default domain.
     pub fn set_domain(&mut self, _domain: &str) {
         todo!()
     }
 
-    /// Sets the SRV target host name.
-    ///
-    /// Most applications will want to use the default value of `ptr::null()` to use the machine's
-    // default host name.
     pub fn set_host(&mut self, _host: &str) {
         todo!()
     }
 
-    /// Sets the optional `TxtRecord` to register this service with.
     pub fn set_txt_record(&mut self, txt_record: TxtRecord) {
         self.txt_record = Some(txt_record);
     }
 
-    /// Sets the [`ServiceRegisteredCallback`] that is invoked when the service has been
-    /// registered.
-    ///
-    /// [`ServiceRegisteredCallback`]: ../type.ServiceRegisteredCallback.html
     pub fn set_registered_callback(&mut self, registered_callback: Box<ServiceRegisteredCallback>) {
         unsafe { (*self.context).registered_callback = Some(registered_callback) };
     }
 
-    /// Sets the optional user context to pass through to the callback. This is useful if you need
-    /// to share state between pre and post-callback. The context type must implement `Any`.
     pub fn set_context(&mut self, context: Box<dyn Any>) {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
-    /// Registers and start's the service. Returns an `EventLoop` which can be called to keep
-    /// the service alive.
     pub fn register(&mut self) -> Result<EventLoop> {
         debug!("Registering service: {:?}", self);
 

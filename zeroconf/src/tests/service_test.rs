@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use crate::{MdnsBrowser, MdnsService};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;

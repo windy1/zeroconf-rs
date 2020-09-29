@@ -80,7 +80,7 @@ impl PartialEq for TxtRecord {
     }
 }
 
-// impl Eq for TxtRecord {}
+impl Eq for TxtRecord {}
 
 impl Default for TxtRecord {
     fn default() -> Self {

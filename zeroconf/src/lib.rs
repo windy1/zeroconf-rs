@@ -22,50 +22,50 @@
 //! use std::time::Duration;
 //! use zeroconf::{MdnsService, ServiceRegistration, TxtRecord};
 //! use zeroconf::prelude::*;
-//! 
+//!
 //! #[derive(Default, Debug)]
 //! pub struct Context {
 //!     service_name: String,
 //! }
-//! 
+//!
 //! fn main() {
 //!     let mut service = MdnsService::new("_http._tcp", 8080);
 //!     let mut txt_record = TxtRecord::new();
 //!     let context: Arc<Mutex<Context>> = Arc::default();
-//! 
+//!
 //!     txt_record.insert("foo", "bar").unwrap();
-//! 
+//!
 //!     service.set_registered_callback(Box::new(on_service_registered));
 //!     service.set_context(Box::new(context));
 //!     service.set_txt_record(txt_record);
-//! 
+//!
 //!     let event_loop = service.register().unwrap();
-//! 
+//!
 //!     loop {
 //!         // calling `poll()` will keep this service alive
 //!         event_loop.poll(Duration::from_secs(0)).unwrap();
 //!     }
 //! }
-//! 
+//!
 //! fn on_service_registered(
 //!     result: zeroconf::Result<ServiceRegistration>,
 //!     context: Option<Arc<dyn Any>>,
 //! ) {
 //!     let service = result.unwrap();
-//! 
+//!
 //!     println!("Service registered: {:?}", service);
-//! 
+//!
 //!     let context = context
 //!         .as_ref()
 //!         .unwrap()
 //!         .downcast_ref::<Arc<Mutex<Context>>>()
 //!         .unwrap()
 //!         .clone();
-//! 
+//!
 //!     context.lock().unwrap().service_name = service.name().clone();
-//! 
+//!
 //!     println!("Context: {:?}", context);
-//! 
+//!
 //!     // ...
 //! }
 //! ```
@@ -76,6 +76,7 @@
 //! use std::sync::Arc;
 //! use std::time::Duration;
 //! use zeroconf::{MdnsBrowser, ServiceDiscovery};
+//! use zeroconf::prelude::*;
 //!
 //! fn main() {
 //!     let mut browser = MdnsBrowser::new("_http._tcp");
@@ -138,10 +139,12 @@ mod interface;
 mod tests;
 mod txt_record;
 
+pub mod browser;
 pub mod builder;
 pub mod error;
 pub mod ffi;
 pub mod prelude;
+pub mod service;
 
 #[cfg(target_os = "linux")]
 pub mod linux;

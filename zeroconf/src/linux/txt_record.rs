@@ -8,6 +8,7 @@ use std::cell::UnsafeCell;
 pub struct AvahiTxtRecord(UnsafeCell<ManagedAvahiStringList>);
 
 impl AvahiTxtRecord {
+    #[allow(clippy::mut_from_ref)]
     fn inner(&self) -> &mut ManagedAvahiStringList {
         unsafe { &mut *self.0.get() }
     }
@@ -98,11 +99,7 @@ impl Iterator for Iter<'_> {
     type Item = (String, String);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.node.is_none() {
-            return None;
-        }
-
-        let mut n = self.node.take().unwrap();
+        let mut n = self.node.take()?;
         let pair = n.get_pair();
         self.node = n.next();
 
