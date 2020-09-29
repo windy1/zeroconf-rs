@@ -5,7 +5,7 @@ use super::client::{self, ManagedAvahiClient, ManagedAvahiClientParams};
 use super::constants;
 use super::entry_group::{AddServiceParams, ManagedAvahiEntryGroup, ManagedAvahiEntryGroupParams};
 use super::poll::ManagedAvahiSimplePoll;
-use crate::ffi::{c_str, AsRaw, FromRaw};
+use crate::ffi::{c_str, AsRaw, FromRaw, UnwrapOrNull};
 use crate::prelude::*;
 use crate::{
     EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration, TxtRecord,
@@ -18,7 +18,6 @@ use libc::c_void;
 use std::any::Any;
 use std::ffi::CString;
 use std::fmt::{self, Formatter};
-use std::ptr;
 use std::sync::Arc;
 
 #[derive(Debug)]
@@ -51,12 +50,12 @@ impl TMdnsService for AvahiMdnsService {
         unsafe { (*self.context).interface_index = avahi_util::interface_index(interface) };
     }
 
-    fn set_domain(&mut self, _domain: &str) {
-        todo!()
+    fn set_domain(&mut self, domain: &str) {
+        unsafe { (*self.context).domain = Some(c_string!(domain)) };
     }
 
-    fn set_host(&mut self, _host: &str) {
-        todo!()
+    fn set_host(&mut self, host: &str) {
+        unsafe { (*self.context).host = Some(c_string!(host)) };
     }
 
     fn set_txt_record(&mut self, txt_record: TxtRecord) {
@@ -103,6 +102,8 @@ struct AvahiServiceContext {
     group: Option<ManagedAvahiEntryGroup>,
     txt_record: Option<TxtRecord>,
     interface_index: AvahiIfIndex,
+    domain: Option<CString>,
+    host: Option<CString>,
     registered_callback: Option<Box<ServiceRegisteredCallback>>,
     user_context: Option<Arc<dyn Any>>,
 }
@@ -116,6 +117,8 @@ impl AvahiServiceContext {
             group: None,
             txt_record: None,
             interface_index: constants::AVAHI_IF_UNSPEC,
+            domain: None,
+            host: None,
             registered_callback: None,
             user_context: None,
         }
@@ -199,8 +202,8 @@ unsafe fn create_service(
                 .flags(0)
                 .name(context.name.as_ref().unwrap().as_ptr())
                 .kind(context.kind.as_ptr())
-                .domain(ptr::null_mut())
-                .host(ptr::null_mut())
+                .domain(context.domain.as_ref().map(|d| d.as_ptr()).unwrap_or_null())
+                .host(context.host.as_ref().map(|h| h.as_ptr()).unwrap_or_null())
                 .port(context.port)
                 .txt(context.txt_record.as_ref().map(|t| t.inner()))
                 .build()?,
