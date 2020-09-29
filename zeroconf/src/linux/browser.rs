@@ -247,6 +247,7 @@ unsafe extern "C" fn resolve_callback(
     context.resolvers.remove_raw(resolver);
 }
 
+#[allow(clippy::too_many_arguments)]
 unsafe fn handle_resolver_found(
     context: &AvahiBrowserContext,
     host_name: &str,
