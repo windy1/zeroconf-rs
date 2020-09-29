@@ -136,7 +136,6 @@ mod macros;
 mod interface;
 #[cfg(test)]
 mod tests;
-mod txt_record;
 
 pub mod browser;
 pub mod error;
@@ -144,6 +143,7 @@ pub mod event_loop;
 pub mod ffi;
 pub mod prelude;
 pub mod service;
+pub mod txt_record;
 
 #[cfg(target_os = "linux")]
 pub mod linux;
