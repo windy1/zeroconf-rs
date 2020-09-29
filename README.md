@@ -14,7 +14,6 @@ $ sudo apt install xorg-dev libxcb-shape0-dev libxcb-xfixes0-dev clang
 
 ## TODO
 
-* TXT Record support
 * Windows support
 * You tell me...
 
