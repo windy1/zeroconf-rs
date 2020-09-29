@@ -5,6 +5,7 @@ use avahi_sys::{
     avahi_string_list_length, avahi_string_list_new, avahi_string_list_to_string, AvahiStringList,
 };
 use libc::{c_char, c_void};
+use std::marker::PhantomData;
 use std::ptr;
 
 #[derive(Debug)]
@@ -64,19 +65,26 @@ impl Drop for ManagedAvahiStringList {
 }
 
 #[derive(new)]
-pub struct AvahiStringListNode(*mut AvahiStringList);
+pub struct AvahiStringListNode<'a> {
+    list: *mut AvahiStringList,
+    phantom: PhantomData<&'a AvahiStringList>,
+}
 
-impl AvahiStringListNode {
+impl<'a> AvahiStringListNode<'a> {
     pub fn get_pair(&mut self) -> AvahiPair {
         let mut key: *mut c_char = ptr::null_mut();
         let mut value: *mut c_char = ptr::null_mut();
         let mut value_size: usize = 0;
 
         unsafe {
-            avahi_string_list_get_pair(self.0, &mut key, &mut value, &mut value_size);
+            avahi_string_list_get_pair(self.list, &mut key, &mut value, &mut value_size);
         }
 
         AvahiPair::new(key.into(), value.into(), value_size)
+    }
+
+    pub fn remove(&mut self) {
+        unsafe { avahi_string_list_free(self.list) };
     }
 }
 
@@ -91,20 +99,18 @@ pub struct AvahiPair {
 pub struct AvahiString(*mut c_char);
 
 impl AvahiString {
-    pub fn as_str(&self) -> &str {
-        unsafe { c_str::raw_to_str(self.0) }
+    pub fn as_str(&self) -> Option<&str> {
+        if self.0.is_null() {
+            None
+        } else {
+            Some(unsafe { c_str::raw_to_str(self.0) })
+        }
     }
 }
 
 impl From<*mut c_char> for AvahiString {
     fn from(s: *mut c_char) -> Self {
         Self::new(s)
-    }
-}
-
-impl ToString for AvahiString {
-    fn to_string(&self) -> String {
-        self.as_str().to_string()
     }
 }
 
@@ -152,10 +158,10 @@ mod tests {
                 .unwrap()
                 .get_pair();
 
-            assert_eq!(pair1.key().as_str(), "foo");
-            assert_eq!(pair1.value().as_str(), "bar");
-            assert_eq!(pair2.key().as_str(), "hello");
-            assert_eq!(pair2.value().as_str(), "world");
+            assert_eq!(pair1.key().as_str().unwrap(), "foo");
+            assert_eq!(pair1.value().as_str().unwrap(), "bar");
+            assert_eq!(pair2.key().as_str().unwrap(), "hello");
+            assert_eq!(pair2.value().as_str().unwrap(), "world");
         }
     }
 
@@ -175,7 +181,7 @@ mod tests {
 
             let pair = list.find(key.as_ptr() as *const c_char).unwrap().get_pair();
 
-            assert_eq!(pair.value().as_str(), "bar");
+            assert_eq!(pair.value().as_str().unwrap(), "bar");
 
             let value = c_string!("baz");
 
@@ -186,7 +192,27 @@ mod tests {
 
             let pair = list.find(key.as_ptr() as *const c_char).unwrap().get_pair();
 
-            assert_eq!(pair.value().as_str(), "baz");
+            assert_eq!(pair.value().as_str().unwrap(), "baz");
+        }
+    }
+
+    #[test]
+    fn remove_node_success() {
+        crate::tests::setup();
+
+        let mut list = ManagedAvahiStringList::new();
+        let key = c_string!("foo");
+        let value = c_string!("bar");
+
+        unsafe {
+            list.add_pair(
+                key.as_ptr() as *const c_char,
+                value.as_ptr() as *const c_char,
+            );
+
+            list.find(key.as_ptr() as *const c_char).unwrap().remove();
+
+            assert_eq!(list.length(), 0);
         }
     }
 
@@ -222,7 +248,7 @@ mod tests {
                 value.as_ptr() as *const c_char,
             );
 
-            assert_eq!(list.to_string().as_str(), "\"foo=bar\"");
+            assert_eq!(list.to_string().as_str().unwrap(), "\"foo=bar\"");
         }
     }
 

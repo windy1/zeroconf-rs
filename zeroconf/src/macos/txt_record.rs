@@ -31,7 +31,10 @@ impl BonjourTxtRecord {
     }
 
     /// Returns the value at the specified key or `None` if no such key exists.
-    pub fn get(&self, key: &str) -> Option<&str> {
+    ///
+    /// This function returns a owned `String` because there are no guarantees that the
+    /// implementation provides access to the underlying value pointer.
+    pub fn get(&self, key: &str) -> Option<String> {
         let mut value_len: u8 = 0;
 
         let value_raw = unsafe {
@@ -42,7 +45,7 @@ impl BonjourTxtRecord {
         if value_raw.is_null() {
             None
         } else {
-            Some(unsafe { c_str::raw_to_str(value_raw as *const c_char) })
+            Some(unsafe { c_str::raw_to_str(value_raw as *const c_char).to_string() })
         }
     }
 
@@ -67,13 +70,8 @@ impl BonjourTxtRecord {
         self.0.get_count() as usize
     }
 
-    /// Returns true if there are no entries in the record.
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
     /// Returns a new `txt_record::Iter` for iterating over the record as you would a `HashMap`.
-    pub fn iter<'a>(&'a self) -> Box<dyn Iterator<Item = (String, &'a str)> + 'a> {
+    pub fn iter<'a>(&'a self) -> Box<dyn Iterator<Item = (String, String)> + 'a> {
         Box::new(Iter::new(self))
     }
 
@@ -83,47 +81,8 @@ impl BonjourTxtRecord {
     }
 
     /// Returns a new `txt_record::Iter` over the records values.
-    pub fn values<'a>(&'a self) -> Box<dyn Iterator<Item = &'a str> + 'a> {
+    pub fn values<'a>(&'a self) -> Box<dyn Iterator<Item = String> + 'a> {
         Box::new(Values(Iter::new(self)))
-    }
-
-    /// Returns a new `HashMap` with this record's keys and values.
-    pub fn to_map(&self) -> HashMap<String, String> {
-        let mut m = HashMap::new();
-        for (key, value) in self.iter() {
-            m.insert(key, value.to_string());
-        }
-        m
-    }
-}
-
-impl From<HashMap<String, String>> for BonjourTxtRecord {
-    fn from(map: HashMap<String, String>) -> BonjourTxtRecord {
-        let mut record = BonjourTxtRecord::new();
-        for (key, value) in map {
-            record.insert(&key, &value).unwrap();
-        }
-        record
-    }
-}
-
-impl Clone for BonjourTxtRecord {
-    fn clone(&self) -> Self {
-        self.to_map().into()
-    }
-}
-
-impl PartialEq for BonjourTxtRecord {
-    fn eq(&self, other: &Self) -> bool {
-        self.to_map() == other.to_map()
-    }
-}
-
-impl Eq for BonjourTxtRecord {}
-
-impl Default for BonjourTxtRecord {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -140,7 +99,7 @@ impl Iter<'_> {
 }
 
 impl<'a> Iterator for Iter<'a> {
-    type Item = (String, &'a str);
+    type Item = (String, String);
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index == self.record.len() {
@@ -170,7 +129,7 @@ impl<'a> Iterator for Iter<'a> {
             .trim_matches(char::from(0))
             .to_string();
 
-        let value = unsafe { c_str::raw_to_str(value as *const c_char) };
+        let value = unsafe { c_str::raw_to_str(value as *const c_char).to_string() };
 
         self.index += 1;
 
@@ -193,7 +152,7 @@ impl Iterator for Keys<'_> {
 pub struct Values<'a>(Iter<'a>);
 
 impl<'a> Iterator for Values<'a> {
-    type Item = &'a str;
+    type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|e| e.1)
