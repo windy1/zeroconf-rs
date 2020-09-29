@@ -1,3 +1,5 @@
+//! Utilities related to c-string handling
+
 use libc::c_char;
 use std::ffi::{CStr, CString};
 

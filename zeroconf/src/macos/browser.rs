@@ -15,7 +15,6 @@ use std::fmt::{self, Formatter};
 use std::ptr;
 use std::sync::{Arc, Mutex};
 
-/// Interface for interacting with Bonjour's mDNS service browsing capabilities.
 #[derive(Debug)]
 pub struct BonjourMdnsBrowser {
     service: Arc<Mutex<ManagedDNSServiceRef>>,

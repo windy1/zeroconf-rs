@@ -1,3 +1,5 @@
+//! Avahi implementation for cross-platform browser
+
 use super::avahi_util;
 use super::client::{ManagedAvahiClient, ManagedAvahiClientParams};
 use super::constants;
@@ -22,7 +24,6 @@ use std::ffi::CString;
 use std::sync::Arc;
 use std::{fmt, ptr};
 
-/// Interface for interacting with Avahi's mDNS service browsing capabilities.
 #[derive(Debug)]
 pub struct AvahiMdnsBrowser {
     client: Option<Arc<ManagedAvahiClient>>,

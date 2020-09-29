@@ -3,6 +3,8 @@
 use crate::{EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, TxtRecord};
 use std::any::Any;
 
+/// Interface for interacting with underlying mDNS service implementation registration
+/// capabilities.
 pub trait TMdnsService {
     /// Creates a new `MdnsService` with the specified `kind` (e.g. `_http._tcp`) and `port`.
     fn new(kind: &str, port: u16) -> Self;

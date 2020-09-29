@@ -3,6 +3,7 @@
 use crate::{EventLoop, NetworkInterface, Result, ServiceDiscoveredCallback};
 use std::any::Any;
 
+/// Interface for interacting with underlying mDNS implementation service browsing capabilities.
 pub trait TMdnsBrowser {
     /// Creates a new `MdnsBrowser` that browses for the specified `kind` (e.g. `_http._tcp`)
     fn new(kind: &str) -> Self;
