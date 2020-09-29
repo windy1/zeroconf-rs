@@ -3,6 +3,7 @@
 use crate::{Result, TxtRecord};
 use std::collections::HashMap;
 
+/// Interface for interacting with underlying mDNS implementation TXT record capabilities
 pub trait TTxtRecord {
     /// Constructs a new TXT record
     fn new() -> Self;
