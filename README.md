@@ -31,6 +31,7 @@ use std::any::Any;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use zeroconf::{MdnsService, ServiceRegistration};
+use zeroconf::prelude::*;
 
 #[derive(Default, Debug)]
 pub struct Context {

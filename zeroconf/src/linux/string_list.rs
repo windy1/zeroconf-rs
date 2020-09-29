@@ -1,8 +1,9 @@
 use crate::ffi::c_str;
 use avahi_sys::{
     avahi_free, avahi_string_list_add_pair, avahi_string_list_copy, avahi_string_list_equal,
-    avahi_string_list_find, avahi_string_list_free, avahi_string_list_get_pair,
-    avahi_string_list_length, avahi_string_list_new, avahi_string_list_to_string, AvahiStringList,
+    avahi_string_list_find, avahi_string_list_free, avahi_string_list_get_next,
+    avahi_string_list_get_pair, avahi_string_list_length, avahi_string_list_new,
+    avahi_string_list_to_string, AvahiStringList,
 };
 use libc::{c_char, c_void};
 use std::marker::PhantomData;
@@ -27,6 +28,10 @@ impl ManagedAvahiStringList {
         } else {
             None
         }
+    }
+
+    pub fn head(&mut self) -> AvahiStringListNode {
+        AvahiStringListNode::new(self.0)
     }
 
     pub fn length(&self) -> u32 {
@@ -71,6 +76,15 @@ pub struct AvahiStringListNode<'a> {
 }
 
 impl<'a> AvahiStringListNode<'a> {
+    pub fn next(self) -> Option<AvahiStringListNode<'a>> {
+        let next = unsafe { avahi_string_list_get_next(self.list) };
+        if next.is_null() {
+            None
+        } else {
+            Some(AvahiStringListNode::new(next))
+        }
+    }
+
     pub fn get_pair(&mut self) -> AvahiPair {
         let mut key: *mut c_char = ptr::null_mut();
         let mut value: *mut c_char = ptr::null_mut();
@@ -81,10 +95,6 @@ impl<'a> AvahiStringListNode<'a> {
         }
 
         AvahiPair::new(key.into(), value.into(), value_size)
-    }
-
-    pub fn remove(&mut self) {
-        unsafe { avahi_string_list_free(self.list) };
     }
 }
 
@@ -125,6 +135,7 @@ impl Drop for AvahiString {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     #[test]
     fn add_get_pair_success() {
@@ -197,26 +208,6 @@ mod tests {
     }
 
     #[test]
-    fn remove_node_success() {
-        crate::tests::setup();
-
-        let mut list = ManagedAvahiStringList::new();
-        let key = c_string!("foo");
-        let value = c_string!("bar");
-
-        unsafe {
-            list.add_pair(
-                key.as_ptr() as *const c_char,
-                value.as_ptr() as *const c_char,
-            );
-
-            list.find(key.as_ptr() as *const c_char).unwrap().remove();
-
-            assert_eq!(list.length(), 0);
-        }
-    }
-
-    #[test]
     fn length_success() {
         crate::tests::setup();
 
@@ -268,5 +259,50 @@ mod tests {
 
             assert_eq!(list.clone(), list);
         }
+    }
+
+    #[test]
+    fn iterate_success() {
+        crate::tests::setup();
+
+        let mut list = ManagedAvahiStringList::new();
+        let key1 = c_string!("foo");
+        let value1 = c_string!("bar");
+        let key2 = c_string!("hello");
+        let value2 = c_string!("world");
+
+        unsafe {
+            list.add_pair(
+                key1.as_ptr() as *const c_char,
+                value1.as_ptr() as *const c_char,
+            );
+
+            list.add_pair(
+                key2.as_ptr() as *const c_char,
+                value2.as_ptr() as *const c_char,
+            );
+        }
+
+        let mut node = Some(list.head());
+        let mut map = HashMap::new();
+
+        while node.is_some() {
+            let mut n = node.unwrap();
+            let pair = n.get_pair();
+
+            map.insert(
+                pair.key().as_str().unwrap().to_string(),
+                pair.value().as_str().unwrap().to_string(),
+            );
+
+            node = n.next();
+        }
+
+        let expected: HashMap<String, String> = hashmap! {
+            "foo".to_string() => "bar".to_string(),
+            "hello".to_string() => "world".to_string()
+        };
+
+        assert_eq!(map, expected);
     }
 }
