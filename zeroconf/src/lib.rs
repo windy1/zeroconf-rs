@@ -129,7 +129,6 @@ extern crate derive_new;
 #[allow(unused_imports)]
 extern crate maplit;
 
-mod registration;
 #[macro_use]
 mod macros;
 mod interface;
@@ -152,7 +151,7 @@ pub mod macos;
 
 pub use browser::{ServiceDiscoveredCallback, ServiceDiscovery};
 pub use interface::*;
-pub use registration::*;
+pub use service::{ServiceRegisteredCallback, ServiceRegistration};
 
 /// Type alias for the platform-specific mDNS browser implementation
 #[cfg(target_os = "linux")]

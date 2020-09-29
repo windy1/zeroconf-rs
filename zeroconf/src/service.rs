@@ -1,7 +1,8 @@
 //! Trait definition for cross-platform service.
 
-use crate::{EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, TxtRecord};
+use crate::{EventLoop, NetworkInterface, Result, TxtRecord};
 use std::any::Any;
+use std::sync::Arc;
 
 /// Interface for interacting with underlying mDNS service implementation registration
 /// capabilities.
@@ -46,4 +47,23 @@ pub trait TMdnsService {
     /// Registers and start's the service. Returns an `EventLoop` which can be called to keep
     /// the service alive.
     fn register(&mut self) -> Result<EventLoop>;
+}
+
+/// Callback invoked from [`MdnsService`] once it has successfully registered.
+///
+/// # Arguments
+/// * `service` - The service information that was registered
+/// * `context` - The optional user context passed through
+///
+/// [`MdnsService`]: type.MdnsService.html
+pub type ServiceRegisteredCallback = dyn Fn(Result<ServiceRegistration>, Option<Arc<dyn Any>>);
+
+/// Represents a registration event for a [`MdnsService`].
+///
+/// [`MdnsService`]: type.MdnsService.html
+#[derive(Builder, BuilderDelegate, Debug, Getters, Clone, Default, PartialEq, Eq)]
+pub struct ServiceRegistration {
+    name: String,
+    kind: String,
+    domain: String,
 }
