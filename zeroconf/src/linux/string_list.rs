@@ -100,6 +100,9 @@ impl Drop for ManagedAvahiStringList {
     }
 }
 
+unsafe impl Send for ManagedAvahiStringList {}
+unsafe impl Sync for ManagedAvahiStringList {}
+
 /// Represents a node or sub-list in an `AvahiStringList`. This struct is similar to it's parent,
 /// but it does not free the `AvahiStringList` once dropped and is bound to the lifetime of it's
 /// parent.
