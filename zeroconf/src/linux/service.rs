@@ -25,7 +25,6 @@ use std::sync::Arc;
 pub struct AvahiMdnsService {
     client: Option<ManagedAvahiClient>,
     poll: Option<Arc<ManagedAvahiSimplePoll>>,
-    txt_record: Option<TxtRecord>,
     context: *mut AvahiServiceContext,
 }
 
@@ -34,7 +33,6 @@ impl TMdnsService for AvahiMdnsService {
         Self {
             client: None,
             poll: None,
-            txt_record: None,
             context: Box::into_raw(Box::new(AvahiServiceContext::new(kind, port))),
         }
     }
@@ -62,7 +60,7 @@ impl TMdnsService for AvahiMdnsService {
     }
 
     fn set_txt_record(&mut self, txt_record: TxtRecord) {
-        self.txt_record = Some(txt_record);
+        unsafe { (*self.context).txt_record = Some(txt_record) };
     }
 
     fn set_registered_callback(&mut self, registered_callback: Box<ServiceRegisteredCallback>) {
@@ -103,6 +101,7 @@ struct AvahiServiceContext {
     kind: CString,
     port: u16,
     group: Option<ManagedAvahiEntryGroup>,
+    txt_record: Option<TxtRecord>,
     interface_index: AvahiIfIndex,
     registered_callback: Option<Box<ServiceRegisteredCallback>>,
     user_context: Option<Arc<dyn Any>>,
@@ -115,6 +114,7 @@ impl AvahiServiceContext {
             kind: c_string!(kind),
             port,
             group: None,
+            txt_record: None,
             interface_index: constants::AVAHI_IF_UNSPEC,
             registered_callback: None,
             user_context: None,
@@ -202,6 +202,7 @@ unsafe fn create_service(
                 .domain(ptr::null_mut())
                 .host(ptr::null_mut())
                 .port(context.port)
+                .txt(context.txt_record.as_ref().map(|t| t.inner()))
                 .build()?,
         )
     } else {

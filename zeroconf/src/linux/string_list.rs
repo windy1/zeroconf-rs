@@ -15,7 +15,7 @@ use std::ptr;
 ///
 /// `zeroconf::TxtRecord` provides the cross-platform bindings for this functionality.
 #[derive(Debug)]
-pub struct ManagedAvahiStringList(*mut AvahiStringList);
+pub struct ManagedAvahiStringList(pub(crate) *mut AvahiStringList);
 
 impl ManagedAvahiStringList {
     /// Creates a new empty TXT record

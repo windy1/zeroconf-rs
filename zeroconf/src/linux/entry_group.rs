@@ -1,13 +1,14 @@
 //! Rust friendly `AvahiEntryGroup` wrappers/helpers
 
+use super::string_list::ManagedAvahiStringList;
+use crate::ffi::UnwrapMutOrNull;
 use crate::Result;
 use avahi_sys::{
-    avahi_entry_group_add_service, avahi_entry_group_commit, avahi_entry_group_free,
+    avahi_entry_group_add_service_strlst, avahi_entry_group_commit, avahi_entry_group_free,
     avahi_entry_group_is_empty, avahi_entry_group_new, avahi_entry_group_reset, AvahiClient,
     AvahiEntryGroup, AvahiEntryGroupCallback, AvahiIfIndex, AvahiProtocol, AvahiPublishFlags,
 };
 use libc::{c_char, c_void};
-use std::ptr;
 
 /// Wraps the `AvahiEntryGroup` type from the raw Avahi bindings.
 ///
@@ -57,10 +58,11 @@ impl ManagedAvahiEntryGroup {
             domain,
             host,
             port,
+            txt,
         }: AddServiceParams,
     ) -> Result<()> {
         avahi!(
-            avahi_entry_group_add_service(
+            avahi_entry_group_add_service_strlst(
                 self.0,
                 interface,
                 protocol,
@@ -70,7 +72,7 @@ impl ManagedAvahiEntryGroup {
                 domain,
                 host,
                 port,
-                ptr::null_mut() as *const c_char, // null terminated txt record list
+                txt.map(|t| t.0).unwrap_mut_or_null()
             ),
             "could not register service"
         )?;
@@ -111,7 +113,7 @@ pub struct ManagedAvahiEntryGroupParams {
 ///
 /// [`avahi_entry_group_add_service()`]: https://avahi.org/doxygen/html/publish_8h.html#acb05a7d3d23a3b825ca77cb1c7d00ce4
 #[derive(Builder, BuilderDelegate)]
-pub struct AddServiceParams {
+pub struct AddServiceParams<'a> {
     interface: AvahiIfIndex,
     protocol: AvahiProtocol,
     flags: AvahiPublishFlags,
@@ -120,4 +122,5 @@ pub struct AddServiceParams {
     domain: *const c_char,
     host: *const c_char,
     port: u16,
+    txt: Option<&'a ManagedAvahiStringList>,
 }

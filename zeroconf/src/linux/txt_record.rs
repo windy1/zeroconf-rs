@@ -9,13 +9,6 @@ use std::cell::UnsafeCell;
 #[derive(Debug)]
 pub struct AvahiTxtRecord(UnsafeCell<ManagedAvahiStringList>);
 
-impl AvahiTxtRecord {
-    #[allow(clippy::mut_from_ref)]
-    fn inner(&self) -> &mut ManagedAvahiStringList {
-        unsafe { &mut *self.0.get() }
-    }
-}
-
 impl TTxtRecord for AvahiTxtRecord {
     fn new() -> Self {
         Self(UnsafeCell::default())
@@ -23,7 +16,7 @@ impl TTxtRecord for AvahiTxtRecord {
 
     fn insert(&mut self, key: &str, value: &str) -> Result<()> {
         unsafe {
-            self.inner().add_pair(
+            self.inner_mut().add_pair(
                 c_string!(key).as_ptr() as *const c_char,
                 c_string!(value).as_ptr() as *const c_char,
             );
@@ -33,7 +26,7 @@ impl TTxtRecord for AvahiTxtRecord {
 
     fn get(&self, key: &str) -> Option<String> {
         unsafe {
-            self.inner()
+            self.inner_mut()
                 .find(c_string!(key).as_ptr() as *const c_char)?
                 .get_pair()
                 .value()
@@ -64,7 +57,7 @@ impl TTxtRecord for AvahiTxtRecord {
 
     fn contains_key(&self, key: &str) -> bool {
         unsafe {
-            self.inner()
+            self.inner_mut()
                 .find(c_string!(key).as_ptr() as *const c_char)
                 .is_some()
         }
@@ -75,15 +68,26 @@ impl TTxtRecord for AvahiTxtRecord {
     }
 
     fn iter<'a>(&'a self) -> Box<dyn Iterator<Item = (String, String)> + 'a> {
-        Box::new(Iter::new(self.inner().head()))
+        Box::new(Iter::new(self.inner_mut().head()))
     }
 
     fn keys<'a>(&'a self) -> Box<dyn Iterator<Item = String> + 'a> {
-        Box::new(Keys(Iter::new(self.inner().head())))
+        Box::new(Keys(Iter::new(self.inner_mut().head())))
     }
 
     fn values<'a>(&'a self) -> Box<dyn Iterator<Item = String> + 'a> {
-        Box::new(Values(Iter::new(self.inner().head())))
+        Box::new(Values(Iter::new(self.inner_mut().head())))
+    }
+}
+
+impl AvahiTxtRecord {
+    #[allow(clippy::mut_from_ref)]
+    fn inner_mut(&self) -> &mut ManagedAvahiStringList {
+        unsafe { &mut *self.0.get() }
+    }
+
+    pub(crate) fn inner(&self) -> &ManagedAvahiStringList {
+        unsafe { &*self.0.get() }
     }
 }
 

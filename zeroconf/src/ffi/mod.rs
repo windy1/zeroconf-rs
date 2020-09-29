@@ -87,6 +87,18 @@ impl<T> UnwrapOrNull<T> for Option<*const T> {
     }
 }
 
+/// Helper trait to unwrap a type to a `*mut T` or a null-pointer if not present.
+pub trait UnwrapMutOrNull<T> {
+    /// Unwraps this type to `*mut T` or `ptr::null_mut()` if not present.
+    fn unwrap_mut_or_null(&mut self) -> *mut T;
+}
+
+impl<T> UnwrapMutOrNull<T> for Option<*mut T> {
+    fn unwrap_mut_or_null(&mut self) -> *mut T {
+        self.unwrap_or_else(|| ptr::null_mut() as *mut T)
+    }
+}
+
 /// Returns a human-readable address of the specified raw address
 ///
 /// # Safety
