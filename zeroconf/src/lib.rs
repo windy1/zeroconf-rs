@@ -129,7 +129,6 @@ extern crate derive_new;
 #[allow(unused_imports)]
 extern crate maplit;
 
-mod discovery;
 mod registration;
 #[macro_use]
 mod macros;
@@ -151,7 +150,7 @@ pub mod linux;
 #[cfg(target_os = "macos")]
 pub mod macos;
 
-pub use discovery::*;
+pub use browser::{ServiceDiscoveredCallback, ServiceDiscovery};
 pub use interface::*;
 pub use registration::*;
 
