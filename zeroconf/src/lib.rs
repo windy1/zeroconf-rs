@@ -137,7 +137,6 @@ mod tests;
 mod txt_record;
 
 pub mod browser;
-pub mod builder;
 pub mod error;
 pub mod event_loop;
 pub mod ffi;

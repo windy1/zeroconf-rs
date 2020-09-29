@@ -8,9 +8,8 @@ use super::raw_browser::{ManagedAvahiServiceBrowser, ManagedAvahiServiceBrowserP
 use super::resolver::{
     ManagedAvahiServiceResolver, ManagedAvahiServiceResolverParams, ServiceResolverSet,
 };
-use crate::browser::TMdnsBrowser;
-use crate::builder::BuilderDelegate;
 use crate::ffi::{c_str, AsRaw, FromRaw};
+use crate::prelude::*;
 use crate::Result;
 use crate::{EventLoop, NetworkInterface, ServiceDiscoveredCallback, ServiceDiscovery};
 use avahi_sys::{

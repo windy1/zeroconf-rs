@@ -5,8 +5,8 @@ use super::client::{self, ManagedAvahiClient, ManagedAvahiClientParams};
 use super::constants;
 use super::entry_group::{AddServiceParams, ManagedAvahiEntryGroup, ManagedAvahiEntryGroupParams};
 use super::poll::ManagedAvahiSimplePoll;
-use crate::builder::BuilderDelegate;
 use crate::ffi::{c_str, AsRaw, FromRaw};
+use crate::prelude::*;
 use crate::{
     EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration, TxtRecord,
 };
@@ -29,8 +29,8 @@ pub struct AvahiMdnsService {
     context: *mut AvahiServiceContext,
 }
 
-impl AvahiMdnsService {
-    pub fn new(kind: &str, port: u16) -> Self {
+impl TMdnsService for AvahiMdnsService {
+    fn new(kind: &str, port: u16) -> Self {
         Self {
             client: None,
             poll: None,
@@ -45,35 +45,35 @@ impl AvahiMdnsService {
     /// See: [`AvahiClient::host_name()`]
     ///
     /// [`AvahiClient::host_name()`]: client/struct.ManagedAvahiClient.html#method.host_name
-    pub fn set_name(&mut self, name: &str) {
+    fn set_name(&mut self, name: &str) {
         unsafe { (*self.context).name = Some(c_string!(name)) };
     }
 
-    pub fn set_network_interface(&mut self, interface: NetworkInterface) {
+    fn set_network_interface(&mut self, interface: NetworkInterface) {
         unsafe { (*self.context).interface_index = avahi_util::interface_index(interface) };
     }
 
-    pub fn set_domain(&mut self, _domain: &str) {
+    fn set_domain(&mut self, _domain: &str) {
         todo!()
     }
 
-    pub fn set_host(&mut self, _host: &str) {
+    fn set_host(&mut self, _host: &str) {
         todo!()
     }
 
-    pub fn set_txt_record(&mut self, txt_record: TxtRecord) {
+    fn set_txt_record(&mut self, txt_record: TxtRecord) {
         self.txt_record = Some(txt_record);
     }
 
-    pub fn set_registered_callback(&mut self, registered_callback: Box<ServiceRegisteredCallback>) {
+    fn set_registered_callback(&mut self, registered_callback: Box<ServiceRegisteredCallback>) {
         unsafe { (*self.context).registered_callback = Some(registered_callback) };
     }
 
-    pub fn set_context(&mut self, context: Box<dyn Any>) {
+    fn set_context(&mut self, context: Box<dyn Any>) {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
-    pub fn register(&mut self) -> Result<EventLoop> {
+    fn register(&mut self) -> Result<EventLoop> {
         debug!("Registering service: {:?}", self);
 
         self.poll = Some(Arc::new(ManagedAvahiSimplePoll::new()?));

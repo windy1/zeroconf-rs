@@ -63,7 +63,7 @@ fn impl_builder_delegate(ast: &DeriveInput) -> TokenStream {
     let generics = &ast.generics;
 
     let gen = quote! {
-        impl #generics crate::builder::BuilderDelegate<#builder #generics> for #name #generics {}
+        impl #generics crate::prelude::BuilderDelegate<#builder #generics> for #name #generics {}
     };
 
     gen.into()
