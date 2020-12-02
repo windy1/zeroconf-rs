@@ -3,7 +3,8 @@
 use super::avahi_util;
 use super::client::{ManagedAvahiClient, ManagedAvahiClientParams};
 use super::constants;
-use super::poll::ManagedAvahiSimplePoll;
+use super::poll::{TNewPoll, TPoll};
+use super::event_loop::AvahiEventLoop;
 use super::raw_browser::{ManagedAvahiServiceBrowser, ManagedAvahiServiceBrowserParams};
 use super::{
     resolver::{
@@ -14,7 +15,7 @@ use super::{
 use crate::ffi::{c_str, AsRaw, FromRaw};
 use crate::prelude::*;
 use crate::Result;
-use crate::{EventLoop, NetworkInterface, ServiceDiscoveredCallback, ServiceDiscovery, TxtRecord};
+use crate::{NetworkInterface, ServiceDiscoveredCallback, ServiceDiscovery, TxtRecord};
 use avahi_sys::{
     AvahiAddress, AvahiBrowserEvent, AvahiClient, AvahiClientFlags, AvahiClientState, AvahiIfIndex,
     AvahiLookupResultFlags, AvahiProtocol, AvahiResolverEvent, AvahiServiceBrowser,
@@ -27,16 +28,19 @@ use std::sync::Arc;
 use std::{fmt, ptr};
 
 #[derive(Debug)]
-pub struct AvahiMdnsBrowser {
+pub struct AvahiMdnsBrowser<Poll> {
     client: Option<Arc<ManagedAvahiClient>>,
-    poll: Option<Arc<ManagedAvahiSimplePoll>>,
+    poll: Option<Poll>,
     browser: Option<ManagedAvahiServiceBrowser>,
     kind: CString,
     interface_index: AvahiIfIndex,
     context: *mut AvahiBrowserContext,
 }
 
-impl TMdnsBrowser for AvahiMdnsBrowser {
+/// AvahiMdnsBrowser using an Avahi simple poll event loop.
+pub type SimpleAvahiMdnsBrowser = AvahiMdnsBrowser<AvahiEventLoop>;
+
+impl<Poll> TMdnsBrowser<Poll> for AvahiMdnsBrowser<Poll> {
     fn new(kind: &str) -> Self {
         Self {
             client: None,
@@ -63,18 +67,26 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
-    fn browse_services(&mut self) -> Result<EventLoop> {
+    fn browse_services(&mut self) -> Result<Poll>
+        where Poll: TNewPoll + Clone + fmt::Debug {
+        let poll: Poll = TNewPoll::new()?;
+        self.browse_services_with_poll(poll.clone())?;
+        Ok(poll)
+    }
+
+    fn browse_services_with_poll(&mut self, poll: Poll) -> Result<()>
+        where Poll: TPoll + fmt::Debug {
         debug!("Browsing services: {:?}", self);
 
-        self.poll = Some(Arc::new(ManagedAvahiSimplePoll::new()?));
+        self.poll = Some(poll);
 
         self.client = Some(Arc::new(ManagedAvahiClient::new(
-            ManagedAvahiClientParams::builder()
-                .poll(self.poll.as_ref().unwrap())
-                .flags(AvahiClientFlags(0))
-                .callback(Some(client_callback))
-                .userdata(ptr::null_mut())
-                .build()?,
+            ManagedAvahiClientParams {
+                poll: self.poll.as_ref().unwrap(),
+                flags: AvahiClientFlags(0),
+                callback: Some(client_callback),
+                userdata: ptr::null_mut()
+            }
         )?));
 
         unsafe {
@@ -93,12 +105,11 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
                     .build()?,
             )?);
         }
-
-        Ok(EventLoop::new(self.poll.as_ref().unwrap().clone()))
+        Ok(())
     }
 }
 
-impl Drop for AvahiMdnsBrowser {
+impl<Poll> Drop for AvahiMdnsBrowser<Poll> {
     fn drop(&mut self) {
         unsafe { Box::from_raw(self.context) };
         // browser must be freed first

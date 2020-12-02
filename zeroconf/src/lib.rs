@@ -156,14 +156,21 @@ pub use service::{ServiceRegisteredCallback, ServiceRegistration};
 
 /// Type alias for the platform-specific mDNS browser implementation
 #[cfg(target_os = "linux")]
-pub type MdnsBrowser = linux::browser::AvahiMdnsBrowser;
+pub type MdnsBrowser<Poll> = linux::browser::AvahiMdnsBrowser<Poll>;
+
+/// Simple MdnsBrowser based on Avahi simple poll.
+#[cfg(target_os = "linux")]
+pub type SimpleMdnsBrowser = linux::browser::SimpleAvahiMdnsBrowser;
+
 /// Type alias for the platform-specific mDNS browser implementation
 #[cfg(target_os = "macos")]
 pub type MdnsBrowser = macos::browser::BonjourMdnsBrowser;
 
 /// Type alias for the platform-specific mDNS service implementation
 #[cfg(target_os = "linux")]
-pub type MdnsService = linux::service::AvahiMdnsService;
+pub type MdnsService<Loop> = linux::service::AvahiMdnsService<Loop>;
+#[cfg(target_os = "linux")]
+pub type SimpleMdnsService = linux::service::SimpleAvahiMdnsService;
 /// Type alias for the platform-specific mDNS service implementation
 #[cfg(target_os = "macos")]
 pub type MdnsService = macos::service::BonjourMdnsService;
@@ -186,3 +193,10 @@ pub type TxtRecord = macos::txt_record::BonjourTxtRecord;
 
 /// Result type for this library
 pub type Result<T> = std::result::Result<T, error::Error>;
+
+// TODO: Make a MacOS version of this too!
+#[cfg(target_os = "linux")]
+pub use linux::poll::TPoll;
+
+#[cfg(target_os = "linux")]
+pub use linux::poll::TNewPoll;

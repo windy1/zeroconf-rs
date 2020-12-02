@@ -1,11 +1,11 @@
 //! Rust friendly `AvahiClient` wrappers/helpers
 
 use super::avahi_util;
-use super::poll::ManagedAvahiSimplePoll;
+use super::poll::TPoll;
 use crate::ffi::c_str;
 use crate::Result;
 use avahi_sys::{
-    avahi_client_free, avahi_client_get_host_name, avahi_client_new, avahi_simple_poll_get,
+    avahi_client_free, avahi_client_get_host_name, avahi_client_new,
     AvahiClient, AvahiClientCallback, AvahiClientFlags,
 };
 use libc::{c_int, c_void};
@@ -20,19 +20,19 @@ pub struct ManagedAvahiClient(pub(super) *mut AvahiClient);
 impl ManagedAvahiClient {
     /// Initializes the underlying `*mut AvahiClient` and verifies it was created; returning
     /// `Err(String)` if unsuccessful.
-    pub fn new(
+    pub fn new<'a, Poll: TPoll>(
         ManagedAvahiClientParams {
             poll,
             flags,
             callback,
             userdata,
-        }: ManagedAvahiClientParams,
+        }: ManagedAvahiClientParams<'a, Poll>,
     ) -> Result<Self> {
         let mut err: c_int = 0;
 
         let client = unsafe {
             avahi_client_new(
-                avahi_simple_poll_get(poll.0),
+                poll.as_avahi_poll(),
                 flags,
                 callback,
                 userdata,
@@ -73,12 +73,11 @@ impl Drop for ManagedAvahiClient {
 /// See [`avahi_client_new()`] for more information about these parameters.
 ///
 /// [`avahi_client_new()`]: https://avahi.org/doxygen/html/client_8h.html#a07b2a33a3e7cbb18a0eb9d00eade6ae6
-#[derive(Builder, BuilderDelegate)]
-pub struct ManagedAvahiClientParams<'a> {
-    poll: &'a ManagedAvahiSimplePoll,
-    flags: AvahiClientFlags,
-    callback: AvahiClientCallback,
-    userdata: *mut c_void,
+pub struct ManagedAvahiClientParams<'a, Poll> {
+    pub(crate) poll: &'a Poll,
+    pub(crate) flags: AvahiClientFlags,
+    pub(crate) callback: AvahiClientCallback,
+    pub(crate) userdata: *mut c_void,
 }
 
 pub(super) unsafe fn get_host_name<'a>(client: *mut AvahiClient) -> Result<&'a str> {
