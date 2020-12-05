@@ -4,11 +4,15 @@ use super::avahi_util;
 use super::client::{self, ManagedAvahiClient, ManagedAvahiClientParams};
 use super::constants;
 use super::entry_group::{AddServiceParams, ManagedAvahiEntryGroup, ManagedAvahiEntryGroupParams};
-use super::poll::ManagedAvahiSimplePoll;
+use super::poll::{
+    TNewPoll,
+    TPoll,
+};
+use super::event_loop::AvahiEventLoop;
 use crate::ffi::{c_str, AsRaw, FromRaw, UnwrapOrNull};
 use crate::prelude::*;
 use crate::{
-    EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration, TxtRecord,
+    NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration, TxtRecord,
 };
 use avahi_sys::{
     AvahiClient, AvahiClientFlags, AvahiClientState, AvahiEntryGroup, AvahiEntryGroupState,
@@ -21,13 +25,16 @@ use std::fmt::{self, Formatter};
 use std::sync::Arc;
 
 #[derive(Debug)]
-pub struct AvahiMdnsService {
+pub struct AvahiMdnsService<Poll> {
     client: Option<ManagedAvahiClient>,
-    poll: Option<Arc<ManagedAvahiSimplePoll>>,
+    poll: Option<Poll>,
     context: *mut AvahiServiceContext,
 }
 
-impl TMdnsService for AvahiMdnsService {
+/// Simple service making use of an avahi simple poll.
+pub type SimpleAvahiMdnsService = AvahiMdnsService<AvahiEventLoop>;
+
+impl<Poll> TMdnsService<Poll> for AvahiMdnsService<Poll> {
     fn new(kind: &str, port: u16) -> Self {
         Self {
             client: None,
@@ -70,25 +77,32 @@ impl TMdnsService for AvahiMdnsService {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
-    fn register(&mut self) -> Result<EventLoop> {
+    fn register(&mut self) -> Result<Poll>
+        where Poll: TNewPoll + TEventLoop + Clone + fmt::Debug {
+        let poll: Poll = TNewPoll::new()?;
+        self.register_with_poll(poll.clone())?;
+        Ok(poll)
+    }
+
+    fn register_with_poll(&mut self, poll: Poll) -> Result<()> 
+        where Poll: TPoll + fmt::Debug {
         debug!("Registering service: {:?}", self);
 
-        self.poll = Some(Arc::new(ManagedAvahiSimplePoll::new()?));
+        self.poll = Some(poll);
 
         self.client = Some(ManagedAvahiClient::new(
-            ManagedAvahiClientParams::builder()
-                .poll(self.poll.as_ref().unwrap())
-                .flags(AvahiClientFlags(0))
-                .callback(Some(client_callback))
-                .userdata(self.context as *mut c_void)
-                .build()?,
+            ManagedAvahiClientParams {
+                poll: self.poll.as_ref().unwrap(),
+                flags: AvahiClientFlags(0),
+                callback: Some(client_callback),
+                userdata: self.context as *mut c_void,
+            }
         )?);
-
-        Ok(EventLoop::new(self.poll.as_ref().unwrap().clone()))
+        Ok(())
     }
 }
 
-impl Drop for AvahiMdnsService {
+impl<Poll> Drop for AvahiMdnsService<Poll> {
     fn drop(&mut self) {
         unsafe { Box::from_raw(self.context) };
     }

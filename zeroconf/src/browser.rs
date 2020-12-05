@@ -1,11 +1,13 @@
 //! Trait definition for cross-platform browser
 
-use crate::{EventLoop, NetworkInterface, Result, TxtRecord};
+use crate::{NetworkInterface, Result, TxtRecord, TNewPoll, TPoll};
+use crate::event_loop::TEventLoop;
 use std::any::Any;
 use std::sync::Arc;
+use std::fmt;
 
 /// Interface for interacting with underlying mDNS implementation service browsing capabilities.
-pub trait TMdnsBrowser {
+pub trait TMdnsBrowser<Poll> {
     /// Creates a new `MdnsBrowser` that browses for the specified `kind` (e.g. `_http._tcp`)
     fn new(kind: &str) -> Self;
 
@@ -29,7 +31,11 @@ pub trait TMdnsBrowser {
     fn set_context(&mut self, context: Box<dyn Any>);
 
     /// Starts the browser. Returns an `EventLoop` which can be called to keep the browser alive.
-    fn browse_services(&mut self) -> Result<EventLoop>;
+    fn browse_services(&mut self) -> Result<Poll>
+        where Poll: TNewPoll + TEventLoop + Clone + fmt::Debug;
+
+    fn browse_services_with_poll(&mut self, poll: Poll) -> Result<()>
+        where Poll: TPoll + fmt::Debug;
 }
 
 /// Callback invoked from [`MdnsBrowser`] once a service has been discovered and resolved.

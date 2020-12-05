@@ -1,12 +1,18 @@
 //! Trait definition for cross-platform service.
 
-use crate::{EventLoop, NetworkInterface, Result, TxtRecord};
+use crate::{
+    NetworkInterface, Result, TxtRecord,
+    TPoll, TNewPoll,
+    event_loop::TEventLoop,
+};
+
 use std::any::Any;
 use std::sync::Arc;
+use std::fmt;
 
 /// Interface for interacting with underlying mDNS service implementation registration
 /// capabilities.
-pub trait TMdnsService {
+pub trait TMdnsService<Poll> {
     /// Creates a new `MdnsService` with the specified `kind` (e.g. `_http._tcp`) and `port`.
     fn new(kind: &str, port: u16) -> Self;
 
@@ -46,7 +52,14 @@ pub trait TMdnsService {
 
     /// Registers and start's the service. Returns an `EventLoop` which can be called to keep
     /// the service alive.
-    fn register(&mut self) -> Result<EventLoop>;
+    fn register(&mut self) -> Result<Poll>
+        where Poll: TNewPoll + TEventLoop + Clone + fmt::Debug;
+
+    /// Register the service with an external provided event loop.
+    ///
+    /// This allows for multiple services or browsers to use the same loop.
+    fn register_with_poll(&mut self, poll: Poll) -> Result<()>
+        where Poll: TPoll + fmt::Debug;
 }
 
 /// Callback invoked from [`MdnsService`] once it has successfully registered.
