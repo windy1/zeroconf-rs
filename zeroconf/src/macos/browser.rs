@@ -5,15 +5,18 @@ use super::service_ref::{
 };
 use super::txt_record_ref::ManagedTXTRecordRef;
 use super::{bonjour_util, constants};
-use crate::ffi::{self, c_str, AsRaw, FromRaw};
+#[cfg(target_os = "linux")]
+use crate::ffi::self;
+use crate::ffi::{c_str, AsRaw, FromRaw};
 use crate::prelude::*;
 use crate::{EventLoop, NetworkInterface, Result, TxtRecord};
 use crate::{ServiceDiscoveredCallback, ServiceDiscovery};
-use bonjour_sys::{sockaddr, DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
+use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_uchar, c_void, sockaddr_in};
 use std::any::Any;
 use std::ffi::CString;
 use std::fmt::{self, Formatter};
+use std::net::IpAddr;
 use std::ptr;
 use std::sync::{Arc, Mutex};
 
@@ -203,11 +206,14 @@ unsafe fn handle_resolve(
         None
     };
 
+    println!("host_target: {}", c_str::copy_raw(host_target));
+    println!("interface_index: {}", interface_index);
+
     ManagedDNSServiceRef::default().get_address_info(
         GetAddressInfoParams::builder()
             .flags(bonjour_sys::kDNSServiceFlagsForceMulticast)
             .interface_index(interface_index)
-            .protocol(0)
+            .protocol(1)
             .hostname(host_target)
             .callback(Some(get_address_info_callback))
             .context(ctx.as_raw())
@@ -221,7 +227,7 @@ unsafe extern "C" fn get_address_info_callback(
     _interface_index: u32,
     error: DNSServiceErrorType,
     hostname: *const c_char,
-    address: *const sockaddr,
+    address: *const bonjour_sys::sockaddr,
     _ttl: u32,
     context: *mut c_void,
 ) {
@@ -234,7 +240,7 @@ unsafe extern "C" fn get_address_info_callback(
 unsafe fn handle_get_address_info(
     ctx: &mut BonjourBrowserContext,
     error: DNSServiceErrorType,
-    address: *const sockaddr,
+    address: *const bonjour_sys::sockaddr,
     hostname: *const c_char,
 ) -> Result<()> {
     // this callback runs multiple times for some reason
@@ -250,7 +256,23 @@ unsafe fn handle_get_address_info(
         .into());
     }
 
+    // on macOS the bytes are swapped for the port
+    #[cfg(target_os = "linux")]
+    let port :u16 = ctx.resolved_port;
+    #[cfg(target_os = "macos")]
+    let port :u16 = ctx.resolved_port.to_be();
+
+    // on macOS the bytes are swapped for the ip
+    #[cfg(target_os = "linux")]
     let ip = ffi::get_ip(address as *const sockaddr_in);
+    #[cfg(target_os = "macos")]
+    let ip = {
+        let address = address as *const sockaddr_in;
+        assert_not_null!(address);
+        let s_addr = (*address).sin_addr.s_addr.to_le_bytes();
+        IpAddr::from(s_addr).to_string()
+    };
+
     let hostname = c_str::copy_raw(hostname);
     let domain = bonjour_util::normalize_domain(&ctx.resolved_domain.take().unwrap());
 
@@ -260,7 +282,7 @@ unsafe fn handle_get_address_info(
         .domain(domain)
         .host_name(hostname)
         .address(ip)
-        .port(ctx.resolved_port)
+        .port(port)
         .txt(ctx.resolved_txt.take())
         .build()
         .expect("could not build ServiceResolution");
