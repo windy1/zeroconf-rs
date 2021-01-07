@@ -252,7 +252,7 @@ unsafe fn handle_get_address_info(
     }
 
     // on macOS the bytes are swapped for the port
-    let port :u16 = ctx.resolved_port.to_be();
+    let port: u16 = ctx.resolved_port.to_be();
 
     // on macOS the bytes are swapped for the ip
     let ip = {

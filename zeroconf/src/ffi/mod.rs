@@ -1,9 +1,9 @@
 //! Utilities related to FFI bindings
 
 use crate::Result;
-use libc::{c_void, fd_set, timeval};
 #[cfg(target_os = "linux")]
 use libc::{c_char, in_addr, sockaddr_in};
+use libc::{c_void, fd_set, timeval};
 use std::time::Duration;
 use std::{mem, ptr};
 
