@@ -5,8 +5,6 @@ use super::service_ref::{
 };
 use super::txt_record_ref::ManagedTXTRecordRef;
 use super::{bonjour_util, constants};
-#[cfg(target_os = "linux")]
-use crate::ffi::self;
 use crate::ffi::{c_str, AsRaw, FromRaw};
 use crate::prelude::*;
 use crate::{EventLoop, NetworkInterface, Result, TxtRecord};
@@ -254,15 +252,9 @@ unsafe fn handle_get_address_info(
     }
 
     // on macOS the bytes are swapped for the port
-    #[cfg(target_os = "linux")]
-    let port :u16 = ctx.resolved_port;
-    #[cfg(target_os = "macos")]
     let port :u16 = ctx.resolved_port.to_be();
 
     // on macOS the bytes are swapped for the ip
-    #[cfg(target_os = "linux")]
-    let ip = ffi::get_ip(address as *const sockaddr_in);
-    #[cfg(target_os = "macos")]
     let ip = {
         let address = address as *const sockaddr_in;
         assert_not_null!(address);
