@@ -206,9 +206,6 @@ unsafe fn handle_resolve(
         None
     };
 
-    println!("host_target: {}", c_str::copy_raw(host_target));
-    println!("interface_index: {}", interface_index);
-
     ManagedDNSServiceRef::default().get_address_info(
         GetAddressInfoParams::builder()
             .flags(bonjour_sys::kDNSServiceFlagsForceMulticast)
