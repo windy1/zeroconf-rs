@@ -208,7 +208,7 @@ unsafe fn handle_resolve(
         GetAddressInfoParams::builder()
             .flags(bonjour_sys::kDNSServiceFlagsForceMulticast)
             .interface_index(interface_index)
-            .protocol(0)
+            .protocol(1)
             .hostname(host_target)
             .callback(Some(get_address_info_callback))
             .context(ctx.as_raw())
