@@ -1,7 +1,9 @@
 //! Utilities related to FFI bindings
 
 use crate::Result;
-use libc::{c_char, c_void, fd_set, in_addr, sockaddr_in, timeval};
+#[cfg(target_os = "linux")]
+use libc::{c_char, in_addr, sockaddr_in};
+use libc::{c_void, fd_set, timeval};
 use std::time::Duration;
 use std::{mem, ptr};
 
@@ -103,12 +105,14 @@ impl<T> UnwrapMutOrNull<T> for Option<*mut T> {
 ///
 /// # Safety
 /// This function is unsafe because of calls to C-library system calls
+#[cfg(target_os = "linux")]
 pub unsafe fn get_ip(address: *const sockaddr_in) -> String {
     assert_not_null!(address);
     let raw = inet_ntoa(&(*address).sin_addr as *const in_addr);
     String::from(c_str::raw_to_str(raw))
 }
 
+#[cfg(target_os = "linux")]
 extern "C" {
     fn inet_ntoa(addr: *const in_addr) -> *const c_char;
 }
