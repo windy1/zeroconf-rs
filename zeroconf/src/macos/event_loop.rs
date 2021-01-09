@@ -5,13 +5,15 @@ use crate::event_loop::TEventLoop;
 use crate::{ffi, Result};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use std::marker::PhantomData;
 
 #[derive(new)]
-pub struct BonjourEventLoop {
+pub struct BonjourEventLoop<'a> {
     service: Arc<Mutex<ManagedDNSServiceRef>>,
+    phantom: PhantomData<&'a ManagedDNSServiceRef>,
 }
 
-impl TEventLoop for BonjourEventLoop {
+impl<'a> TEventLoop for BonjourEventLoop<'a> {
     /// Polls for new events.
     ///
     /// Prior to calling `ManagedDNSServiceRef::process_result()`, this function performs a unix

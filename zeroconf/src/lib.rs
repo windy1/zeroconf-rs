@@ -170,10 +170,10 @@ pub type MdnsService = macos::service::BonjourMdnsService;
 
 /// Type alias for the platform-specific structure responsible for polling the mDNS event loop
 #[cfg(target_os = "linux")]
-pub type EventLoop = linux::event_loop::AvahiEventLoop;
+pub type EventLoop<'a> = linux::event_loop::AvahiEventLoop<'a>;
 /// Type alias for the platform-specific structure responsible for polling the mDNS event loop
 #[cfg(target_os = "macos")]
-pub type EventLoop = macos::event_loop::BonjourEventLoop;
+pub type EventLoop<'a> = macos::event_loop::BonjourEventLoop<'a>;
 
 /// Type alias for the platform-specific structure responsible for storing and accessing TXT
 /// record data
