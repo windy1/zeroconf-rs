@@ -51,7 +51,7 @@ use zeroconf::prelude::*;
 // }
 
 // fn create_service(port: u16) -> (Option<MdnsService>, impl Fn() -> ()) {
-//     let mut service: AvahiMdnsService = MdnsService::new("_myapp._tcp", port);
+//     let mut service = MdnsService::new("_myapp._tcp", port);
 //     service.set_registered_callback(Box::new(|_, _| println!("Registered")));
 //
 //     let event_loop = service.register().unwrap();
