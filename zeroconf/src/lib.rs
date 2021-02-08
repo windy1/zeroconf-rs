@@ -117,7 +117,7 @@ extern crate derive_builder;
 extern crate zeroconf_macros;
 #[cfg(target_os = "linux")]
 extern crate avahi_sys;
-#[cfg(target_os = "macos")]
+#[cfg(target_vendor = "apple")]
 extern crate bonjour_sys;
 #[macro_use]
 extern crate derive_getters;
@@ -147,7 +147,7 @@ pub mod txt_record;
 
 #[cfg(target_os = "linux")]
 pub mod linux;
-#[cfg(target_os = "macos")]
+#[cfg(target_vendor = "apple")]
 pub mod macos;
 
 pub use browser::{ServiceDiscoveredCallback, ServiceDiscovery};
@@ -158,21 +158,21 @@ pub use service::{ServiceRegisteredCallback, ServiceRegistration};
 #[cfg(target_os = "linux")]
 pub type MdnsBrowser = linux::browser::AvahiMdnsBrowser;
 /// Type alias for the platform-specific mDNS browser implementation
-#[cfg(target_os = "macos")]
+#[cfg(target_vendor = "apple")]
 pub type MdnsBrowser = macos::browser::BonjourMdnsBrowser;
 
 /// Type alias for the platform-specific mDNS service implementation
 #[cfg(target_os = "linux")]
 pub type MdnsService = linux::service::AvahiMdnsService;
 /// Type alias for the platform-specific mDNS service implementation
-#[cfg(target_os = "macos")]
+#[cfg(target_vendor = "apple")]
 pub type MdnsService = macos::service::BonjourMdnsService;
 
 /// Type alias for the platform-specific structure responsible for polling the mDNS event loop
 #[cfg(target_os = "linux")]
 pub type EventLoop<'a> = linux::event_loop::AvahiEventLoop<'a>;
 /// Type alias for the platform-specific structure responsible for polling the mDNS event loop
-#[cfg(target_os = "macos")]
+#[cfg(target_vendor = "apple")]
 pub type EventLoop<'a> = macos::event_loop::BonjourEventLoop<'a>;
 
 /// Type alias for the platform-specific structure responsible for storing and accessing TXT
@@ -181,7 +181,7 @@ pub type EventLoop<'a> = macos::event_loop::BonjourEventLoop<'a>;
 pub type TxtRecord = linux::txt_record::AvahiTxtRecord;
 /// Type alias for the platform-specific structure responsible for storing and accessing TXT
 /// record data
-#[cfg(target_os = "macos")]
+#[cfg(target_vendor = "apple")]
 pub type TxtRecord = macos::txt_record::BonjourTxtRecord;
 
 /// Result type for this library
