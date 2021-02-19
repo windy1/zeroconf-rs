@@ -18,12 +18,15 @@ use libc::c_void;
 use std::any::Any;
 use std::ffi::CString;
 use std::fmt::{self, Formatter};
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
+use std::task;
+use std::time::Duration;
 
 #[derive(Debug)]
 pub struct AvahiMdnsService {
     client: Option<ManagedAvahiClient>,
-    poll: Option<Arc<ManagedAvahiSimplePoll>>,
     context: *mut AvahiServiceContext,
 }
 
@@ -31,7 +34,6 @@ impl TMdnsService for AvahiMdnsService {
     fn new(kind: &str, port: u16) -> Self {
         Self {
             client: None,
-            poll: None,
             context: Box::into_raw(Box::new(AvahiServiceContext::new(kind, port))),
         }
     }
@@ -73,18 +75,64 @@ impl TMdnsService for AvahiMdnsService {
     fn register(&mut self) -> Result<EventLoop> {
         debug!("Registering service: {:?}", self);
 
-        self.poll = Some(Arc::new(ManagedAvahiSimplePoll::new()?));
+        let poll = ManagedAvahiSimplePoll::new()?;
 
         self.client = Some(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
-                .poll(self.poll.as_ref().unwrap())
+                .poll(&poll)
                 .flags(AvahiClientFlags(0))
                 .callback(Some(client_callback))
                 .userdata(self.context as *mut c_void)
                 .build()?,
         )?);
 
-        Ok(EventLoop::new(self.poll.as_ref().unwrap().clone()))
+        Ok(EventLoop::new(poll))
+    }
+
+    fn register_async(&mut self) -> Result<&dyn Future<Output = Result<ServiceRegistration>>> {
+        let poll = ManagedAvahiSimplePoll::new()?;
+
+        self.client = Some(ManagedAvahiClient::new(
+            ManagedAvahiClientParams::builder()
+                .poll(&poll)
+                .flags(AvahiClientFlags(0))
+                .callback(Some(client_callback))
+                .userdata(self.context as *mut c_void)
+                .build()?,
+        )?);
+
+        let event_loop = EventLoop::new(poll);
+        let future = RegisterFuture::new(event_loop);
+
+        unsafe {
+            (*self.context).register_future = Some(future);
+            Ok((*self.context).register_future.as_ref().unwrap())
+        }
+    }
+}
+
+struct RegisterFuture {
+    event_loop: EventLoop,
+    result: Option<Result<ServiceRegistration>>,
+}
+
+impl RegisterFuture {
+    fn new(event_loop: EventLoop) -> Self {
+        Self {
+            event_loop,
+            result: None,
+        }
+    }
+}
+
+impl Future for RegisterFuture {
+    type Output = Result<ServiceRegistration>;
+
+    fn poll(self: Pin<&mut Self>, _ctx: &mut task::Context<'_>) -> task::Poll<Self::Output> {
+        while self.result.is_none() {
+            self.event_loop.poll(Duration::from_secs(0))?;
+        }
+        task::Poll::Ready(self.result.clone().unwrap())
     }
 }
 
@@ -106,6 +154,7 @@ struct AvahiServiceContext {
     host: Option<CString>,
     registered_callback: Option<Box<ServiceRegisteredCallback>>,
     user_context: Option<Arc<dyn Any>>,
+    register_future: Option<RegisterFuture>,
 }
 
 impl AvahiServiceContext {
@@ -121,10 +170,15 @@ impl AvahiServiceContext {
             host: None,
             registered_callback: None,
             user_context: None,
+            register_future: None,
         }
     }
 
-    fn invoke_callback(&self, result: Result<ServiceRegistration>) {
+    fn invoke_callback(&mut self, result: Result<ServiceRegistration>) {
+        if let Some(future) = &mut self.register_future {
+            future.result = Some(result.clone());
+        }
+
         if let Some(f) = &self.registered_callback {
             f(result, self.user_context.clone());
         } else {
@@ -226,7 +280,7 @@ unsafe extern "C" fn entry_group_callback(
     }
 }
 
-unsafe fn handle_group_established(context: &AvahiServiceContext) -> Result<()> {
+unsafe fn handle_group_established(context: &mut AvahiServiceContext) -> Result<()> {
     debug!("Group established");
 
     let result = ServiceRegistration::builder()

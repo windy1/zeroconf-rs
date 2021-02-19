@@ -29,7 +29,6 @@ use std::{fmt, ptr};
 #[derive(Debug)]
 pub struct AvahiMdnsBrowser {
     client: Option<Arc<ManagedAvahiClient>>,
-    poll: Option<Arc<ManagedAvahiSimplePoll>>,
     browser: Option<ManagedAvahiServiceBrowser>,
     kind: CString,
     interface_index: AvahiIfIndex,
@@ -40,7 +39,6 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
     fn new(kind: &str) -> Self {
         Self {
             client: None,
-            poll: None,
             browser: None,
             kind: c_string!(kind.to_string()),
             context: Box::into_raw(Box::default()),
@@ -66,11 +64,11 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
     fn browse_services(&mut self) -> Result<EventLoop> {
         debug!("Browsing services: {:?}", self);
 
-        self.poll = Some(Arc::new(ManagedAvahiSimplePoll::new()?));
+        let poll = ManagedAvahiSimplePoll::new()?;
 
         self.client = Some(Arc::new(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
-                .poll(self.poll.as_ref().unwrap())
+                .poll(&poll)
                 .flags(AvahiClientFlags(0))
                 .callback(Some(client_callback))
                 .userdata(ptr::null_mut())
@@ -94,7 +92,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
             )?);
         }
 
-        Ok(EventLoop::new(self.poll.as_ref().unwrap().clone()))
+        Ok(EventLoop::new(poll))
     }
 }
 
