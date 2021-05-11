@@ -3,7 +3,7 @@
 use crate::Result;
 #[cfg(target_os = "linux")]
 use libc::{c_char, in_addr, sockaddr_in};
-use libc::{c_void, fd_set, timeval};
+use libc::{c_void, fd_set, timeval, time_t, suseconds_t};
 use std::time::Duration;
 use std::{mem, ptr};
 
@@ -54,12 +54,8 @@ pub unsafe fn read_select(sock_fd: i32, timeout: Duration) -> Result<u32> {
     libc::FD_ZERO(&mut read_flags);
     libc::FD_SET(sock_fd, &mut read_flags);
 
-    let tv_sec = timeout.as_secs() as i64;
-    #[cfg(target_vendor = "apple")]
-    let tv_usec = timeout.subsec_micros() as i32;
-    #[cfg(target_os = "linux")]
-    let tv_usec = timeout.subsec_micros() as i64;
-
+    let tv_sec = timeout.as_secs() as time_t;
+    let tv_usec = timeout.subsec_micros() as suseconds_t;
     let mut timeout = timeval { tv_sec, tv_usec };
 
     let result = libc::select(
