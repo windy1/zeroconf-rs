@@ -5,7 +5,6 @@ use crate::NetworkInterface;
 use avahi_sys::{avahi_address_snprint, avahi_strerror, AvahiAddress};
 use libc::c_char;
 use std::ffi::CStr;
-use std::mem;
 
 /// Converts the specified `*const AvahiAddress` to a `String`.
 ///
@@ -21,7 +20,7 @@ pub unsafe fn avahi_address_to_string(addr: *const AvahiAddress) -> String {
 
     avahi_address_snprint(
         addr_str.as_ptr() as *mut c_char,
-        mem::size_of_val(&addr_str),
+        constants::AVAHI_ADDRESS_STR_MAX,
         addr,
     );
 
@@ -52,9 +51,48 @@ pub fn interface_index(interface: NetworkInterface) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use avahi_sys::{
+        AvahiAddress__bindgen_ty_1, AvahiIPv4Address, AvahiIPv6Address, AVAHI_PROTO_INET,
+        AVAHI_PROTO_INET6,
+    };
 
     #[test]
     fn get_error_returns_valid_error_string() {
         assert_eq!(get_error(avahi_sys::AVAHI_ERR_FAILURE), "Operation failed");
+    }
+
+    #[test]
+    fn address_to_string_returns_correct_ipv4_string() {
+        let ipv4_addr = AvahiAddress {
+            proto: AVAHI_PROTO_INET,
+            data: AvahiAddress__bindgen_ty_1 {
+                ipv4: AvahiIPv4Address {
+                    address: 0x6464a8c0, // 192.168.100.100
+                },
+            },
+        };
+
+        unsafe {
+            assert_eq!(avahi_address_to_string(&ipv4_addr), "192.168.100.100");
+        }
+    }
+
+    #[test]
+    fn address_to_string_returns_correct_ipv6_string() {
+        let ipv6_addr = AvahiAddress {
+            proto: AVAHI_PROTO_INET6,
+            data: AvahiAddress__bindgen_ty_1 {
+                ipv6: AvahiIPv6Address {
+                    address: [
+                        0xfe, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0x34, 0x56, 0x78,
+                        0x9a, 0xbc, 0xde, 0xf0,
+                    ],
+                },
+            },
+        };
+
+        unsafe {
+            assert_eq!(avahi_address_to_string(&ipv6_addr), "fe80::1234:5678:9abc:def0");
+        }
     }
 }
