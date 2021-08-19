@@ -111,7 +111,14 @@ fn on_service_discovered(
 }
 ```
 
+## Resources
+
+* [Avahi docs]
+* [Bonjour docs]
+
 [ZeroConf/mDNS]: https://en.wikipedia.org/wiki/Zero-configuration_networking
 [Bonjour]: https://en.wikipedia.org/wiki/Bonjour_(software)
 [Avahi]: https://en.wikipedia.org/wiki/Avahi_(software)
 [`Any`]: https://doc.rust-lang.org/std/any/trait.Any.html
+[Avahi docs]: https://avahi.org/doxygen/html/
+[Bonjour docs]: https://developer.apple.com/documentation/dnssd/dns_service_discovery_c
