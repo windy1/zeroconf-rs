@@ -85,11 +85,11 @@ fn on_service_registered(
 use std::any::Any;
 use std::sync::Arc;
 use std::time::Duration;
-use zeroconf::{MdnsBrowser, ServiceDiscovery};
 use zeroconf::prelude::*;
+use zeroconf::{MdnsBrowser, ServiceDiscovery, ServiceType};
 
 fn main() {
-    let mut browser = MdnsBrowser::new("_http._tcp");
+    let mut browser = MdnsBrowser::new(ServiceType::new("http", "tcp").unwrap());
 
     browser.set_service_discovered_callback(Box::new(on_service_discovered));
 

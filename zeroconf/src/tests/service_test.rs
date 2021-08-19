@@ -25,7 +25,7 @@ fn service_register_is_browsable() {
     service.set_txt_record(txt.clone());
 
     service.set_registered_callback(Box::new(|_, context| {
-        let mut browser = MdnsBrowser::new("_http._tcp");
+        let mut browser = MdnsBrowser::new(ServiceType::new("http", "tcp").unwrap());
 
         let context = context
             .as_ref()
