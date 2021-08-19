@@ -1,8 +1,8 @@
 use std::any::Any;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use zeroconf::{MdnsService, ServiceRegistration, TxtRecord};
 use zeroconf::prelude::*;
+use zeroconf::{MdnsService, ServiceRegistration, ServiceType, TxtRecord};
 
 #[derive(Default, Debug)]
 pub struct Context {
@@ -10,7 +10,7 @@ pub struct Context {
 }
 
 fn main() {
-    let mut service = MdnsService::new("_http._tcp", 8080);
+    let mut service = MdnsService::new(ServiceType::new("http", "tcp").unwrap(), 8080);
     let mut txt_record = TxtRecord::new();
     let context: Arc<Mutex<Context>> = Arc::default();
 

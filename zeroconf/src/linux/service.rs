@@ -8,7 +8,8 @@ use super::poll::ManagedAvahiSimplePoll;
 use crate::ffi::{c_str, AsRaw, FromRaw, UnwrapOrNull};
 use crate::prelude::*;
 use crate::{
-    EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration, TxtRecord,
+    EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration,
+    ServiceType, TxtRecord,
 };
 use avahi_sys::{
     AvahiClient, AvahiClientFlags, AvahiClientState, AvahiEntryGroup, AvahiEntryGroupState,
@@ -18,6 +19,7 @@ use libc::c_void;
 use std::any::Any;
 use std::ffi::CString;
 use std::fmt::{self, Formatter};
+use std::str::FromStr;
 use std::sync::Arc;
 
 #[derive(Debug)]
@@ -28,11 +30,14 @@ pub struct AvahiMdnsService {
 }
 
 impl TMdnsService for AvahiMdnsService {
-    fn new(kind: &str, port: u16) -> Self {
+    fn new(service_type: ServiceType, port: u16) -> Self {
         Self {
             client: None,
             poll: None,
-            context: Box::into_raw(Box::new(AvahiServiceContext::new(kind, port))),
+            context: Box::into_raw(Box::new(AvahiServiceContext::new(
+                &service_type.to_string(),
+                port,
+            ))),
         }
     }
 
@@ -231,7 +236,9 @@ unsafe fn handle_group_established(context: &AvahiServiceContext) -> Result<()> 
 
     let result = ServiceRegistration::builder()
         .name(c_str::copy_raw(context.name.as_ref().unwrap().as_ptr()))
-        .kind(c_str::copy_raw(context.kind.as_ptr()))
+        .service_type(ServiceType::from_str(&c_str::copy_raw(
+            context.kind.as_ptr(),
+        ))?)
         .domain("local".to_string())
         .build()?;
 
