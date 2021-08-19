@@ -29,8 +29,8 @@ types will automatically. See `MdnsService` for more information about contexts.
 use std::any::Any;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use zeroconf::{MdnsService, ServiceRegistration, TxtRecord};
 use zeroconf::prelude::*;
+use zeroconf::{MdnsService, ServiceRegistration, ServiceType, TxtRecord};
 
 #[derive(Default, Debug)]
 pub struct Context {
@@ -38,7 +38,7 @@ pub struct Context {
 }
 
 fn main() {
-    let mut service = MdnsService::new("_http._tcp", 8080);
+    let mut service = MdnsService::new(ServiceType::new("http", "tcp").unwrap(), 8080);
     let mut txt_record = TxtRecord::new();
     let context: Arc<Mutex<Context>> = Arc::default();
 
@@ -111,7 +111,14 @@ fn on_service_discovered(
 }
 ```
 
+## Resources
+
+* [Avahi docs]
+* [Bonjour docs]
+
 [ZeroConf/mDNS]: https://en.wikipedia.org/wiki/Zero-configuration_networking
 [Bonjour]: https://en.wikipedia.org/wiki/Bonjour_(software)
 [Avahi]: https://en.wikipedia.org/wiki/Avahi_(software)
 [`Any`]: https://doc.rust-lang.org/std/any/trait.Any.html
+[Avahi docs]: https://avahi.org/doxygen/html/
+[Bonjour docs]: https://developer.apple.com/documentation/dnssd/dns_service_discovery_c

@@ -20,8 +20,8 @@
 //! use std::any::Any;
 //! use std::sync::{Arc, Mutex};
 //! use std::time::Duration;
-//! use zeroconf::{MdnsService, ServiceRegistration, TxtRecord};
 //! use zeroconf::prelude::*;
+//! use zeroconf::{MdnsService, ServiceRegistration, ServiceType, TxtRecord};
 //!
 //! #[derive(Default, Debug)]
 //! pub struct Context {
@@ -29,7 +29,7 @@
 //! }
 //!
 //! fn main() {
-//!     let mut service = MdnsService::new("_http._tcp", 8080);
+//!     let mut service = MdnsService::new(ServiceType::new("http", "tcp").unwrap(), 8080);
 //!     let mut txt_record = TxtRecord::new();
 //!     let context: Arc<Mutex<Context>> = Arc::default();
 //!
@@ -143,6 +143,7 @@ pub mod event_loop;
 pub mod ffi;
 pub mod prelude;
 pub mod service;
+pub mod service_type;
 pub mod txt_record;
 
 #[cfg(target_os = "linux")]
@@ -153,6 +154,7 @@ pub mod macos;
 pub use browser::{ServiceDiscoveredCallback, ServiceDiscovery};
 pub use interface::*;
 pub use service::{ServiceRegisteredCallback, ServiceRegistration};
+pub use service_type::*;
 
 /// Type alias for the platform-specific mDNS browser implementation
 #[cfg(target_os = "linux")]

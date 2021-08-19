@@ -92,7 +92,10 @@ mod tests {
         };
 
         unsafe {
-            assert_eq!(avahi_address_to_string(&ipv6_addr), "fe80::1234:5678:9abc:def0");
+            assert_eq!(
+                avahi_address_to_string(&ipv6_addr),
+                "fe80::1234:5678:9abc:def0"
+            );
         }
     }
 }

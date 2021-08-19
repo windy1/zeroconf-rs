@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::{MdnsBrowser, MdnsService, TxtRecord};
+use crate::{MdnsBrowser, MdnsService, ServiceType, TxtRecord};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -14,7 +14,7 @@ fn service_register_is_browsable() {
     }
 
     static SERVICE_NAME: &str = "service_register_is_browsable";
-    let mut service = MdnsService::new("_http._tcp", 8080);
+    let mut service = MdnsService::new(ServiceType::new("http", "tcp").unwrap(), 8080);
     let context: Arc<Mutex<Context>> = Arc::default();
 
     let mut txt = TxtRecord::new();
