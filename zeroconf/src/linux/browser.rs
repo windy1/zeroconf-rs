@@ -14,7 +14,10 @@ use super::{
 use crate::ffi::{c_str, AsRaw, FromRaw};
 use crate::prelude::*;
 use crate::Result;
-use crate::{EventLoop, NetworkInterface, ServiceDiscoveredCallback, ServiceDiscovery, TxtRecord};
+use crate::{
+    EventLoop, NetworkInterface, ServiceDiscoveredCallback, ServiceDiscovery, ServiceType,
+    TxtRecord,
+};
 use avahi_sys::{
     AvahiAddress, AvahiBrowserEvent, AvahiClient, AvahiClientFlags, AvahiClientState, AvahiIfIndex,
     AvahiLookupResultFlags, AvahiProtocol, AvahiResolverEvent, AvahiServiceBrowser,
@@ -23,6 +26,7 @@ use avahi_sys::{
 use libc::{c_char, c_void};
 use std::any::Any;
 use std::ffi::CString;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::{fmt, ptr};
 
@@ -37,12 +41,12 @@ pub struct AvahiMdnsBrowser {
 }
 
 impl TMdnsBrowser for AvahiMdnsBrowser {
-    fn new(kind: &str) -> Self {
+    fn new(service_type: ServiceType) -> Self {
         Self {
             client: None,
             poll: None,
             browser: None,
-            kind: c_string!(kind.to_string()),
+            kind: c_string!(service_type.to_string()),
             context: Box::into_raw(Box::default()),
             interface_index: constants::AVAHI_IF_UNSPEC,
         }
@@ -268,7 +272,7 @@ unsafe fn handle_resolver_found(
 
     let result = ServiceDiscovery::builder()
         .name(name.to_string())
-        .kind(kind.to_string())
+        .service_type(ServiceType::from_str(kind)?)
         .domain(domain.to_string())
         .host_name(host_name.to_string())
         .address(address)

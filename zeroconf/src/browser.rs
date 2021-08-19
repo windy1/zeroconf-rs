@@ -1,13 +1,13 @@
 //! Trait definition for cross-platform browser
 
-use crate::{EventLoop, NetworkInterface, Result, TxtRecord};
+use crate::{EventLoop, NetworkInterface, Result, ServiceType, TxtRecord};
 use std::any::Any;
 use std::sync::Arc;
 
 /// Interface for interacting with underlying mDNS implementation service browsing capabilities.
 pub trait TMdnsBrowser {
     /// Creates a new `MdnsBrowser` that browses for the specified `kind` (e.g. `_http._tcp`)
-    fn new(kind: &str) -> Self;
+    fn new(service_type: ServiceType) -> Self;
 
     /// Sets the network interface on which to browse for services on.
     ///
@@ -49,7 +49,7 @@ pub type ServiceDiscoveredCallback = dyn Fn(Result<ServiceDiscovery>, Option<Arc
 )]
 pub struct ServiceDiscovery {
     name: String,
-    kind: String,
+    service_type: ServiceType,
     domain: String,
     host_name: String,
     address: String,

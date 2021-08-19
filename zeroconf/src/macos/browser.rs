@@ -7,7 +7,7 @@ use super::txt_record_ref::ManagedTXTRecordRef;
 use super::{bonjour_util, constants};
 use crate::ffi::{c_str, AsRaw, FromRaw};
 use crate::prelude::*;
-use crate::{EventLoop, NetworkInterface, Result, TxtRecord};
+use crate::{EventLoop, NetworkInterface, Result, ServiceType, TxtRecord};
 use crate::{ServiceDiscoveredCallback, ServiceDiscovery};
 use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_uchar, c_void, sockaddr_in};
@@ -16,6 +16,7 @@ use std::ffi::CString;
 use std::fmt::{self, Formatter};
 use std::net::IpAddr;
 use std::ptr;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
@@ -27,10 +28,10 @@ pub struct BonjourMdnsBrowser {
 }
 
 impl TMdnsBrowser for BonjourMdnsBrowser {
-    fn new(kind: &str) -> Self {
+    fn new(service_type: ServiceType) -> Self {
         Self {
             service: Arc::default(),
-            kind: c_string!(kind),
+            kind: c_string!(service_type.to_string()),
             interface_index: constants::BONJOUR_IF_UNSPEC,
             context: Box::into_raw(Box::default()),
         }
@@ -267,7 +268,7 @@ unsafe fn handle_get_address_info(
 
     let result = ServiceDiscovery::builder()
         .name(ctx.resolved_name.take().unwrap())
-        .kind(ctx.resolved_kind.take().unwrap())
+        .service_type(ServiceType::from_str(&ctx.resolved_kind.take().unwrap())?)
         .domain(domain)
         .host_name(hostname)
         .address(ip)
