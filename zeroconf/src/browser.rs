@@ -44,7 +44,9 @@ pub type ServiceDiscoveredCallback = dyn Fn(Result<ServiceDiscovery>, Option<Arc
 /// Represents a service that has been discovered by a [`MdnsBrowser`].
 ///
 /// [`MdnsBrowser`]: type.MdnsBrowser.html
-#[derive(Debug, Getters, Builder, BuilderDelegate, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(
+    Debug, Getters, Builder, BuilderDelegate, Serialize, Deserialize, Clone, PartialEq, Eq,
+)]
 pub struct ServiceDiscovery {
     name: String,
     kind: String,

@@ -3,9 +3,9 @@
 use super::service_ref::ManagedDNSServiceRef;
 use crate::event_loop::TEventLoop;
 use crate::{ffi, Result};
+use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use std::marker::PhantomData;
 
 #[derive(new)]
 pub struct BonjourEventLoop<'a> {

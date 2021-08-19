@@ -3,7 +3,7 @@
 use crate::Result;
 #[cfg(target_os = "linux")]
 use libc::{c_char, in_addr, sockaddr_in};
-use libc::{c_void, fd_set, timeval, time_t, suseconds_t};
+use libc::{c_void, fd_set, suseconds_t, time_t, timeval};
 use std::time::Duration;
 use std::{mem, ptr};
 

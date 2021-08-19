@@ -6,12 +6,14 @@ use crate::ffi::c_str::{self, AsCChars};
 use crate::ffi::{FromRaw, UnwrapOrNull};
 use crate::prelude::*;
 use crate::{
-    EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration, TxtRecord,
+    EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration,
+    ServiceType, TxtRecord,
 };
 use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_void};
 use std::any::Any;
 use std::ffi::CString;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
@@ -28,10 +30,10 @@ pub struct BonjourMdnsService {
 }
 
 impl TMdnsService for BonjourMdnsService {
-    fn new(kind: &str, port: u16) -> Self {
+    fn new(service_type: ServiceType, port: u16) -> Self {
         Self {
             service: Arc::default(),
-            kind: c_string!(kind),
+            kind: c_string!(service_type.to_string()),
             port,
             name: None,
             domain: None,
@@ -159,7 +161,7 @@ unsafe fn handle_register(
 
     let result = ServiceRegistration::builder()
         .name(c_str::copy_raw(name))
-        .kind(c_str::copy_raw(regtype))
+        .service_type(ServiceType::from_str(&c_str::copy_raw(regtype))?)
         .domain(domain)
         .build()
         .expect("could not build ServiceRegistration");
