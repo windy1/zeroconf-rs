@@ -158,10 +158,11 @@ unsafe fn handle_register(
     }
 
     let domain = bonjour_util::normalize_domain(c_str::raw_to_str(domain));
+    let kind = bonjour_util::normalize_domain(c_str::raw_to_str(regtype));
 
     let result = ServiceRegistration::builder()
         .name(c_str::copy_raw(name))
-        .service_type(ServiceType::from_str(&c_str::copy_raw(regtype))?)
+        .service_type(ServiceType::from_str(&kind)?)
         .domain(domain)
         .build()
         .expect("could not build ServiceRegistration");
