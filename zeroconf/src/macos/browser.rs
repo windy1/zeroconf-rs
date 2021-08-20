@@ -265,10 +265,11 @@ unsafe fn handle_get_address_info(
 
     let hostname = c_str::copy_raw(hostname);
     let domain = bonjour_util::normalize_domain(&ctx.resolved_domain.take().unwrap());
+    let kind = bonjour_util::normalize_domain(&ctx.resolved_kind.take().unwrap());
 
     let result = ServiceDiscovery::builder()
         .name(ctx.resolved_name.take().unwrap())
-        .service_type(ServiceType::from_str(&ctx.resolved_kind.take().unwrap())?)
+        .service_type(ServiceType::from_str(&kind)?)
         .domain(domain)
         .host_name(hostname)
         .address(ip)
