@@ -1,6 +1,5 @@
 //! Utilities related to Avahi
 
-use super::constants;
 use crate::NetworkInterface;
 use avahi_sys::{avahi_address_snprint, avahi_strerror, AvahiAddress};
 use libc::c_char;
@@ -16,11 +15,11 @@ use std::ffi::CStr;
 pub unsafe fn avahi_address_to_string(addr: *const AvahiAddress) -> String {
     assert_not_null!(addr);
 
-    let addr_str = c_string!(alloc(constants::AVAHI_ADDRESS_STR_MAX));
+    let addr_str = c_string!(alloc(avahi_sys::AVAHI_ADDRESS_STR_MAX as usize));
 
     avahi_address_snprint(
         addr_str.as_ptr() as *mut c_char,
-        constants::AVAHI_ADDRESS_STR_MAX,
+        avahi_sys::AVAHI_ADDRESS_STR_MAX as usize,
         addr,
     );
 
@@ -43,7 +42,7 @@ pub fn get_error<'a>(code: i32) -> &'a str {
 /// [`NetworkInterface`]: ../../enum.NetworkInterface.html
 pub fn interface_index(interface: NetworkInterface) -> i32 {
     match interface {
-        NetworkInterface::Unspec => constants::AVAHI_IF_UNSPEC,
+        NetworkInterface::Unspec => avahi_sys::AVAHI_IF_UNSPEC,
         NetworkInterface::AtIndex(i) => i as i32,
     }
 }

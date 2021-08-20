@@ -67,8 +67,8 @@ impl<T> UnwrapMutOrNull<T> for Option<*mut T> {
 pub(crate) mod macos {
     use crate::Result;
     use libc::{fd_set, suseconds_t, time_t, timeval};
-    use std::{mem, ptr};
     use std::time::Duration;
+    use std::{mem, ptr};
 
     /// Performs a unix `select()` on the specified `sock_fd` and `timeout`. Returns the select result
     /// or `Err` if the result is negative.

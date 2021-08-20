@@ -6,8 +6,6 @@
 //! [Bonjour]: https://en.wikipedia.org/wiki/Bonjour_(software)
 //! [Avahi]: https://en.wikipedia.org/wiki/Avahi_(software)
 
-pub(crate) mod constants;
-
 pub mod avahi_util;
 pub mod browser;
 pub mod client;
