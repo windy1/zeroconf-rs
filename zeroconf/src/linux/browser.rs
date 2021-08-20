@@ -85,7 +85,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
 
             self.browser = Some(ManagedAvahiServiceBrowser::new(
                 ManagedAvahiServiceBrowserParams::builder()
-                    .client(&(*self.context).client.as_ref().unwrap())
+                    .client((*self.context).client.as_ref().unwrap())
                     .interface(self.interface_index)
                     .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
                     .kind(self.kind.as_ptr())
