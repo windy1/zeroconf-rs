@@ -14,10 +14,14 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Check formatting
-        run: ./scripts/checkfmt.sh
+      - name: Prepare
+        run: rustup component add clippy
       - name: Build
         run: ./scripts/buildall.sh
+      - name: Check formatting
+        run: ./scripts/checkfmt.sh
+      - name: Run clippy
+        run: ./scripts/lintall.sh
       - name: Run tests
         run: cargo test --verbose
 
@@ -26,10 +30,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Prepare
-        run: "sudo apt -y install avahi-daemon libavahi-client-dev && sudo systemctl start avahi-daemon.service"
-      - name: Check formatting
-        run: ./scripts/checkfmt.sh
+        run: "rustup component add clippy && sudo apt -y install avahi-daemon libavahi-client-dev && sudo systemctl start avahi-daemon.service"
       - name: Build
         run: ./scripts/buildall.sh
+      - name: Check formatting
+        run: ./scripts/checkfmt.sh
+      - name: Run clippy
+        run: ./scripts/lintall.sh
       - name: Run tests
         run: cargo test --verbose
