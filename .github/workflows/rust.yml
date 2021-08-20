@@ -17,7 +17,7 @@ jobs:
       - name: Check formatting
         run: ./scripts/checkfmt.sh
       - name: Build
-        run: cargo build --verbose
+        run: ./scripts/buildall.sh
       - name: Run tests
         run: cargo test --verbose
 
@@ -30,6 +30,6 @@ jobs:
       - name: Check formatting
         run: ./scripts/checkfmt.sh
       - name: Build
-        run: cargo build --verbose
+        run: ./scripts/buildall.sh
       - name: Run tests
         run: cargo test --verbose
