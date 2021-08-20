@@ -9,7 +9,7 @@ browse services.
 On Linux:
 
 ```bash
-$ sudo apt install xorg-dev libxcb-shape0-dev libxcb-xfixes0-dev clang
+$ sudo apt install xorg-dev libxcb-shape0-dev libxcb-xfixes0-dev clang avahi-daemon libavahi-client-dev
 ```
 
 ## TODO
