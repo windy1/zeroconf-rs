@@ -72,7 +72,7 @@ impl ManagedAvahiEntryGroup {
                 domain,
                 host,
                 port,
-                txt.map(|t| t.0).unwrap_mut_or_null()
+                txt.map(|t| t.inner()).unwrap_mut_or_null()
             ),
             "could not register service"
         )?;

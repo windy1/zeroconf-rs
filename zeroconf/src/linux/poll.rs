@@ -11,7 +11,7 @@ use avahi_sys::{
 /// This struct allocates a new `*mut AvahiSimplePoll` when `ManagedAvahiClient::new()` is invoked
 /// and calls the Avahi function responsible for freeing the poll on `trait Drop`.
 #[derive(Debug)]
-pub struct ManagedAvahiSimplePoll(pub(super) *mut AvahiSimplePoll);
+pub struct ManagedAvahiSimplePoll(*mut AvahiSimplePoll);
 
 impl ManagedAvahiSimplePoll {
     /// Initializes the underlying `*mut AvahiSimplePoll` and verifies it was created; returning
@@ -40,6 +40,10 @@ impl ManagedAvahiSimplePoll {
     /// [`avahi_simple_poll_iterate()`]: https://avahi.org/doxygen/html/simple-watch_8h.html#ad5b7c9d3b7a6584d609241ee6f472a2e
     pub fn iterate(&self, sleep_time: i32) {
         unsafe { avahi_simple_poll_iterate(self.0, sleep_time) };
+    }
+
+    pub(super) fn inner(&self) -> *mut AvahiSimplePoll {
+        self.0
     }
 }
 

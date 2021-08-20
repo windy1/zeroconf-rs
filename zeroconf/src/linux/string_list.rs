@@ -15,7 +15,7 @@ use std::ptr;
 ///
 /// `zeroconf::TxtRecord` provides the cross-platform bindings for this functionality.
 #[derive(Debug)]
-pub struct ManagedAvahiStringList(pub(crate) *mut AvahiStringList);
+pub struct ManagedAvahiStringList(*mut AvahiStringList);
 
 impl ManagedAvahiStringList {
     /// Creates a new empty TXT record
@@ -69,8 +69,12 @@ impl ManagedAvahiStringList {
         AvahiStringListNode::new(self.0)
     }
 
-    pub(crate) fn clone_raw(raw: *mut AvahiStringList) -> Self {
+    pub(super) fn clone_raw(raw: *mut AvahiStringList) -> Self {
         Self(unsafe { avahi_string_list_copy(raw) })
+    }
+
+    pub(super) fn inner(&self) -> *mut AvahiStringList {
+        self.0
     }
 }
 

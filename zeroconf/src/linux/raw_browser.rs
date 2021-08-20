@@ -32,7 +32,14 @@ impl ManagedAvahiServiceBrowser {
     ) -> Result<Self> {
         let browser = unsafe {
             avahi_service_browser_new(
-                client.0, interface, protocol, kind, domain, flags, callback, userdata,
+                client.inner(),
+                interface,
+                protocol,
+                kind,
+                domain,
+                flags,
+                callback,
+                userdata,
             )
         };
 
