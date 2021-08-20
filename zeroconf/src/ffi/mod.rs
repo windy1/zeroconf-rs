@@ -63,11 +63,11 @@ impl<T> UnwrapMutOrNull<T> for Option<*mut T> {
     }
 }
 
-#[cfg(target_os = "apple")]
-mod macos {
+#[cfg(target_vendor = "apple")]
+pub(crate) mod macos {
     use crate::Result;
-    use libc::{c_void, fd_set, suseconds_t, time_t, timeval};
-    use std::mem;
+    use libc::{fd_set, suseconds_t, time_t, timeval};
+    use std::{mem, ptr};
     use std::time::Duration;
 
     /// Performs a unix `select()` on the specified `sock_fd` and `timeout`. Returns the select result
