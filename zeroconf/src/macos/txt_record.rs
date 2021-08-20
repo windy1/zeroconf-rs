@@ -9,7 +9,7 @@ use std::ffi::CString;
 use std::{mem, ptr};
 
 /// Interface for interfacting with Bonjour's TXT record capabilities.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct BonjourTxtRecord(pub(crate) ManagedTXTRecordRef);
 
 impl TTxtRecord for BonjourTxtRecord {
