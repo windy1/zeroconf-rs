@@ -6,7 +6,6 @@ use crate::Result;
 use libc::c_char;
 use std::cell::UnsafeCell;
 
-#[derive(Debug)]
 pub struct AvahiTxtRecord(UnsafeCell<ManagedAvahiStringList>);
 
 impl TTxtRecord for AvahiTxtRecord {

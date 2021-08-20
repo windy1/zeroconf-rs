@@ -36,7 +36,15 @@ impl ManagedAvahiServiceResolver {
     ) -> Result<Self> {
         let resolver = unsafe {
             avahi_service_resolver_new(
-                client.0, interface, protocol, name, kind, domain, aprotocol, flags, callback,
+                client.inner(),
+                interface,
+                protocol,
+                name,
+                kind,
+                domain,
+                aprotocol,
+                flags,
+                callback,
                 userdata,
             )
         };

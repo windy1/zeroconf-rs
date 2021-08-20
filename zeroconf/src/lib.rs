@@ -133,17 +133,17 @@ extern crate maplit;
 
 #[macro_use]
 mod macros;
+mod ffi;
 mod interface;
+mod service_type;
 #[cfg(test)]
 mod tests;
 
 pub mod browser;
 pub mod error;
 pub mod event_loop;
-pub mod ffi;
 pub mod prelude;
 pub mod service;
-pub mod service_type;
 pub mod txt_record;
 
 #[cfg(target_os = "linux")]

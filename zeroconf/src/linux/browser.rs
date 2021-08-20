@@ -2,7 +2,6 @@
 
 use super::avahi_util;
 use super::client::{ManagedAvahiClient, ManagedAvahiClientParams};
-use super::constants;
 use super::poll::ManagedAvahiSimplePoll;
 use super::raw_browser::{ManagedAvahiServiceBrowser, ManagedAvahiServiceBrowserParams};
 use super::{
@@ -48,7 +47,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
             browser: None,
             kind: c_string!(service_type.to_string()),
             context: Box::into_raw(Box::default()),
-            interface_index: constants::AVAHI_IF_UNSPEC,
+            interface_index: avahi_sys::AVAHI_IF_UNSPEC,
         }
     }
 
@@ -86,9 +85,9 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
 
             self.browser = Some(ManagedAvahiServiceBrowser::new(
                 ManagedAvahiServiceBrowserParams::builder()
-                    .client(&(*self.context).client.as_ref().unwrap())
+                    .client((*self.context).client.as_ref().unwrap())
                     .interface(self.interface_index)
-                    .protocol(constants::AVAHI_PROTO_UNSPEC)
+                    .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
                     .kind(self.kind.as_ptr())
                     .domain(ptr::null_mut())
                     .flags(0)
@@ -123,7 +122,7 @@ impl AvahiBrowserContext {
         if let Some(f) = &self.service_discovered_callback {
             f(result, self.user_context.clone());
         } else {
-            warn!("attempted to invoke callback but none was set");
+            panic!("attempted to invoke browser callback but none was set");
         }
     }
 }
@@ -191,7 +190,7 @@ fn handle_browser_new(
             .name(name)
             .kind(kind)
             .domain(domain)
-            .aprotocol(constants::AVAHI_PROTO_UNSPEC)
+            .aprotocol(avahi_sys::AVAHI_PROTO_UNSPEC)
             .flags(0)
             .callback(Some(resolve_callback))
             .userdata(raw_context)

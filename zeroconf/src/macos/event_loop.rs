@@ -21,7 +21,7 @@ impl<'a> TEventLoop for BonjourEventLoop<'a> {
     /// new data, the blocking call is not made.
     fn poll(&self, timeout: Duration) -> Result<()> {
         let service = self.service.lock().unwrap();
-        let select = unsafe { ffi::read_select(service.sock_fd(), timeout)? };
+        let select = unsafe { ffi::macos::read_select(service.sock_fd(), timeout)? };
         if select > 0 {
             service.process_result()
         } else {

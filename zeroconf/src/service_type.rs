@@ -36,9 +36,9 @@ impl ServiceType {
     }
 
     fn check_part(part: &str) -> Result<&str> {
-        if part.contains(".") {
+        if part.contains('.') {
             Err("invalid character: .".into())
-        } else if part.contains(",") {
+        } else if part.contains(',') {
             Err("invalid character: ,".into())
         } else if part.is_empty() {
             Err("cannot be empty".into())
@@ -48,8 +48,8 @@ impl ServiceType {
     }
 
     fn lstrip_underscore(s: &str) -> &str {
-        if s.starts_with("_") {
-            &s[1..]
+        if let Some(stripped) = s.strip_prefix('_') {
+            stripped
         } else {
             s
         }
@@ -75,12 +75,12 @@ impl FromStr for ServiceType {
     type Err = crate::error::Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let parts: Vec<&str> = s.split(",").collect();
+        let parts: Vec<&str> = s.split(',').collect();
         if parts.is_empty() {
             return Err("could not parse ServiceType from string".into());
         }
 
-        let head: Vec<&str> = parts[0].split(".").collect();
+        let head: Vec<&str> = parts[0].split('.').collect();
         if head.len() != 2 {
             return Err("invalid name and protocol".into());
         }
@@ -90,12 +90,12 @@ impl FromStr for ServiceType {
 
         let mut sub_types: Vec<&str> = vec![];
         if parts.len() > 1 {
-            for i in 1..parts.len() {
-                sub_types.push(Self::lstrip_underscore(parts[i]));
+            for part in parts.iter().skip(1) {
+                sub_types.push(Self::lstrip_underscore(part));
             }
         }
 
-        Ok(ServiceType::with_sub_types(name, protocol, sub_types)?)
+        ServiceType::with_sub_types(name, protocol, sub_types)
     }
 }
 
@@ -105,17 +105,17 @@ mod tests {
 
     #[test]
     fn new_invalid() {
-        ServiceType::new(".http", "tcp").expect_err("invalid character: .".into());
-        ServiceType::new("http", ".tcp").expect_err("invalid character: .".into());
-        ServiceType::new(",http", "tcp").expect_err("invalid character: ,".into());
-        ServiceType::new("http", ",tcp").expect_err("invalid character: ,".into());
-        ServiceType::new("", "tcp").expect_err("cannot be empty".into());
-        ServiceType::new("http", "").expect_err("cannot be empty".into());
+        ServiceType::new(".http", "tcp").expect_err("invalid character: .");
+        ServiceType::new("http", ".tcp").expect_err("invalid character: .");
+        ServiceType::new(",http", "tcp").expect_err("invalid character: ,");
+        ServiceType::new("http", ",tcp").expect_err("invalid character: ,");
+        ServiceType::new("", "tcp").expect_err("cannot be empty");
+        ServiceType::new("http", "").expect_err("cannot be empty");
     }
 
     #[test]
     fn must_have_name_and_protocol() {
-        ServiceType::from_str("_http").expect_err("invalid name and protocol".into());
+        ServiceType::from_str("_http").expect_err("invalid name and protocol");
     }
 
     #[test]

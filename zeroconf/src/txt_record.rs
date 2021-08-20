@@ -5,11 +5,11 @@ use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::HashMap;
-use std::fmt;
+use std::fmt::{self, Debug};
 use std::marker::PhantomData;
 
 /// Interface for interacting with underlying mDNS implementation TXT record capabilities
-pub trait TTxtRecord: Clone + PartialEq + Eq {
+pub trait TTxtRecord: Clone + PartialEq + Eq + Debug {
     /// Constructs a new TXT record
     fn new() -> Self;
 
@@ -127,6 +127,14 @@ impl<'de> Deserialize<'de> for TxtRecord {
         D: Deserializer<'de>,
     {
         deserializer.deserialize_map(TxtRecordVisitor::new())
+    }
+}
+
+impl Debug for TxtRecord {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("TxtRecord")
+            .field("data", &self.to_map())
+            .finish()
     }
 }
 

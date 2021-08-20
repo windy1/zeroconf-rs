@@ -1,13 +1,9 @@
 //! Utilities related to FFI bindings
 
-use crate::Result;
-#[cfg(target_os = "linux")]
-use libc::{c_char, in_addr, sockaddr_in};
-use libc::{c_void, fd_set, suseconds_t, time_t, timeval};
-use std::time::Duration;
-use std::{mem, ptr};
+use libc::c_void;
+use std::ptr;
 
-pub mod c_str;
+pub(crate) mod c_str;
 
 /// Helper trait to convert a raw `*mut c_void` to it's rust type
 pub trait FromRaw<T> {
@@ -43,36 +39,6 @@ pub trait AsRaw {
     }
 }
 
-/// Performs a unix `select()` on the specified `sock_fd` and `timeout`. Returns the select result
-/// or `Err` if the result is negative.
-///
-/// # Safety
-/// This function is unsafe because it directly interfaces with C-library system calls.
-pub unsafe fn read_select(sock_fd: i32, timeout: Duration) -> Result<u32> {
-    let mut read_flags: fd_set = mem::zeroed();
-
-    libc::FD_ZERO(&mut read_flags);
-    libc::FD_SET(sock_fd, &mut read_flags);
-
-    let tv_sec = timeout.as_secs() as time_t;
-    let tv_usec = timeout.subsec_micros() as suseconds_t;
-    let mut timeout = timeval { tv_sec, tv_usec };
-
-    let result = libc::select(
-        sock_fd + 1,
-        &mut read_flags,
-        ptr::null_mut(),
-        ptr::null_mut(),
-        &mut timeout,
-    );
-
-    if result < 0 {
-        Err("select(): returned error status".into())
-    } else {
-        Ok(result as u32)
-    }
-}
-
 /// Helper trait to unwrap a type to a `*const T` or a null-pointer if not present.
 pub trait UnwrapOrNull<T> {
     /// Unwraps this type to `*const T` or `ptr::null()` if not present.
@@ -97,18 +63,40 @@ impl<T> UnwrapMutOrNull<T> for Option<*mut T> {
     }
 }
 
-/// Returns a human-readable address of the specified raw address
-///
-/// # Safety
-/// This function is unsafe because of calls to C-library system calls
-#[cfg(target_os = "linux")]
-pub unsafe fn get_ip(address: *const sockaddr_in) -> String {
-    assert_not_null!(address);
-    let raw = inet_ntoa(&(*address).sin_addr as *const in_addr);
-    String::from(c_str::raw_to_str(raw))
-}
+#[cfg(target_vendor = "apple")]
+pub(crate) mod macos {
+    use crate::Result;
+    use libc::{fd_set, suseconds_t, time_t, timeval};
+    use std::time::Duration;
+    use std::{mem, ptr};
 
-#[cfg(target_os = "linux")]
-extern "C" {
-    fn inet_ntoa(addr: *const in_addr) -> *const c_char;
+    /// Performs a unix `select()` on the specified `sock_fd` and `timeout`. Returns the select result
+    /// or `Err` if the result is negative.
+    ///
+    /// # Safety
+    /// This function is unsafe because it directly interfaces with C-library system calls.
+    pub unsafe fn read_select(sock_fd: i32, timeout: Duration) -> Result<u32> {
+        let mut read_flags: fd_set = mem::zeroed();
+
+        libc::FD_ZERO(&mut read_flags);
+        libc::FD_SET(sock_fd, &mut read_flags);
+
+        let tv_sec = timeout.as_secs() as time_t;
+        let tv_usec = timeout.subsec_micros() as suseconds_t;
+        let mut timeout = timeval { tv_sec, tv_usec };
+
+        let result = libc::select(
+            sock_fd + 1,
+            &mut read_flags,
+            ptr::null_mut(),
+            ptr::null_mut(),
+            &mut timeout,
+        );
+
+        if result < 0 {
+            Err("select(): returned error status".into())
+        } else {
+            Ok(result as u32)
+        }
+    }
 }

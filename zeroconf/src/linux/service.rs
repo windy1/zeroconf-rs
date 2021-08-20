@@ -2,7 +2,6 @@
 
 use super::avahi_util;
 use super::client::{self, ManagedAvahiClient, ManagedAvahiClientParams};
-use super::constants;
 use super::entry_group::{AddServiceParams, ManagedAvahiEntryGroup, ManagedAvahiEntryGroupParams};
 use super::poll::ManagedAvahiSimplePoll;
 use crate::ffi::{c_str, AsRaw, FromRaw, UnwrapOrNull};
@@ -121,7 +120,7 @@ impl AvahiServiceContext {
             port,
             group: None,
             txt_record: None,
-            interface_index: constants::AVAHI_IF_UNSPEC,
+            interface_index: avahi_sys::AVAHI_IF_UNSPEC,
             domain: None,
             host: None,
             registered_callback: None,
@@ -133,7 +132,7 @@ impl AvahiServiceContext {
         if let Some(f) = &self.registered_callback {
             f(result, self.user_context.clone());
         } else {
-            warn!("attempted to invoke callback but none was set");
+            panic!("attempted to invoke service callback but none was set");
         }
     }
 }
@@ -203,7 +202,7 @@ unsafe fn create_service(
         group.add_service(
             AddServiceParams::builder()
                 .interface(context.interface_index)
-                .protocol(constants::AVAHI_PROTO_UNSPEC)
+                .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
                 .flags(0)
                 .name(context.name.as_ref().unwrap().as_ptr())
                 .kind(context.kind.as_ptr())
