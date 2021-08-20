@@ -122,7 +122,7 @@ impl AvahiBrowserContext {
         if let Some(f) = &self.service_discovered_callback {
             f(result, self.user_context.clone());
         } else {
-            warn!("attempted to invoke callback but none was set");
+            panic!("attempted to invoke browser callback but none was set");
         }
     }
 }
