@@ -10,7 +10,7 @@ use std::{mem, ptr};
 
 /// Interface for interfacting with Bonjour's TXT record capabilities.
 #[derive(Clone)]
-pub struct BonjourTxtRecord(pub(crate) ManagedTXTRecordRef);
+pub struct BonjourTxtRecord(ManagedTXTRecordRef);
 
 impl TTxtRecord for BonjourTxtRecord {
     fn new() -> Self {
@@ -73,6 +73,12 @@ impl TTxtRecord for BonjourTxtRecord {
 
     fn values<'a>(&'a self) -> Box<dyn Iterator<Item = String> + 'a> {
         Box::new(Values(Iter::new(self)))
+    }
+}
+
+impl BonjourTxtRecord {
+    pub(super) fn inner(&self) -> &ManagedTXTRecordRef {
+        &self.0
     }
 }
 

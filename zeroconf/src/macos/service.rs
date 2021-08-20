@@ -80,13 +80,13 @@ impl TMdnsService for BonjourMdnsService {
         let txt_len = self
             .txt_record
             .as_ref()
-            .map(|t| t.0.get_length())
+            .map(|t| t.inner().get_length())
             .unwrap_or(0);
 
         let txt_record = self
             .txt_record
             .as_ref()
-            .map(|t| t.0.get_bytes_ptr())
+            .map(|t| t.inner().get_bytes_ptr())
             .unwrap_or_null();
 
         self.service.lock().unwrap().register_service(
