@@ -5,6 +5,7 @@ use std::any::Any;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
+use std::time::Duration;
 
 /// Interface for interacting with underlying mDNS service implementation registration
 /// capabilities.
@@ -45,6 +46,9 @@ pub trait TMdnsService {
     /// Sets the optional user context to pass through to the callback. This is useful if you need
     /// to share state between pre and post-callback. The context type must implement `Any`.
     fn set_context(&mut self, context: Box<dyn Any>);
+
+    // Sets the timeout to be used on `EventLoop::poll()` when a `Future` is being awaited on.
+    fn set_timeout(&mut self, timeout: Duration);
 
     /// Registers and start's the service.
     fn register(&mut self) -> Result<&EventLoop>;

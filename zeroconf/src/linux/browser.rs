@@ -38,6 +38,7 @@ use std::{fmt, ptr};
 pub struct AvahiMdnsBrowser {
     client: Option<Arc<ManagedAvahiClient>>,
     event_loop: Option<EventLoop>,
+    timeout: Duration,
     browser: Option<ManagedAvahiServiceBrowser>,
     kind: CString,
     interface_index: AvahiIfIndex,
@@ -49,6 +50,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
         Self {
             client: None,
             event_loop: None,
+            timeout: Duration::from_secs(0),
             browser: None,
             kind: c_string!(service_type.to_string()),
             context: Box::into_raw(Box::default()),
@@ -69,6 +71,10 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
 
     fn set_context(&mut self, context: Box<dyn Any>) {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
+    }
+
+    fn set_timeout(&mut self, timeout: Duration) {
+        self.timeout = timeout;
     }
 
     fn browse(&mut self) -> Result<&EventLoop> {
@@ -133,7 +139,7 @@ impl<'a> Future for AvahiBrowseFuture<'a> {
         if let Some(result) = unsafe { (*browser.context).discovered_service.take() } {
             Poll::Ready(result)
         } else if let Some(event_loop) = &browser.event_loop {
-            if let Err(error) = event_loop.poll(Duration::from_secs(0)) {
+            if let Err(error) = event_loop.poll(browser.timeout) {
                 return Poll::Ready(Err(error));
             }
             waker.wake_by_ref();

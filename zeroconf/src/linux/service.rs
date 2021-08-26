@@ -30,6 +30,7 @@ use std::time::Duration;
 pub struct AvahiMdnsService {
     client: Option<ManagedAvahiClient>,
     event_loop: Option<EventLoop>,
+    timeout: Duration,
     context: *mut AvahiServiceContext,
 }
 
@@ -38,6 +39,7 @@ impl TMdnsService for AvahiMdnsService {
         Self {
             client: None,
             event_loop: None,
+            timeout: Duration::from_secs(0),
             context: Box::into_raw(Box::new(AvahiServiceContext::new(
                 &service_type.to_string(),
                 port,
@@ -77,6 +79,10 @@ impl TMdnsService for AvahiMdnsService {
 
     fn set_context(&mut self, context: Box<dyn Any>) {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
+    }
+
+    fn set_timeout(&mut self, timeout: Duration) {
+        self.timeout = timeout;
     }
 
     fn register(&mut self) -> Result<&EventLoop> {
@@ -124,7 +130,7 @@ impl<'a> Future for AvahiServiceRegisterFuture<'a> {
         if let Some(result) = unsafe { (*service.context).registration_result.take() } {
             Poll::Ready(result)
         } else if let Some(event_loop) = &service.event_loop {
-            if let Err(error) = event_loop.poll(Duration::from_secs(0)) {
+            if let Err(error) = event_loop.poll(service.timeout) {
                 return Poll::Ready(Err(error));
             }
             waker.wake_by_ref();
