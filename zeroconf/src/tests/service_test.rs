@@ -3,7 +3,25 @@ use crate::{MdnsBrowser, MdnsService, ServiceType, TxtRecord};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+#[tokio::test]
+#[serial_test::serial]
+async fn service_register_is_browsable_async() {
+    super::setup();
+
+    static SERVICE_NAME: &str = "service_register_is_browsable_async";
+    let mut service = MdnsService::new(ServiceType::new("http", "tcp").unwrap(), 8080);
+    service.set_name(SERVICE_NAME);
+
+    let result = service.register_async().await.unwrap();
+    assert_eq!(result.name(), SERVICE_NAME);
+
+    let mut browser = MdnsBrowser::new(ServiceType::new("http", "tcp").unwrap());
+    let browse_result = browser.browse_async().await.unwrap();
+    assert_eq!(browse_result.name(), result.name());
+}
+
 #[test]
+#[serial_test::serial]
 fn service_register_is_browsable() {
     super::setup();
 
