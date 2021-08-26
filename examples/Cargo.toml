@@ -2,4 +2,5 @@
 members = [
     "browser",
     "service",
+    "service-async",
 ]

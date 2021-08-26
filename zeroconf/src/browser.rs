@@ -29,7 +29,7 @@ pub trait TMdnsBrowser {
     fn set_context(&mut self, context: Box<dyn Any>);
 
     /// Starts the browser. Returns an `EventLoop` which can be called to keep the browser alive.
-    fn browse_services(&mut self) -> Result<EventLoop>;
+    fn browse_services(&mut self) -> Result<&EventLoop>;
 }
 
 /// Callback invoked from [`MdnsBrowser`] once a service has been discovered and resolved.

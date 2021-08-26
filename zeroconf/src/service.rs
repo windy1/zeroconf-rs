@@ -2,6 +2,8 @@
 
 use crate::{EventLoop, NetworkInterface, Result, ServiceType, TxtRecord};
 use std::any::Any;
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 
 /// Interface for interacting with underlying mDNS service implementation registration
@@ -46,7 +48,11 @@ pub trait TMdnsService {
 
     /// Registers and start's the service. Returns an `EventLoop` which can be called to keep
     /// the service alive.
-    fn register(&mut self) -> Result<EventLoop>;
+    fn register(&mut self) -> Result<&EventLoop>;
+
+    fn register_async<'a>(
+        &'a mut self,
+    ) -> Pin<Box<(dyn Future<Output = Result<ServiceRegistration>> + 'a)>>;
 }
 
 /// Callback invoked from [`MdnsService`] once it has successfully registered.

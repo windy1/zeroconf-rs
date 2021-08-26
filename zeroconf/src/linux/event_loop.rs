@@ -3,17 +3,14 @@
 use super::poll::ManagedAvahiSimplePoll;
 use crate::event_loop::TEventLoop;
 use crate::Result;
-use std::marker::PhantomData;
-use std::sync::Arc;
 use std::time::Duration;
 
-#[derive(new)]
-pub struct AvahiEventLoop<'a> {
-    poll: Arc<ManagedAvahiSimplePoll>,
-    phantom: PhantomData<&'a ManagedAvahiSimplePoll>,
+#[derive(new, Debug)]
+pub struct AvahiEventLoop {
+    poll: ManagedAvahiSimplePoll,
 }
 
-impl<'a> TEventLoop for AvahiEventLoop<'a> {
+impl TEventLoop for AvahiEventLoop {
     /// Polls for new events.
     ///
     /// Internally calls `ManagedAvahiSimplePoll::iterate(0)`, the `timeout` parameter does not

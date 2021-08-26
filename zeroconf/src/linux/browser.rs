@@ -32,7 +32,7 @@ use std::{fmt, ptr};
 #[derive(Debug)]
 pub struct AvahiMdnsBrowser {
     client: Option<Arc<ManagedAvahiClient>>,
-    poll: Option<Arc<ManagedAvahiSimplePoll>>,
+    event_loop: Option<EventLoop>,
     browser: Option<ManagedAvahiServiceBrowser>,
     kind: CString,
     interface_index: AvahiIfIndex,
@@ -43,7 +43,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
     fn new(service_type: ServiceType) -> Self {
         Self {
             client: None,
-            poll: None,
+            event_loop: None,
             browser: None,
             kind: c_string!(service_type.to_string()),
             context: Box::into_raw(Box::default()),
@@ -66,14 +66,14 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
-    fn browse_services(&mut self) -> Result<EventLoop> {
+    fn browse_services(&mut self) -> Result<&EventLoop> {
         debug!("Browsing services: {:?}", self);
 
-        self.poll = Some(Arc::new(ManagedAvahiSimplePoll::new()?));
+        let poll = ManagedAvahiSimplePoll::new()?;
 
         self.client = Some(Arc::new(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
-                .poll(self.poll.as_ref().unwrap())
+                .poll(&poll)
                 .flags(AvahiClientFlags(0))
                 .callback(Some(client_callback))
                 .userdata(ptr::null_mut())
@@ -97,7 +97,9 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
             )?);
         }
 
-        Ok(EventLoop::new(self.poll.as_ref().unwrap().clone()))
+        self.event_loop = Some(EventLoop::new(poll));
+
+        Ok(self.event_loop.as_ref().unwrap())
     }
 }
 
