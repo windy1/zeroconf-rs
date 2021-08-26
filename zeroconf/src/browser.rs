@@ -2,6 +2,8 @@
 
 use crate::{EventLoop, NetworkInterface, Result, ServiceType, TxtRecord};
 use std::any::Any;
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 
 /// Interface for interacting with underlying mDNS implementation service browsing capabilities.
@@ -29,7 +31,11 @@ pub trait TMdnsBrowser {
     fn set_context(&mut self, context: Box<dyn Any>);
 
     /// Starts the browser. Returns an `EventLoop` which can be called to keep the browser alive.
-    fn browse_services(&mut self) -> Result<&EventLoop>;
+    fn browse(&mut self) -> Result<&EventLoop>;
+
+    fn browse_async<'a>(
+        &'a mut self,
+    ) -> Pin<Box<(dyn Future<Output = Result<ServiceDiscovery>> + 'a)>>;
 }
 
 /// Callback invoked from [`MdnsBrowser`] once a service has been discovered and resolved.

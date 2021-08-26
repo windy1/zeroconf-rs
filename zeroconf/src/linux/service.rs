@@ -121,8 +121,8 @@ impl<'a> Future for AvahiServiceRegisterFuture<'a> {
     fn poll(mut self: Pin<&mut Self>, ctx: &mut Context<'_>) -> Poll<Self::Output> {
         let waker = ctx.waker();
         let service = &mut self.service;
-        if let Some(result) = unsafe { (*service.context).registration_result.as_ref() } {
-            Poll::Ready(result.clone())
+        if let Some(result) = unsafe { (*service.context).registration_result.take() } {
+            Poll::Ready(result)
         } else if let Some(event_loop) = &service.event_loop {
             event_loop.poll(Duration::from_secs(0)).unwrap();
             waker.wake_by_ref();

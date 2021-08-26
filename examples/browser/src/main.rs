@@ -9,7 +9,7 @@ fn main() {
 
     browser.set_service_discovered_callback(Box::new(on_service_discovered));
 
-    let event_loop = browser.browse_services().unwrap();
+    let event_loop = browser.browse().unwrap();
 
     loop {
         // calling `poll()` will keep this browser alive

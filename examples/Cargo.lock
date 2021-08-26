@@ -691,6 +691,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "zeroconf-browser-async-example"
+version = "0.1.0"
+dependencies = [
+ "tokio",
+ "zeroconf",
+]
+
+[[package]]
 name = "zeroconf-browser-example"
 version = "0.1.0"
 dependencies = [
