@@ -133,11 +133,15 @@ impl<'a> Future for AvahiBrowseFuture<'a> {
         if let Some(result) = unsafe { (*browser.context).discovered_service.take() } {
             Poll::Ready(result)
         } else if let Some(event_loop) = &browser.event_loop {
-            event_loop.poll(Duration::from_secs(0)).unwrap();
+            if let Err(error) = event_loop.poll(Duration::from_secs(0)) {
+                return Poll::Ready(Err(error));
+            }
             waker.wake_by_ref();
             Poll::Pending
         } else {
-            browser.browse().unwrap();
+            if let Err(error) = browser.browse() {
+                return Poll::Ready(Err(error));
+            }
             waker.wake_by_ref();
             Poll::Pending
         }

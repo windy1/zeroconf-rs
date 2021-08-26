@@ -124,11 +124,15 @@ impl<'a> Future for AvahiServiceRegisterFuture<'a> {
         if let Some(result) = unsafe { (*service.context).registration_result.take() } {
             Poll::Ready(result)
         } else if let Some(event_loop) = &service.event_loop {
-            event_loop.poll(Duration::from_secs(0)).unwrap();
+            if let Err(error) = event_loop.poll(Duration::from_secs(0)) {
+                return Poll::Ready(Err(error));
+            }
             waker.wake_by_ref();
             Poll::Pending
         } else {
-            service.register().unwrap();
+            if let Err(error) = service.register() {
+                return Poll::Ready(Err(error));
+            }
             waker.wake_by_ref();
             Poll::Pending
         }
