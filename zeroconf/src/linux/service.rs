@@ -6,6 +6,7 @@ use super::entry_group::{AddServiceParams, ManagedAvahiEntryGroup, ManagedAvahiE
 use super::poll::ManagedAvahiSimplePoll;
 use crate::ffi::{c_str, AsRaw, FromRaw, UnwrapOrNull};
 use crate::prelude::*;
+use crate::service::ServiceRegisterFuture;
 use crate::{
     EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration,
     ServiceType, TxtRecord,
@@ -104,9 +105,7 @@ impl TMdnsService for AvahiMdnsService {
         Ok(self.event_loop.as_ref().unwrap())
     }
 
-    fn register_async<'a>(
-        &'a mut self,
-    ) -> Pin<Box<(dyn Future<Output = Result<ServiceRegistration>> + 'a)>> {
+    fn register_async(&mut self) -> ServiceRegisterFuture {
         Box::pin(AvahiServiceRegisterFuture::new(self))
     }
 }

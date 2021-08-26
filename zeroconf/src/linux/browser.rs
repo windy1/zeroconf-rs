@@ -10,6 +10,7 @@ use super::{
     },
     string_list::ManagedAvahiStringList,
 };
+use crate::browser::BrowseFuture;
 use crate::ffi::{c_str, AsRaw, FromRaw};
 use crate::prelude::*;
 use crate::Result;
@@ -113,9 +114,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
         Ok(self.event_loop.as_ref().unwrap())
     }
 
-    fn browse_async<'a>(
-        &'a mut self,
-    ) -> Pin<Box<(dyn Future<Output = Result<ServiceDiscovery>> + 'a)>> {
+    fn browse_async(&mut self) -> BrowseFuture {
         Box::pin(AvahiBrowseFuture::new(self))
     }
 }

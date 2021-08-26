@@ -1,9 +1,8 @@
 //! Trait definition for cross-platform service.
 
+use crate::util::PinnedFuture;
 use crate::{EventLoop, NetworkInterface, Result, ServiceType, TxtRecord};
 use std::any::Any;
-use std::future::Future;
-use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -47,17 +46,18 @@ pub trait TMdnsService {
     /// to share state between pre and post-callback. The context type must implement `Any`.
     fn set_context(&mut self, context: Box<dyn Any>);
 
-    // Sets the timeout to be used on `EventLoop::poll()` when a `Future` is being awaited on.
+    /// Sets the timeout to be used on `EventLoop::poll()` when a `Future` is being awaited on.
     fn set_timeout(&mut self, timeout: Duration);
 
     /// Registers and start's the service.
     fn register(&mut self) -> Result<&EventLoop>;
 
     /// Returns a `Future` that can be `await`ed on to register this service.
-    fn register_async<'a>(
-        &'a mut self,
-    ) -> Pin<Box<(dyn Future<Output = Result<ServiceRegistration>> + 'a)>>;
+    fn register_async(&mut self) -> ServiceRegisterFuture;
 }
+
+/// Future returned by `MdnsService::register_async()`.
+pub type ServiceRegisterFuture<'a> = PinnedFuture<'a, ServiceRegistration>;
 
 /// Callback invoked from [`MdnsService`] once it has successfully registered.
 ///
