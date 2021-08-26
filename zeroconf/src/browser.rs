@@ -33,6 +33,7 @@ pub trait TMdnsBrowser {
     /// Starts the browser. Returns an `EventLoop` which can be called to keep the browser alive.
     fn browse(&mut self) -> Result<&EventLoop>;
 
+    // Returns a `Future` that can be `await`ed on to discover the next service.
     fn browse_async<'a>(
         &'a mut self,
     ) -> Pin<Box<(dyn Future<Output = Result<ServiceDiscovery>> + 'a)>>;

@@ -1,8 +1,5 @@
-use std::any::Any;
-use std::sync::Arc;
-use std::time::Duration;
 use zeroconf::prelude::*;
-use zeroconf::{MdnsBrowser, ServiceDiscovery, ServiceType};
+use zeroconf::{MdnsBrowser, ServiceType};
 
 #[tokio::main]
 pub async fn main() -> zeroconf::Result<()> {

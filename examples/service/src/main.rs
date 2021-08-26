@@ -47,5 +47,5 @@ fn on_service_registered(
 
     println!("Context: {:?}", context);
 
-    // ...
+    // do stuff
 }

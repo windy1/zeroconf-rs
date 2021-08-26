@@ -10,7 +10,36 @@
 //!
 //! # Examples
 //!
-//! ## Register a service
+//! ## Register a service (async/await)
+//!
+//! `MdnsService::register_async()` provides a `Future` that can be awaited on to register a
+//! service via an executor of your choice such as [`tokio`] or [`async-std`].
+//!
+//! ```no_run
+//! use std::thread;
+//! use std::time::Duration;
+//! use zeroconf::prelude::*;
+//! use zeroconf::{MdnsService, ServiceType, TxtRecord};
+//!
+//! #[tokio::main]
+//! pub async fn main() -> zeroconf::Result<()> {
+//!     let mut service = MdnsService::new(ServiceType::new("http", "tcp")?, 8080);
+//!     let mut txt_record = TxtRecord::new();
+//!
+//!     txt_record.insert("hello", "world")?;
+//!     service.set_txt_record(txt_record);
+//!
+//!     let result = service.register_async().await;
+//!     println!("Service: {:?}", result);
+//!
+//!     loop {
+//!         // do stuff
+//!         thread::sleep(Duration::from_nanos(1));
+//!     }
+//! }
+//! ```
+//!
+//! ## Register a service (callback)
 //!
 //! When registering a service, you may optionally pass a "context" to pass state through the
 //! callback. The only requirement is that this context implements the [`Any`] trait, which most
@@ -66,11 +95,31 @@
 //!
 //!     println!("Context: {:?}", context);
 //!
-//!     // ...
+//!     // do stuff
 //! }
 //! ```
 //!
-//! ## Browsing services
+//! ## Browsing services (async/await)
+//!
+//! `MdnsBrowser::browse_async()` provides a `Future` that can be awaited on to discover services
+//! via an executor of your choice such as [`tokio`] or [`async-std`].
+//!
+//! ```no_run
+//! use zeroconf::prelude::*;
+//! use zeroconf::{MdnsBrowser, ServiceType};
+//!
+//! #[tokio::main]
+//! pub async fn main() -> zeroconf::Result<()> {
+//!     let mut browser = MdnsBrowser::new(ServiceType::new("http", "tcp")?);
+//!     loop {
+//!         let result = browser.browse_async().await;
+//!         println!("Service discovered: {:?}", result.unwrap());
+//!     }
+//! }
+//! ```
+//!
+//! ## Browsing services (callback)
+//!
 //! ```no_run
 //! use std::any::Any;
 //! use std::sync::Arc;
@@ -83,10 +132,10 @@
 //!
 //!     browser.set_service_discovered_callback(Box::new(on_service_discovered));
 //!
-//!     let event_loop = browser.browse_services().unwrap();
+//!     let event_loop = browser.browse().unwrap();
 //!
 //!     loop {
-//!         // calling `poll()` will keep this browser alive
+//!         // calling `poll()` will cause the browser to continue discovering services
 //!         event_loop.poll(Duration::from_secs(0)).unwrap();
 //!     }
 //! }
@@ -97,7 +146,7 @@
 //! ) {
 //!     println!("Service discovered: {:?}", result.unwrap());
 //!
-//!     // ...
+//!     // do stuff
 //! }
 //! ```
 //!
@@ -107,6 +156,8 @@
 //! [`MdnsService`]: type.MdnsService.html
 //! [`MdnsBrowser`]: type.MdnsBrowser.html
 //! [`Any`]: https://doc.rust-lang.org/std/any/trait.Any.html
+//! [`async-std`]: https://async.rs/
+//! [`tokio`]: https://tokio.rs/
 
 #![allow(clippy::needless_doctest_main)]
 #[macro_use]

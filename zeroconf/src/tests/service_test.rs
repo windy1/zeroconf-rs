@@ -55,7 +55,7 @@ fn service_register_is_browsable() {
             }
         }));
 
-        let event_loop = browser.browse_services().unwrap();
+        let event_loop = browser.browse().unwrap();
 
         loop {
             event_loop.poll(Duration::from_secs(0)).unwrap();

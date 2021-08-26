@@ -46,10 +46,10 @@ pub trait TMdnsService {
     /// to share state between pre and post-callback. The context type must implement `Any`.
     fn set_context(&mut self, context: Box<dyn Any>);
 
-    /// Registers and start's the service. Returns an `EventLoop` which can be called to keep
-    /// the service alive.
+    /// Registers and start's the service.
     fn register(&mut self) -> Result<&EventLoop>;
 
+    /// Returns a `Future` that can be `await`ed on to register this service.
     fn register_async<'a>(
         &'a mut self,
     ) -> Pin<Box<(dyn Future<Output = Result<ServiceRegistration>> + 'a)>>;

@@ -5,10 +5,10 @@ use zeroconf::{MdnsService, ServiceType, TxtRecord};
 
 #[tokio::main]
 pub async fn main() -> zeroconf::Result<()> {
-    let mut service = MdnsService::new(ServiceType::new("http", "tcp").unwrap(), 8080);
+    let mut service = MdnsService::new(ServiceType::new("http", "tcp")?, 8080);
     let mut txt_record = TxtRecord::new();
 
-    txt_record.insert("hello", "world").unwrap();
+    txt_record.insert("hello", "world")?;
     service.set_txt_record(txt_record);
 
     let result = service.register_async().await;

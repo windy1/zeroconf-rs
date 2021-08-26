@@ -25,6 +25,7 @@ zeroconf-macros = { path = "../zeroconf-macros", version = "0.1.2" }
 env_logger = "0.7.1"
 maplit = "1.0.2"
 serde_json = "1.0.57"
+tokio = { version = "1.10.1", features = ["full"] }
 
 [target.'cfg(unix)'.dependencies]
 avahi-sys = "0.10.0"
