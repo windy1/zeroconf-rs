@@ -200,6 +200,20 @@ impl fmt::Debug for AvahiServiceContext {
             .field("kind", &self.kind)
             .field("port", &self.port)
             .field("group", &self.group)
+            .field("txt_record", &self.txt_record)
+            .field("interface_index", &self.interface_index)
+            .field("domain", &self.domain)
+            .field("host", &self.host)
+            .field("registration_result", &self.registration_result)
+            .field(
+                "registered_callback",
+                &self
+                    .registered_callback
+                    .as_ref()
+                    .map(|_| "Some(Box<ServiceRegisteredCallback>)")
+                    .unwrap_or("None"),
+            )
+            .field("user_context", &self.user_context)
             .finish()
     }
 }

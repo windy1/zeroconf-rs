@@ -199,6 +199,16 @@ impl fmt::Debug for AvahiBrowserContext {
         f.debug_struct("AvahiBrowserContext")
             .field("client", &self.client)
             .field("resolvers", &self.resolvers)
+            .field("discovered_service", &self.discovered_service)
+            .field(
+                "service_discovered_callback",
+                &self
+                    .service_discovered_callback
+                    .as_ref()
+                    .map(|_| "Some(Box<ServiceDiscoveredCallback>)")
+                    .unwrap_or("None"),
+            )
+            .field("user_context", &self.user_context)
             .finish()
     }
 }
