@@ -110,14 +110,15 @@ impl TMdnsService for AvahiMdnsService {
     }
 }
 
-struct AvahiServiceRegisterFuture<'a> {
-    service: &'a mut AvahiMdnsService,
+impl Drop for AvahiMdnsService {
+    fn drop(&mut self) {
+        unsafe { Box::from_raw(self.context) };
+    }
 }
 
-impl<'a> AvahiServiceRegisterFuture<'a> {
-    pub fn new(service: &'a mut AvahiMdnsService) -> Self {
-        Self { service }
-    }
+#[derive(new)]
+struct AvahiServiceRegisterFuture<'a> {
+    service: &'a mut AvahiMdnsService,
 }
 
 impl<'a> Future for AvahiServiceRegisterFuture<'a> {
@@ -141,12 +142,6 @@ impl<'a> Future for AvahiServiceRegisterFuture<'a> {
             waker.wake_by_ref();
             Poll::Pending
         }
-    }
-}
-
-impl Drop for AvahiMdnsService {
-    fn drop(&mut self) {
-        unsafe { Box::from_raw(self.context) };
     }
 }
 

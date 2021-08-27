@@ -31,7 +31,7 @@ impl ManagedDNSServiceRef {
     /// Delegate function for [`DNSServiceRegister`].
     ///
     /// [`DNSServiceRegister`]: https://developer.apple.com/documentation/dnssd/1804733-dnsserviceregister?language=objc
-    pub fn register_service(
+    pub fn register(
         &mut self,
         RegisterServiceParams {
             flags,
@@ -69,7 +69,7 @@ impl ManagedDNSServiceRef {
     /// Delegate function for [`DNSServiceBrowse`].
     ///
     /// [`DNSServiceBrowse`]: https://developer.apple.com/documentation/dnssd/1804742-dnsservicebrowse?language=objc
-    pub fn browse_services(
+    pub fn browse(
         &mut self,
         BrowseServicesParams {
             flags,
@@ -160,6 +160,7 @@ impl ManagedDNSServiceRef {
     ///
     /// [`DNSServiceProcessResult`]: https://developer.apple.com/documentation/dnssd/1804696-dnsserviceprocessresult?language=objc
     pub fn process_result(&self) -> Result<()> {
+        debug!("ManagedDNSServiceRef::process_result()");
         bonjour!(
             DNSServiceProcessResult(self.0),
             "could not process service result"

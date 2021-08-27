@@ -119,14 +119,17 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
     }
 }
 
-struct AvahiBrowseFuture<'a> {
-    browser: &'a mut AvahiMdnsBrowser,
+impl Drop for AvahiMdnsBrowser {
+    fn drop(&mut self) {
+        unsafe { Box::from_raw(self.context) };
+        // browser must be freed first
+        self.browser = None;
+    }
 }
 
-impl<'a> AvahiBrowseFuture<'a> {
-    pub fn new(browser: &'a mut AvahiMdnsBrowser) -> Self {
-        AvahiBrowseFuture { browser }
-    }
+#[derive(new)]
+struct AvahiBrowseFuture<'a> {
+    browser: &'a mut AvahiMdnsBrowser,
 }
 
 impl<'a> Future for AvahiBrowseFuture<'a> {
@@ -150,14 +153,6 @@ impl<'a> Future for AvahiBrowseFuture<'a> {
             waker.wake_by_ref();
             Poll::Pending
         }
-    }
-}
-
-impl Drop for AvahiMdnsBrowser {
-    fn drop(&mut self) {
-        unsafe { Box::from_raw(self.context) };
-        // browser must be freed first
-        self.browser = None;
     }
 }
 

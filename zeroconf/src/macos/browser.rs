@@ -5,6 +5,7 @@ use super::service_ref::{
 };
 use super::txt_record_ref::ManagedTXTRecordRef;
 use super::{bonjour_util, constants};
+use crate::browser::BrowseFuture;
 use crate::ffi::{c_str, AsRaw, FromRaw};
 use crate::prelude::*;
 use crate::{EventLoop, NetworkInterface, Result, ServiceType, TxtRecord};
@@ -14,14 +15,21 @@ use libc::{c_char, c_uchar, c_void, sockaddr_in};
 use std::any::Any;
 use std::ffi::CString;
 use std::fmt::{self, Formatter};
+use std::future::Future;
 use std::net::IpAddr;
+use std::pin::Pin;
 use std::ptr;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::task::Context;
+use std::task::Poll;
+use std::time::Duration;
 
 #[derive(Debug)]
 pub struct BonjourMdnsBrowser {
-    service: Arc<Mutex<ManagedDNSServiceRef>>,
+    event_loop: EventLoop,
+    timeout: Duration,
+    is_init: bool,
     kind: CString,
     interface_index: u32,
     context: *mut BonjourBrowserContext,
@@ -30,7 +38,9 @@ pub struct BonjourMdnsBrowser {
 impl TMdnsBrowser for BonjourMdnsBrowser {
     fn new(service_type: ServiceType) -> Self {
         Self {
-            service: Arc::default(),
+            event_loop: EventLoop::default(),
+            timeout: Duration::from_secs(0),
+            is_init: false,
             kind: c_string!(service_type.to_string()),
             interface_index: constants::BONJOUR_IF_UNSPEC,
             context: Box::into_raw(Box::default()),
@@ -52,10 +62,14 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
-    fn browse_services(&mut self) -> Result<EventLoop> {
+    fn set_timeout(&mut self, timeout: Duration) {
+        self.timeout = timeout;
+    }
+
+    fn browse(&mut self) -> Result<&EventLoop> {
         debug!("Browsing services: {:?}", self);
 
-        self.service.lock().unwrap().browse_services(
+        self.event_loop.service_mut().browse(
             BrowseServicesParams::builder()
                 .flags(0)
                 .interface_index(self.interface_index)
@@ -66,7 +80,13 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
                 .build()?,
         )?;
 
-        Ok(EventLoop::new(self.service.clone()))
+        self.is_init = true;
+
+        Ok(&self.event_loop)
+    }
+
+    fn browse_async(&mut self) -> BrowseFuture {
+        Box::pin(BonjourBrowseFuture::new(self))
     }
 }
 
@@ -76,8 +96,42 @@ impl Drop for BonjourMdnsBrowser {
     }
 }
 
+#[derive(new)]
+struct BonjourBrowseFuture<'a> {
+    browser: &'a mut BonjourMdnsBrowser,
+}
+
+impl<'a> Future for BonjourBrowseFuture<'a> {
+    type Output = Result<ServiceDiscovery>;
+
+    fn poll(mut self: Pin<&mut Self>, ctx: &mut Context<'_>) -> Poll<Self::Output> {
+        let waker = ctx.waker();
+        let browser = &mut self.browser;
+        if let Some(result) = unsafe { (*browser.context).discovered_service.take() } {
+            debug!("BonjourBrowseFuture::poll() result = {:?}", result);
+            Poll::Ready(result)
+        } else if browser.is_init {
+            debug!("BonjourBrowseFuture::poll() polling");
+            if let Err(error) = browser.event_loop.poll(browser.timeout) {
+                return Poll::Ready(Err(error));
+            }
+            debug!("BonjourBrowseFuture::poll() POLLED");
+            waker.wake_by_ref();
+            Poll::Pending
+        } else {
+            debug!("BonjourBrowseFuture::poll() initializing");
+            if let Err(error) = browser.browse() {
+                return Poll::Ready(Err(error));
+            }
+            waker.wake_by_ref();
+            Poll::Pending
+        }
+    }
+}
+
 #[derive(Default, FromRaw, AsRaw)]
 struct BonjourBrowserContext {
+    discovered_service: Option<Result<ServiceDiscovery>>,
     service_discovered_callback: Option<Box<ServiceDiscoveredCallback>>,
     resolved_name: Option<String>,
     resolved_kind: Option<String>,
@@ -88,7 +142,12 @@ struct BonjourBrowserContext {
 }
 
 impl BonjourBrowserContext {
-    fn invoke_callback(&self, result: Result<ServiceDiscovery>) {
+    fn invoke_callback(&mut self, result: Result<ServiceDiscovery>) {
+        debug!(
+            "BonjourBrowserContext::invoke_callback() result = {:?}",
+            result
+        );
+        self.discovered_service = Some(result.clone());
         if let Some(f) = &self.service_discovered_callback {
             f(result, self.user_context.clone());
         } else {
@@ -100,10 +159,21 @@ impl BonjourBrowserContext {
 impl fmt::Debug for BonjourBrowserContext {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("BonjourResolverContext")
+            .field("discovered_service", &self.discovered_service)
+            .field(
+                "service_discovered_callback",
+                &self
+                    .service_discovered_callback
+                    .as_ref()
+                    .map(|_| "Some(Box<ServiceDiscoveredCallback>)")
+                    .unwrap_or("None"),
+            )
             .field("resolved_name", &self.resolved_name)
             .field("resolved_kind", &self.resolved_kind)
             .field("resolved_domain", &self.resolved_domain)
             .field("resolved_port", &self.resolved_port)
+            .field("resolved_txt", &self.resolved_txt)
+            .field("user_context", &self.user_context)
             .finish()
     }
 }

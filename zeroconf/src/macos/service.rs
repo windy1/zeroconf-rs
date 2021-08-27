@@ -1,10 +1,11 @@
 //! Bonjour implementation for cross-platform service.
 
-use super::service_ref::{ManagedDNSServiceRef, RegisterServiceParams};
+use super::service_ref::RegisterServiceParams;
 use super::{bonjour_util, constants};
 use crate::ffi::c_str::{self, AsCChars};
 use crate::ffi::{FromRaw, UnwrapOrNull};
 use crate::prelude::*;
+use crate::service::ServiceRegisterFuture;
 use crate::{
     EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration,
     ServiceType, TxtRecord,
@@ -13,12 +14,21 @@ use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_void};
 use std::any::Any;
 use std::ffi::CString;
+use std::fmt;
+use std::fmt::Formatter;
+use std::future::Future;
+use std::pin::Pin;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::task::Context;
+use std::task::Poll;
+use std::time::Duration;
 
 #[derive(Debug)]
 pub struct BonjourMdnsService {
-    service: Arc<Mutex<ManagedDNSServiceRef>>,
+    event_loop: EventLoop,
+    is_init: bool,
+    timeout: Duration,
     kind: CString,
     port: u16,
     name: Option<CString>,
@@ -32,7 +42,9 @@ pub struct BonjourMdnsService {
 impl TMdnsService for BonjourMdnsService {
     fn new(service_type: ServiceType, port: u16) -> Self {
         Self {
-            service: Arc::default(),
+            event_loop: EventLoop::default(),
+            is_init: false,
+            timeout: Duration::from_secs(0),
             kind: c_string!(service_type.to_string()),
             port,
             name: None,
@@ -74,7 +86,11 @@ impl TMdnsService for BonjourMdnsService {
         unsafe { (*self.context).user_context = Some(Arc::from(context)) };
     }
 
-    fn register(&mut self) -> Result<EventLoop> {
+    fn set_timeout(&mut self, timeout: Duration) {
+        self.timeout = timeout;
+    }
+
+    fn register(&mut self) -> Result<&EventLoop> {
         debug!("Registering service: {:?}", self);
 
         let txt_len = self
@@ -89,7 +105,7 @@ impl TMdnsService for BonjourMdnsService {
             .map(|t| t.inner().get_bytes_ptr())
             .unwrap_or_null();
 
-        self.service.lock().unwrap().register_service(
+        self.event_loop.service_mut().register(
             RegisterServiceParams::builder()
                 .flags(constants::BONJOUR_RENAME_FLAGS)
                 .interface_index(self.interface_index)
@@ -105,7 +121,13 @@ impl TMdnsService for BonjourMdnsService {
                 .build()?,
         )?;
 
-        Ok(EventLoop::new(self.service.clone()))
+        self.is_init = true;
+
+        Ok(&self.event_loop)
+    }
+
+    fn register_async(&mut self) -> ServiceRegisterFuture {
+        Box::pin(BonjourServiceRegisterFuture::new(self))
     }
 }
 
@@ -115,8 +137,38 @@ impl Drop for BonjourMdnsService {
     }
 }
 
+#[derive(new)]
+struct BonjourServiceRegisterFuture<'a> {
+    service: &'a mut BonjourMdnsService,
+}
+
+impl<'a> Future for BonjourServiceRegisterFuture<'a> {
+    type Output = Result<ServiceRegistration>;
+
+    fn poll(mut self: Pin<&mut Self>, ctx: &mut Context<'_>) -> Poll<Self::Output> {
+        let waker = ctx.waker();
+        let service = &mut self.service;
+        if let Some(result) = unsafe { (*service.context).registration_result.take() } {
+            Poll::Ready(result)
+        } else if service.is_init {
+            if let Err(error) = service.event_loop.poll(service.timeout) {
+                return Poll::Ready(Err(error));
+            }
+            waker.wake_by_ref();
+            Poll::Pending
+        } else {
+            if let Err(error) = service.register() {
+                return Poll::Ready(Err(error));
+            }
+            waker.wake_by_ref();
+            Poll::Pending
+        }
+    }
+}
+
 #[derive(Default, FromRaw)]
 struct BonjourServiceContext {
+    registration_result: Option<Result<ServiceRegistration>>,
     registered_callback: Option<Box<ServiceRegisteredCallback>>,
     user_context: Option<Arc<dyn Any>>,
 }
@@ -126,8 +178,25 @@ impl BonjourServiceContext {
         if let Some(f) = &self.registered_callback {
             f(result, self.user_context.clone());
         } else {
-            warn!("attempted to invoke callback but none was set");
+            warn!("attempted to invoke service callback but none was set");
         }
+    }
+}
+
+impl fmt::Debug for BonjourServiceContext {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("BonjourServiceContext")
+            .field("registration_result", &self.registration_result)
+            .field(
+                "registered_callback",
+                &self
+                    .registered_callback
+                    .as_ref()
+                    .map(|_| "Some(Box<ServiceRegisteredCallback>)")
+                    .unwrap_or("None"),
+            )
+            .field("user_context", &self.user_context)
+            .finish()
     }
 }
 

@@ -5,6 +5,8 @@ use zeroconf::{MdnsService, ServiceType, TxtRecord};
 
 #[tokio::main]
 pub async fn main() -> zeroconf::Result<()> {
+    env_logger::init();
+
     let mut service = MdnsService::new(ServiceType::new("http", "tcp")?, 8080);
     let mut txt_record = TxtRecord::new();
 
