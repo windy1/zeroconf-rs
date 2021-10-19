@@ -56,7 +56,7 @@ impl ManagedDNSServiceRef {
                 regtype,
                 domain,
                 host,
-                port,
+                port.to_be(),
                 txt_len,
                 txt_record,
                 callback,
