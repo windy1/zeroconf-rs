@@ -3,6 +3,7 @@
 use super::poll::ManagedAvahiSimplePoll;
 use crate::event_loop::TEventLoop;
 use crate::Result;
+use std::convert::TryInto;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
@@ -16,10 +17,9 @@ pub struct AvahiEventLoop<'a> {
 impl<'a> TEventLoop for AvahiEventLoop<'a> {
     /// Polls for new events.
     ///
-    /// Internally calls `ManagedAvahiSimplePoll::iterate(0)`, the `timeout` parameter does not
-    /// currently do anything in the Avahi implementation.
-    fn poll(&self, _timeout: Duration) -> Result<()> {
-        self.poll.iterate(0);
-        Ok(())
+    /// The `timeout` parameter defines the maximum time to sleep, but it will return earlier if
+    /// an event occurs.
+    fn poll(&self, timeout: Duration) -> Result<()> {
+        self.poll.iterate(timeout.as_millis().try_into().unwrap_or(-1))
     }
 }

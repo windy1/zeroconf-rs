@@ -38,8 +38,15 @@ impl ManagedAvahiSimplePoll {
     /// Delegate function for [`avahi_simple_poll_iterate()`].
     ///
     /// [`avahi_simple_poll_iterate()`]: https://avahi.org/doxygen/html/simple-watch_8h.html#ad5b7c9d3b7a6584d609241ee6f472a2e
-    pub fn iterate(&self, sleep_time: i32) {
-        unsafe { avahi_simple_poll_iterate(self.0, sleep_time) };
+    pub fn iterate(&self, sleep_time: i32) -> Result<()> {
+        let err = unsafe { avahi_simple_poll_iterate(self.0, sleep_time) };
+        if err < 0 {
+            avahi!(err, "AvahiSimplePoll poll failed")
+        } else if err > 0 {
+            Err("AvahiSimplePoll requested quit".into())
+        } else {
+            Ok(())
+        }
     }
 
     pub(super) fn inner(&self) -> *mut AvahiSimplePoll {
