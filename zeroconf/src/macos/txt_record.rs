@@ -6,7 +6,7 @@ use crate::txt_record::TTxtRecord;
 use crate::Result;
 use libc::{c_char, c_void};
 use std::ffi::CString;
-use std::{mem, ptr};
+use std::ptr;
 
 /// Interface for interfacting with Bonjour's TXT record capabilities.
 #[derive(Clone)]
