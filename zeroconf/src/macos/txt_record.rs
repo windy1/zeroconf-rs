@@ -20,11 +20,12 @@ impl TTxtRecord for BonjourTxtRecord {
     fn insert(&mut self, key: &str, value: &str) -> Result<()> {
         let key = c_string!(key);
         let value = c_string!(value);
-        let value_size = mem::size_of_val(&value) as u8;
+        // let value_size = mem::size_of_val(&value) as u8;
+        let value_size = value.as_bytes().len();
         unsafe {
             self.0.set_value(
                 key.as_ptr() as *const c_char,
-                value_size,
+                value_size as u8,
                 value.as_ptr() as *const c_void,
             )
         }

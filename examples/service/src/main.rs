@@ -16,6 +16,7 @@ fn main() {
 
     txt_record.insert("foo", "bar").unwrap();
 
+    service.set_name("zeroconf_example_service");
     service.set_registered_callback(Box::new(on_service_registered));
     service.set_context(Box::new(context));
     service.set_txt_record(txt_record);
