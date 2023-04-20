@@ -3,7 +3,7 @@
 use super::service_ref::{ManagedDNSServiceRef, RegisterServiceParams};
 use super::{bonjour_util, constants};
 use crate::ffi::c_str::{self, AsCChars};
-use crate::ffi::{FromRaw, UnwrapOrNull};
+use crate::ffi::{FromRaw, UnwrapOrNull, AsRaw};
 use crate::prelude::*;
 use crate::{
     EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration,
@@ -26,7 +26,7 @@ pub struct BonjourMdnsService {
     host: Option<CString>,
     interface_index: u32,
     txt_record: Option<TxtRecord>,
-    context: *mut BonjourServiceContext,
+    context: Box<BonjourServiceContext>,
 }
 
 impl TMdnsService for BonjourMdnsService {
@@ -40,7 +40,7 @@ impl TMdnsService for BonjourMdnsService {
             host: None,
             interface_index: constants::BONJOUR_IF_UNSPEC,
             txt_record: None,
-            context: Box::into_raw(Box::default()),
+            context: Box::default(),
         }
     }
 
@@ -67,11 +67,11 @@ impl TMdnsService for BonjourMdnsService {
     }
 
     fn set_registered_callback(&mut self, registered_callback: Box<ServiceRegisteredCallback>) {
-        unsafe { (*self.context).registered_callback = Some(registered_callback) };
+        self.context.registered_callback = Some(registered_callback);
     }
 
     fn set_context(&mut self, context: Box<dyn Any>) {
-        unsafe { (*self.context).user_context = Some(Arc::from(context)) };
+        self.context.user_context = Some(Arc::from(context));
     }
 
     fn register(&mut self) -> Result<EventLoop> {
@@ -101,7 +101,7 @@ impl TMdnsService for BonjourMdnsService {
                 .txt_len(txt_len)
                 .txt_record(txt_record)
                 .callback(Some(register_callback))
-                .context(self.context as *mut c_void)
+                .context(self.context.as_raw())
                 .build()?,
         )?;
 
@@ -109,16 +109,16 @@ impl TMdnsService for BonjourMdnsService {
     }
 }
 
-impl Drop for BonjourMdnsService {
-    fn drop(&mut self) {
-        unsafe { Box::from_raw(self.context) };
-    }
-}
-
-#[derive(Default, FromRaw)]
+#[derive(Default, FromRaw, AsRaw)]
 struct BonjourServiceContext {
     registered_callback: Option<Box<ServiceRegisteredCallback>>,
     user_context: Option<Arc<dyn Any>>,
+}
+// Necessary for BonjourMdnsService, cant be `derive`d because of registered_callback
+impl std::fmt::Debug for BonjourServiceContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BonjourServiceContext").field("user_context", &self.user_context).finish()
+    }
 }
 
 impl BonjourServiceContext {

@@ -36,7 +36,7 @@ pub struct AvahiMdnsBrowser {
     browser: Option<ManagedAvahiServiceBrowser>,
     kind: CString,
     interface_index: AvahiIfIndex,
-    context: *mut AvahiBrowserContext,
+    context: Box<AvahiBrowserContext>,
 }
 
 impl TMdnsBrowser for AvahiMdnsBrowser {
@@ -46,7 +46,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
             poll: None,
             browser: None,
             kind: c_string!(service_type.to_string()),
-            context: Box::into_raw(Box::default()),
+            context: Box::default(),
             interface_index: avahi_sys::AVAHI_IF_UNSPEC,
         }
     }
@@ -59,11 +59,11 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
         &mut self,
         service_discovered_callback: Box<ServiceDiscoveredCallback>,
     ) {
-        unsafe { (*self.context).service_discovered_callback = Some(service_discovered_callback) };
+        self.context.service_discovered_callback = Some(service_discovered_callback);
     }
 
     fn set_context(&mut self, context: Box<dyn Any>) {
-        unsafe { (*self.context).user_context = Some(Arc::from(context)) };
+        self.context.user_context = Some(Arc::from(context));
     }
 
     fn browse_services(&mut self) -> Result<EventLoop> {
@@ -80,22 +80,20 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
                 .build()?,
         )?));
 
-        unsafe {
-            (*self.context).client = self.client.clone();
+        self.context.client = self.client.clone();
 
-            self.browser = Some(ManagedAvahiServiceBrowser::new(
-                ManagedAvahiServiceBrowserParams::builder()
-                    .client((*self.context).client.as_ref().unwrap())
-                    .interface(self.interface_index)
-                    .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
-                    .kind(self.kind.as_ptr())
-                    .domain(ptr::null_mut())
-                    .flags(0)
-                    .callback(Some(browse_callback))
-                    .userdata(self.context as *mut c_void)
-                    .build()?,
-            )?);
-        }
+        self.browser = Some(ManagedAvahiServiceBrowser::new(
+            ManagedAvahiServiceBrowserParams::builder()
+                .interface(self.interface_index)
+                .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
+                .kind(self.kind.as_ptr())
+                .domain(ptr::null_mut())
+                .flags(0)
+                .callback(Some(browse_callback))
+                .userdata(self.context.as_raw())
+                .client(self.context.client.as_ref().unwrap())
+                .build()?,
+        )?);
 
         Ok(EventLoop::new(self.poll.as_ref().unwrap().clone()))
     }
@@ -103,7 +101,6 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
 
 impl Drop for AvahiMdnsBrowser {
     fn drop(&mut self) {
-        unsafe { Box::from_raw(self.context) };
         // browser must be freed first
         self.browser = None;
     }

@@ -24,7 +24,7 @@ pub struct BonjourMdnsBrowser {
     service: Arc<Mutex<ManagedDNSServiceRef>>,
     kind: CString,
     interface_index: u32,
-    context: *mut BonjourBrowserContext,
+    context: Box<BonjourBrowserContext>,
 }
 
 impl TMdnsBrowser for BonjourMdnsBrowser {
@@ -33,7 +33,7 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
             service: Arc::default(),
             kind: c_string!(service_type.to_string()),
             interface_index: constants::BONJOUR_IF_UNSPEC,
-            context: Box::into_raw(Box::default()),
+            context: Box::default(),
         }
     }
 
@@ -45,11 +45,11 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
         &mut self,
         service_discovered_callback: Box<ServiceDiscoveredCallback>,
     ) {
-        unsafe { (*self.context).service_discovered_callback = Some(service_discovered_callback) };
+        self.context.service_discovered_callback = Some(service_discovered_callback);
     }
 
     fn set_context(&mut self, context: Box<dyn Any>) {
-        unsafe { (*self.context).user_context = Some(Arc::from(context)) };
+        self.context.user_context = Some(Arc::from(context));
     }
 
     fn browse_services(&mut self) -> Result<EventLoop> {
@@ -62,17 +62,11 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
                 .regtype(self.kind.as_ptr())
                 .domain(ptr::null_mut())
                 .callback(Some(browse_callback))
-                .context(self.context as *mut c_void)
+                .context(self.context.as_raw())
                 .build()?,
         )?;
 
         Ok(EventLoop::new(self.service.clone()))
-    }
-}
-
-impl Drop for BonjourMdnsBrowser {
-    fn drop(&mut self) {
-        unsafe { Box::from_raw(self.context) };
     }
 }
 
