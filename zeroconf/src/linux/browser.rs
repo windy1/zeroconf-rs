@@ -127,6 +127,7 @@ impl AvahiBrowserContext {
     }
 }
 
+#[allow(clippy::derivable_impls)]
 impl Default for AvahiBrowserContext {
     fn default() -> Self {
         AvahiBrowserContext {

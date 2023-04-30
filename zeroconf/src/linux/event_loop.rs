@@ -16,10 +16,11 @@ pub struct AvahiEventLoop<'a> {
 impl<'a> TEventLoop for AvahiEventLoop<'a> {
     /// Polls for new events.
     ///
-    /// Internally calls `ManagedAvahiSimplePoll::iterate(0)`, the `timeout` parameter does not
-    /// currently do anything in the Avahi implementation.
-    fn poll(&self, _timeout: Duration) -> Result<()> {
-        self.poll.iterate(0);
-        Ok(())
+    /// Internally calls `ManagedAvahiSimplePoll::iterate(..)`.  
+    /// In systems where the C implementation of `poll(.., timeout)`
+    /// does not respect the `timeout` parameter, the `timeout` passed
+    /// here will have no effect -- ie will return immediately.
+    fn poll(&self, timeout: Duration) -> Result<()> {
+        self.poll.iterate(timeout)
     }
 }
