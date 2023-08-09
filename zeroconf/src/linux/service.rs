@@ -25,7 +25,7 @@ use std::sync::Arc;
 pub struct AvahiMdnsService {
     client: Option<ManagedAvahiClient>,
     poll: Option<Arc<ManagedAvahiSimplePoll>>,
-    context: *mut AvahiServiceContext,
+    context: Box<AvahiServiceContext>,
 }
 
 impl TMdnsService for AvahiMdnsService {
@@ -33,10 +33,10 @@ impl TMdnsService for AvahiMdnsService {
         Self {
             client: None,
             poll: None,
-            context: Box::into_raw(Box::new(AvahiServiceContext::new(
+            context: Box::new(AvahiServiceContext::new(
                 &service_type.to_string(),
                 port,
-            ))),
+            )),
         }
     }
 
@@ -47,31 +47,31 @@ impl TMdnsService for AvahiMdnsService {
     ///
     /// [`AvahiClient::host_name()`]: client/struct.ManagedAvahiClient.html#method.host_name
     fn set_name(&mut self, name: &str) {
-        unsafe { (*self.context).name = Some(c_string!(name)) };
+        self.context.name = Some(c_string!(name))
     }
 
     fn set_network_interface(&mut self, interface: NetworkInterface) {
-        unsafe { (*self.context).interface_index = avahi_util::interface_index(interface) };
+        self.context.interface_index = avahi_util::interface_index(interface)
     }
 
     fn set_domain(&mut self, domain: &str) {
-        unsafe { (*self.context).domain = Some(c_string!(domain)) };
+        self.context.domain = Some(c_string!(domain))
     }
 
     fn set_host(&mut self, host: &str) {
-        unsafe { (*self.context).host = Some(c_string!(host)) };
+        self.context.host = Some(c_string!(host))
     }
 
     fn set_txt_record(&mut self, txt_record: TxtRecord) {
-        unsafe { (*self.context).txt_record = Some(txt_record) };
+        self.context.txt_record = Some(txt_record)
     }
 
     fn set_registered_callback(&mut self, registered_callback: Box<ServiceRegisteredCallback>) {
-        unsafe { (*self.context).registered_callback = Some(registered_callback) };
+        self.context.registered_callback = Some(registered_callback)
     }
 
     fn set_context(&mut self, context: Box<dyn Any>) {
-        unsafe { (*self.context).user_context = Some(Arc::from(context)) };
+        self.context.user_context = Some(Arc::from(context))
     }
 
     fn register(&mut self) -> Result<EventLoop> {
@@ -84,17 +84,11 @@ impl TMdnsService for AvahiMdnsService {
                 .poll(self.poll.as_ref().unwrap())
                 .flags(AvahiClientFlags(0))
                 .callback(Some(client_callback))
-                .userdata(self.context as *mut c_void)
+                .userdata(self.context.as_raw())
                 .build()?,
         )?);
 
         Ok(EventLoop::new(self.poll.as_ref().unwrap().clone()))
-    }
-}
-
-impl Drop for AvahiMdnsService {
-    fn drop(&mut self) {
-        unsafe { Box::from_raw(self.context) };
     }
 }
 
