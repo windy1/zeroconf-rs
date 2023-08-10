@@ -2,6 +2,7 @@
 
 use super::constants;
 use crate::NetworkInterface;
+use bonjour_sys::DNSServiceErrorType;
 
 /// Normalizes the specified domain `&str` to conform to a standard enforced by this crate.
 ///
@@ -22,5 +23,16 @@ pub fn interface_index(interface: NetworkInterface) -> u32 {
     match interface {
         NetworkInterface::Unspec => constants::BONJOUR_IF_UNSPEC,
         NetworkInterface::AtIndex(i) => i,
+    }
+}
+
+/// Executes the specified closure and returns a formatted `Result`
+pub fn sys_exec<F: FnOnce() -> DNSServiceErrorType>(func: F, message: &str) -> crate::Result<()> {
+    let err = func();
+
+    if err < 0 {
+        crate::Result::Err(format!("{}", format!("{} (code: {})", message, err)).into())
+    } else {
+        crate::Result::Ok(())
     }
 }

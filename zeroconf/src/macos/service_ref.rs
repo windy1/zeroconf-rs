@@ -1,6 +1,6 @@
 //! Low level interface for interacting with `DNSserviceRef`
 
-use crate::Result;
+use crate::{macos::bonjour_util, Result};
 use bonjour_sys::{
     DNSServiceBrowse, DNSServiceBrowseReply, DNSServiceFlags, DNSServiceGetAddrInfo,
     DNSServiceGetAddrInfoReply, DNSServiceProcessResult, DNSServiceProtocol, DNSServiceRef,
@@ -12,11 +12,11 @@ use std::ptr;
 
 /// Wraps the `DNSServiceRef` type from the raw Bonjour bindings.
 ///
-/// This struct allocates a new `DNSServiceRef` when any of the delgate functions is invoked and
+/// This struct allocates a new `DNSServiceRef` when any of the delegate functions is invoked and
 /// calls the Bonjour function responsible for freeing the client on `trait Drop`.
 ///
 /// # Note
-/// This wrapper is meant for one-off calls to underlying Bonjour functions. The behaviour for
+/// This wrapper is meant for one-off calls to underlying Bonjour functions. The behavior for
 /// using an already initialized `DNSServiceRef` in one of these functions is undefined. Therefore,
 /// it is preferable to only call one delegate function per-instance.
 #[derive(Debug)]
@@ -47,22 +47,24 @@ impl ManagedDNSServiceRef {
             context,
         }: RegisterServiceParams,
     ) -> Result<()> {
-        bonjour!(
-            DNSServiceRegister(
-                &mut self.0 as *mut DNSServiceRef,
-                flags,
-                interface_index,
-                name,
-                regtype,
-                domain,
-                host,
-                port.to_be(),
-                txt_len,
-                txt_record,
-                callback,
-                context,
-            ),
-            "could not register service"
+        bonjour_util::sys_exec(
+            || unsafe {
+                DNSServiceRegister(
+                    &mut self.0 as *mut DNSServiceRef,
+                    flags,
+                    interface_index,
+                    name,
+                    regtype,
+                    domain,
+                    host,
+                    port.to_be(),
+                    txt_len,
+                    txt_record,
+                    callback,
+                    context,
+                )
+            },
+            "could not register service",
         )
     }
 
@@ -80,17 +82,19 @@ impl ManagedDNSServiceRef {
             context,
         }: BrowseServicesParams,
     ) -> Result<()> {
-        bonjour!(
-            DNSServiceBrowse(
-                &mut self.0 as *mut DNSServiceRef,
-                flags,
-                interface_index,
-                regtype,
-                domain,
-                callback,
-                context,
-            ),
-            "could not browse services"
+        bonjour_util::sys_exec(
+            || unsafe {
+                DNSServiceBrowse(
+                    &mut self.0 as *mut DNSServiceRef,
+                    flags,
+                    interface_index,
+                    regtype,
+                    domain,
+                    callback,
+                    context,
+                )
+            },
+            "could not browse services",
         )
     }
 
@@ -109,18 +113,20 @@ impl ManagedDNSServiceRef {
             context,
         }: ServiceResolveParams,
     ) -> Result<()> {
-        bonjour!(
-            DNSServiceResolve(
-                &mut self.0 as *mut DNSServiceRef,
-                flags,
-                interface_index,
-                name,
-                regtype,
-                domain,
-                callback,
-                context,
-            ),
-            "DNSServiceResolve() reported error"
+        bonjour_util::sys_exec(
+            || unsafe {
+                DNSServiceResolve(
+                    &mut self.0 as *mut DNSServiceRef,
+                    flags,
+                    interface_index,
+                    name,
+                    regtype,
+                    domain,
+                    callback,
+                    context,
+                )
+            },
+            "DNSServiceResolve() reported error",
         )?;
 
         self.process_result()
@@ -140,17 +146,19 @@ impl ManagedDNSServiceRef {
             context,
         }: GetAddressInfoParams,
     ) -> Result<()> {
-        bonjour!(
-            DNSServiceGetAddrInfo(
-                &mut self.0 as *mut DNSServiceRef,
-                flags,
-                interface_index,
-                protocol,
-                hostname,
-                callback,
-                context,
-            ),
-            "DNSServiceGetAddrInfo() reported error"
+        bonjour_util::sys_exec(
+            || unsafe {
+                DNSServiceGetAddrInfo(
+                    &mut self.0 as *mut DNSServiceRef,
+                    flags,
+                    interface_index,
+                    protocol,
+                    hostname,
+                    callback,
+                    context,
+                )
+            },
+            "DNSServiceGetAddrInfo() reported error",
         )?;
 
         self.process_result()
@@ -160,9 +168,9 @@ impl ManagedDNSServiceRef {
     ///
     /// [`DNSServiceProcessResult`]: https://developer.apple.com/documentation/dnssd/1804696-dnsserviceprocessresult?language=objc
     pub fn process_result(&self) -> Result<()> {
-        bonjour!(
-            DNSServiceProcessResult(self.0),
-            "could not process service result"
+        bonjour_util::sys_exec(
+            || unsafe { DNSServiceProcessResult(self.0) },
+            "could not process service result",
         )
     }
 

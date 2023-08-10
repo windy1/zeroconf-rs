@@ -10,6 +10,8 @@ use libc::{c_char, c_uchar, c_void};
 use std::ffi::CString;
 use std::{fmt, mem, ptr};
 
+use super::bonjour_util;
+
 /// Wraps the `ManagedTXTRecordRef` type from the raw Bonjour bindings.
 ///
 /// `zeroconf::TxtRecord` provides the cross-platform bindings for this functionality.
@@ -49,9 +51,9 @@ impl ManagedTXTRecordRef {
     ///
     /// [`TXTRecordRemoveValue()`]: https://developer.apple.com/documentation/dnssd/1804721-txtrecordremovevalue?language=objc
     pub unsafe fn remove_value(&mut self, key: *const c_char) -> Result<()> {
-        bonjour!(
-            TXTRecordRemoveValue(&mut self.0, key),
-            "could not remove TXT record value"
+        bonjour_util::sys_exec(
+            || unsafe { TXTRecordRemoveValue(&mut self.0, key) },
+            "could not remove TXT record value",
         )
     }
 
@@ -68,9 +70,9 @@ impl ManagedTXTRecordRef {
         value_size: u8,
         value: *const c_void,
     ) -> Result<()> {
-        bonjour!(
-            TXTRecordSetValue(&mut self.0, key, value_size, value),
-            "could not set TXT record value"
+        bonjour_util::sys_exec(
+            || unsafe { TXTRecordSetValue(&mut self.0, key, value_size, value) },
+            "could not set TXT record value",
         )
     }
 
@@ -200,9 +202,11 @@ fn _get_item_at_index(
     value_len: *mut u8,
     value: *mut *const c_void,
 ) -> Result<()> {
-    bonjour!(
-        TXTRecordGetItemAtIndex(length, data, item_index, key_buf_len, key, value_len, value),
-        "could get item at index for TXT record"
+    bonjour_util::sys_exec(
+        || unsafe {
+            TXTRecordGetItemAtIndex(length, data, item_index, key_buf_len, key, value_len, value)
+        },
+        "could get item at index for TXT record",
     )
 }
 
