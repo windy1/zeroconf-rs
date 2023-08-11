@@ -34,9 +34,11 @@ impl TTxtRecord for BonjourTxtRecord {
     fn get(&self, key: &str) -> Option<String> {
         let mut value_len: u8 = 0;
 
+        let c_str = c_string!(key);
+
         let value_raw = unsafe {
             self.0
-                .get_value_ptr(c_string!(key).as_ptr() as *const c_char, &mut value_len)
+                .get_value_ptr(c_str.as_ptr() as *const c_char, &mut value_len)
         };
 
         if value_raw.is_null() {
@@ -47,17 +49,13 @@ impl TTxtRecord for BonjourTxtRecord {
     }
 
     fn remove(&mut self, key: &str) -> Result<()> {
-        unsafe {
-            self.0
-                .remove_value(c_string!(key).as_ptr() as *const c_char)
-        }
+        let c_str = c_string!(key);
+        unsafe { self.0.remove_value(c_str.as_ptr() as *const c_char) }
     }
 
     fn contains_key(&self, key: &str) -> bool {
-        unsafe {
-            self.0
-                .contains_key(c_string!(key).as_ptr() as *const c_char)
-        }
+        let c_str = c_string!(key);
+        unsafe { self.0.contains_key(c_str.as_ptr() as *const c_char) }
     }
 
     fn len(&self) -> usize {
