@@ -31,7 +31,7 @@ pub fn sys_exec<F: FnOnce() -> DNSServiceErrorType>(func: F, message: &str) -> c
     let err = func();
 
     if err < 0 {
-        crate::Result::Err(format!("{}", format!("{} (code: {})", message, err)).into())
+        crate::Result::Err(format!("{} (code: {})", message, err).into())
     } else {
         crate::Result::Ok(())
     }
