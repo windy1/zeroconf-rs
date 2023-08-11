@@ -38,7 +38,6 @@ fn len_success() {
 }
 
 #[test]
-#[ignore]
 fn iter_success() {
     super::setup();
 
@@ -55,7 +54,6 @@ fn iter_success() {
 }
 
 #[test]
-#[ignore]
 fn keys_success() {
     super::setup();
 
@@ -70,7 +68,6 @@ fn keys_success() {
 }
 
 #[test]
-#[ignore]
 fn values_success() {
     super::setup();
 
