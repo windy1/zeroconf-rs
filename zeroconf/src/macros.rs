@@ -40,7 +40,8 @@ mod tests {
 
     #[test]
     fn assert_not_null_non_null_success() {
-        assert_not_null!(c_string!("foo").as_ptr());
+        let c_str = c_string!("foo");
+        assert_not_null!(c_str.as_ptr());
     }
 
     #[test]

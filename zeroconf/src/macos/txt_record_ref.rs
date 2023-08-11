@@ -97,7 +97,7 @@ impl ManagedTXTRecordRef {
     /// Delegate function for [`TXTRecordGetItemAtIndex`].
     ///
     /// # Safety
-    /// This function is unsafe because it makes no guarantees about it's rew pointer arguments
+    /// This function is unsafe because it makes no guarantees about it's raw pointer arguments
     /// that are dereferenced.
     ///
     /// [`TXTRecordGetItemAtIndex`]: https://developer.apple.com/documentation/dnssd/1804708-txtrecordgetitematindex?language=objc

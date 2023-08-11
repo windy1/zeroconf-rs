@@ -6,7 +6,7 @@ use crate::txt_record::TTxtRecord;
 use crate::Result;
 use libc::{c_char, c_void};
 use std::ffi::CString;
-use std::ptr;
+use std::{ptr, slice};
 
 /// Interface for interfacting with Bonjour's TXT record capabilities.
 #[derive(Clone)]
@@ -20,8 +20,8 @@ impl TTxtRecord for BonjourTxtRecord {
     fn insert(&mut self, key: &str, value: &str) -> Result<()> {
         let key = c_string!(key);
         let value = c_string!(value);
-        // let value_size = mem::size_of_val(&value) as u8;
         let value_size = value.as_bytes().len();
+
         unsafe {
             self.0.set_value(
                 key.as_ptr() as *const c_char,
@@ -136,7 +136,9 @@ impl Iterator for Iter<'_> {
             .trim_matches(char::from(0))
             .to_string();
 
-        let value = unsafe { c_str::raw_to_str(value as *const c_char).to_string() };
+        let value_len = value_len as usize;
+        let value_raw = unsafe { slice::from_raw_parts(value as *const u8, value_len) };
+        let value = String::from_utf8(value_raw.to_vec()).unwrap();
 
         self.index += 1;
 
