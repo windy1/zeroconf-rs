@@ -1,14 +1,13 @@
 //! Bonjour implementation for cross-platform TXT record.
 
 use super::txt_record_ref::ManagedTXTRecordRef;
-use crate::ffi::c_str;
 use crate::txt_record::TTxtRecord;
 use crate::Result;
 use libc::{c_char, c_void};
 use std::ffi::CString;
 use std::{ptr, slice};
 
-/// Interface for interfacting with Bonjour's TXT record capabilities.
+/// Interface for interfacing with Bonjour's TXT record capabilities.
 #[derive(Clone)]
 pub struct BonjourTxtRecord(ManagedTXTRecordRef);
 
@@ -44,7 +43,7 @@ impl TTxtRecord for BonjourTxtRecord {
         if value_raw.is_null() {
             None
         } else {
-            Some(unsafe { c_str::raw_to_str(value_raw as *const c_char).to_string() })
+            Some(unsafe { read_value(value_raw, value_len) })
         }
     }
 
@@ -136,9 +135,7 @@ impl Iterator for Iter<'_> {
             .trim_matches(char::from(0))
             .to_string();
 
-        let value_len = value_len as usize;
-        let value_raw = unsafe { slice::from_raw_parts(value as *const u8, value_len) };
-        let value = String::from_utf8(value_raw.to_vec()).unwrap();
+        let value = unsafe { read_value(value, value_len) };
 
         self.index += 1;
 
@@ -166,4 +163,10 @@ impl<'a> Iterator for Values<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|e| e.1)
     }
+}
+
+unsafe fn read_value(value: *const c_void, value_len: u8) -> String {
+    let value_len = value_len as usize;
+    let value_raw = slice::from_raw_parts(value as *const u8, value_len);
+    String::from_utf8(value_raw.to_vec()).unwrap()
 }
