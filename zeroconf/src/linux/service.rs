@@ -33,10 +33,7 @@ impl TMdnsService for AvahiMdnsService {
         Self {
             client: None,
             poll: None,
-            context: Box::new(AvahiServiceContext::new(
-                &service_type.to_string(),
-                port,
-            )),
+            context: Box::new(AvahiServiceContext::new(&service_type.to_string(), port)),
         }
     }
 
