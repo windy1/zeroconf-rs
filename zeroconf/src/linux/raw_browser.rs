@@ -1,5 +1,7 @@
 //! Rust friendly `AvahiServiceBrowser` wrappers/helpers
 
+use std::sync::Arc;
+
 use super::client::ManagedAvahiClient;
 use crate::Result;
 use avahi_sys::{
@@ -13,10 +15,13 @@ use libc::{c_char, c_void};
 /// This struct allocates a new `*mut AvahiServiceBrowser` when `ManagedAvahiServiceBrowser::new()`
 /// is invoked and calls the Avahi function responsible for freeing the client on `trait Drop`.
 #[derive(Debug)]
-pub struct ManagedAvahiServiceBrowser(*mut AvahiServiceBrowser);
+pub struct ManagedAvahiServiceBrowser {
+    inner: *mut AvahiServiceBrowser,
+    _client: Arc<ManagedAvahiClient>,
+}
 
 impl ManagedAvahiServiceBrowser {
-    /// Intializes the underlying `*mut AvahiClient` and verifies it was created; returning
+    /// Initializes the underlying `*mut AvahiClient` and verifies it was created; returning
     /// `Err(String)` if unsuccessful.
     pub fn new(
         ManagedAvahiServiceBrowserParams {
@@ -30,9 +35,9 @@ impl ManagedAvahiServiceBrowser {
             userdata,
         }: ManagedAvahiServiceBrowserParams,
     ) -> Result<Self> {
-        let browser = unsafe {
+        let inner = unsafe {
             avahi_service_browser_new(
-                client.inner(),
+                client.inner,
                 interface,
                 protocol,
                 kind,
@@ -43,17 +48,20 @@ impl ManagedAvahiServiceBrowser {
             )
         };
 
-        if browser.is_null() {
+        if inner.is_null() {
             Err("could not initialize Avahi service browser".into())
         } else {
-            Ok(Self(browser))
+            Ok(Self {
+                inner,
+                _client: client,
+            })
         }
     }
 }
 
 impl Drop for ManagedAvahiServiceBrowser {
     fn drop(&mut self) {
-        unsafe { avahi_service_browser_free(self.0) };
+        unsafe { avahi_service_browser_free(self.inner) };
     }
 }
 
@@ -64,8 +72,8 @@ impl Drop for ManagedAvahiServiceBrowser {
 ///
 /// [`avahi_service_browser_new()`]: https://avahi.org/doxygen/html/lookup_8h.html#a52d55a5156a7943012d03e6700880d2b
 #[derive(Builder, BuilderDelegate)]
-pub struct ManagedAvahiServiceBrowserParams<'a> {
-    client: &'a ManagedAvahiClient,
+pub struct ManagedAvahiServiceBrowserParams {
+    client: Arc<ManagedAvahiClient>,
     interface: AvahiIfIndex,
     protocol: AvahiProtocol,
     kind: *const c_char,

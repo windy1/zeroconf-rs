@@ -1,5 +1,7 @@
 //! Rust friendly `AvahiClient` wrappers/helpers
 
+use std::sync::Arc;
+
 use super::avahi_util;
 use super::poll::ManagedAvahiSimplePoll;
 use crate::ffi::c_str;
@@ -15,7 +17,10 @@ use libc::{c_int, c_void};
 /// This struct allocates a new `*mut AvahiClient` when `ManagedAvahiClient::new()` is invoked and
 /// calls the Avahi function responsible for freeing the client on `trait Drop`.
 #[derive(Debug)]
-pub struct ManagedAvahiClient(*mut AvahiClient);
+pub struct ManagedAvahiClient {
+    pub(crate) inner: *mut AvahiClient,
+    _poll: Arc<ManagedAvahiSimplePoll>,
+}
 
 impl ManagedAvahiClient {
     /// Initializes the underlying `*mut AvahiClient` and verifies it was created; returning
@@ -30,7 +35,7 @@ impl ManagedAvahiClient {
     ) -> Result<Self> {
         let mut err: c_int = 0;
 
-        let client = unsafe {
+        let inner = unsafe {
             avahi_client_new(
                 avahi_simple_poll_get(poll.inner()),
                 flags,
@@ -40,12 +45,12 @@ impl ManagedAvahiClient {
             )
         };
 
-        if client.is_null() {
+        if inner.is_null() {
             return Err("could not initialize AvahiClient".into());
         }
 
         match err {
-            0 => Ok(Self(client)),
+            0 => Ok(Self { inner, _poll: poll }),
             _ => Err(format!(
                 "could not initialize AvahiClient: {}",
                 avahi_util::get_error(err)
@@ -58,17 +63,13 @@ impl ManagedAvahiClient {
     ///
     /// [`avahi_client_get_host_name()`]: https://avahi.org/doxygen/html/client_8h.html#a89378618c3c592a255551c308ba300bf
     pub fn host_name<'a>(&self) -> Result<&'a str> {
-        unsafe { get_host_name(self.0) }
-    }
-
-    pub(super) fn inner(&self) -> *mut AvahiClient {
-        self.0
+        unsafe { get_host_name(self.inner) }
     }
 }
 
 impl Drop for ManagedAvahiClient {
     fn drop(&mut self) {
-        unsafe { avahi_client_free(self.0) };
+        unsafe { avahi_client_free(self.inner) };
     }
 }
 
@@ -78,8 +79,8 @@ impl Drop for ManagedAvahiClient {
 ///
 /// [`avahi_client_new()`]: https://avahi.org/doxygen/html/client_8h.html#a07b2a33a3e7cbb18a0eb9d00eade6ae6
 #[derive(Builder, BuilderDelegate)]
-pub struct ManagedAvahiClientParams<'a> {
-    poll: &'a ManagedAvahiSimplePoll,
+pub struct ManagedAvahiClientParams {
+    poll: Arc<ManagedAvahiSimplePoll>,
     flags: AvahiClientFlags,
     callback: AvahiClientCallback,
     userdata: *mut c_void,

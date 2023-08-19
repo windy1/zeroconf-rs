@@ -1,14 +1,13 @@
 //! Bonjour implementation for cross-platform TXT record.
 
 use super::txt_record_ref::ManagedTXTRecordRef;
-use crate::ffi::c_str;
 use crate::txt_record::TTxtRecord;
 use crate::Result;
 use libc::{c_char, c_void};
 use std::ffi::CString;
-use std::ptr;
+use std::{ptr, slice};
 
-/// Interface for interfacting with Bonjour's TXT record capabilities.
+/// Interface for interfacing with Bonjour's TXT record capabilities.
 #[derive(Clone)]
 pub struct BonjourTxtRecord(ManagedTXTRecordRef);
 
@@ -20,8 +19,8 @@ impl TTxtRecord for BonjourTxtRecord {
     fn insert(&mut self, key: &str, value: &str) -> Result<()> {
         let key = c_string!(key);
         let value = c_string!(value);
-        // let value_size = mem::size_of_val(&value) as u8;
         let value_size = value.as_bytes().len();
+
         unsafe {
             self.0.set_value(
                 key.as_ptr() as *const c_char,
@@ -34,30 +33,28 @@ impl TTxtRecord for BonjourTxtRecord {
     fn get(&self, key: &str) -> Option<String> {
         let mut value_len: u8 = 0;
 
+        let c_str = c_string!(key);
+
         let value_raw = unsafe {
             self.0
-                .get_value_ptr(c_string!(key).as_ptr() as *const c_char, &mut value_len)
+                .get_value_ptr(c_str.as_ptr() as *const c_char, &mut value_len)
         };
 
         if value_raw.is_null() {
             None
         } else {
-            Some(unsafe { c_str::raw_to_str(value_raw as *const c_char).to_string() })
+            Some(unsafe { read_value(value_raw, value_len) })
         }
     }
 
     fn remove(&mut self, key: &str) -> Result<()> {
-        unsafe {
-            self.0
-                .remove_value(c_string!(key).as_ptr() as *const c_char)
-        }
+        let c_str = c_string!(key);
+        unsafe { self.0.remove_value(c_str.as_ptr() as *const c_char) }
     }
 
     fn contains_key(&self, key: &str) -> bool {
-        unsafe {
-            self.0
-                .contains_key(c_string!(key).as_ptr() as *const c_char)
-        }
+        let c_str = c_string!(key);
+        unsafe { self.0.contains_key(c_str.as_ptr() as *const c_char) }
     }
 
     fn len(&self) -> usize {
@@ -138,7 +135,7 @@ impl Iterator for Iter<'_> {
             .trim_matches(char::from(0))
             .to_string();
 
-        let value = unsafe { c_str::raw_to_str(value as *const c_char).to_string() };
+        let value = unsafe { read_value(value, value_len) };
 
         self.index += 1;
 
@@ -166,4 +163,10 @@ impl<'a> Iterator for Values<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|e| e.1)
     }
+}
+
+unsafe fn read_value(value: *const c_void, value_len: u8) -> String {
+    let value_len = value_len as usize;
+    let value_raw = slice::from_raw_parts(value as *const u8, value_len);
+    String::from_utf8(value_raw.to_vec()).unwrap()
 }

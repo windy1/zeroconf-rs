@@ -14,19 +14,23 @@ impl TTxtRecord for AvahiTxtRecord {
     }
 
     fn insert(&mut self, key: &str, value: &str) -> Result<()> {
+        let c_key = c_string!(key);
+        let c_value = c_string!(value);
+
         unsafe {
             self.inner_mut().add_pair(
-                c_string!(key).as_ptr() as *const c_char,
-                c_string!(value).as_ptr() as *const c_char,
+                c_key.as_ptr() as *const c_char,
+                c_value.as_ptr() as *const c_char,
             );
         }
         Ok(())
     }
 
     fn get(&self, key: &str) -> Option<String> {
+        let c_str = c_string!(key);
         unsafe {
             self.inner_mut()
-                .find(c_string!(key).as_ptr() as *const c_char)?
+                .find(c_str.as_ptr() as *const c_char)?
                 .get_pair()
                 .value()
                 .as_str()
@@ -41,10 +45,13 @@ impl TTxtRecord for AvahiTxtRecord {
         map.remove(key);
 
         for (key, value) in map {
+            let c_key = c_string!(key);
+            let c_value = c_string!(value);
+
             unsafe {
                 list.add_pair(
-                    c_string!(key).as_ptr() as *const c_char,
-                    c_string!(value).as_ptr() as *const c_char,
+                    c_key.as_ptr() as *const c_char,
+                    c_value.as_ptr() as *const c_char,
                 );
             }
         }
@@ -55,9 +62,10 @@ impl TTxtRecord for AvahiTxtRecord {
     }
 
     fn contains_key(&self, key: &str) -> bool {
+        let c_str = c_string!(key);
         unsafe {
             self.inner_mut()
-                .find(c_string!(key).as_ptr() as *const c_char)
+                .find(c_str.as_ptr() as *const c_char)
                 .is_some()
         }
     }
