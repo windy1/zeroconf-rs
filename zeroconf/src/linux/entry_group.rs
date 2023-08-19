@@ -73,25 +73,27 @@ impl ManagedAvahiEntryGroup {
             txt,
         }: AddServiceParams,
     ) -> Result<()> {
-        avahi!(
-            avahi_entry_group_add_service_strlst(
-                self.inner,
-                interface,
-                protocol,
-                flags,
-                name,
-                kind,
-                domain,
-                host,
-                port,
-                txt.map(|t| t.inner()).unwrap_mut_or_null()
-            ),
-            "could not register service"
+        avahi_util::sys_exec(
+            || unsafe {
+                avahi_entry_group_add_service_strlst(
+                    self.inner,
+                    interface,
+                    protocol,
+                    flags,
+                    name,
+                    kind,
+                    domain,
+                    host,
+                    port,
+                    txt.map(|t| t.inner()).unwrap_mut_or_null(),
+                )
+            },
+            "could not register service",
         )?;
 
-        avahi!(
-            avahi_entry_group_commit(self.inner),
-            "could not commit service"
+        avahi_util::sys_exec(
+            || unsafe { avahi_entry_group_commit(self.inner) },
+            "could not commit service",
         )
     }
 

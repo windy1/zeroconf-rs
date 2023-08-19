@@ -47,6 +47,24 @@ pub fn interface_index(interface: NetworkInterface) -> i32 {
     }
 }
 
+/// Executes the specified closure and returns a formatted `Result`
+pub fn sys_exec<F: FnOnce() -> i32>(func: F, message: &str) -> crate::Result<()> {
+    let err = func();
+
+    if err < 0 {
+        crate::Result::Err(
+            format!(
+                "{}: `{}`",
+                message,
+                crate::linux::avahi_util::get_error(err)
+            )
+            .into(),
+        )
+    } else {
+        crate::Result::Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
