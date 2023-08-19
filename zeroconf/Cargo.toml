@@ -1,6 +1,6 @@
 [package]
 name = "zeroconf"
-version = "0.11.0"
+version = "0.11.1"
 authors = ["Walker Crouse <walkercrouse@hotmail.com>"]
 edition = "2018"
 description = "cross-platform library that wraps ZeroConf/mDNS implementations like Bonjour or Avahi"
@@ -9,7 +9,13 @@ homepage = "https://github.com/windy1/zeroconf-rs"
 repository = "https://github.com/windy1/zeroconf-rs"
 license-file = "../LICENSE"
 keywords = ["zeroconf", "mdns", "avahi", "bonjour", "dnssd"]
-categories = ["api-bindings", "network-programming", "os", "os::linux-apis", "os::macos-apis"]
+categories = [
+    "api-bindings",
+    "network-programming",
+    "os",
+    "os::linux-apis",
+    "os::macos-apis",
+]
 documentation = "https://docs.rs/zeroconf"
 
 [dependencies]

@@ -3,7 +3,7 @@
 use super::service_ref::{ManagedDNSServiceRef, RegisterServiceParams};
 use super::{bonjour_util, constants};
 use crate::ffi::c_str::{self, AsCChars};
-use crate::ffi::{FromRaw, UnwrapOrNull, AsRaw};
+use crate::ffi::{AsRaw, FromRaw, UnwrapOrNull};
 use crate::prelude::*;
 use crate::{
     EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration,
@@ -117,7 +117,9 @@ struct BonjourServiceContext {
 // Necessary for BonjourMdnsService, cant be `derive`d because of registered_callback
 impl std::fmt::Debug for BonjourServiceContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("BonjourServiceContext").field("user_context", &self.user_context).finish()
+        f.debug_struct("BonjourServiceContext")
+            .field("user_context", &self.user_context)
+            .finish()
     }
 }
 
