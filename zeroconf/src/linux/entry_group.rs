@@ -1,14 +1,16 @@
 //! Rust friendly `AvahiEntryGroup` wrappers/helpers
 
-use super::string_list::ManagedAvahiStringList;
+use std::sync::Arc;
+
+use super::{client::ManagedAvahiClient, string_list::ManagedAvahiStringList};
 use crate::ffi::UnwrapMutOrNull;
 use crate::linux::avahi_util;
 use crate::Result;
 use avahi_sys::{
     avahi_client_errno, avahi_entry_group_add_service_strlst, avahi_entry_group_commit,
     avahi_entry_group_free, avahi_entry_group_is_empty, avahi_entry_group_new,
-    avahi_entry_group_reset, AvahiClient, AvahiEntryGroup, AvahiEntryGroupCallback, AvahiIfIndex,
-    AvahiProtocol, AvahiPublishFlags,
+    avahi_entry_group_reset, AvahiEntryGroup, AvahiEntryGroupCallback, AvahiIfIndex, AvahiProtocol,
+    AvahiPublishFlags,
 };
 use libc::{c_char, c_void};
 
@@ -17,10 +19,13 @@ use libc::{c_char, c_void};
 /// This struct allocates a new `*mut AvahiEntryGroup` when `ManagedAvahiEntryGroup::new()` is
 /// invoked and calls the Avahi function responsible for freeing the group on `trait Drop`.
 #[derive(Debug)]
-pub struct ManagedAvahiEntryGroup(*mut AvahiEntryGroup);
+pub struct ManagedAvahiEntryGroup {
+    inner: *mut AvahiEntryGroup,
+    _client: Arc<ManagedAvahiClient>,
+}
 
 impl ManagedAvahiEntryGroup {
-    /// Intiializes the underlying `*mut AvahiEntryGroup` and verifies it was created; returning
+    /// Initializes the underlying `*mut AvahiEntryGroup` and verifies it was created; returning
     /// `Err(String)` if unsuccessful.
     pub fn new(
         ManagedAvahiEntryGroupParams {
@@ -29,12 +34,16 @@ impl ManagedAvahiEntryGroup {
             userdata,
         }: ManagedAvahiEntryGroupParams,
     ) -> Result<Self> {
-        let group = unsafe { avahi_entry_group_new(client, callback, userdata) };
-        if group.is_null() {
-            let err = avahi_util::get_error(unsafe { avahi_client_errno(client) });
+        let inner = unsafe { avahi_entry_group_new(client.inner, callback, userdata) };
+
+        if inner.is_null() {
+            let err = avahi_util::get_error(unsafe { avahi_client_errno(client.inner) });
             Err(format!("could not initialize AvahiEntryGroup: {}", err).into())
         } else {
-            Ok(Self(group))
+            Ok(Self {
+                inner,
+                _client: client,
+            })
         }
     }
 
@@ -42,10 +51,10 @@ impl ManagedAvahiEntryGroup {
     ///
     /// [`avahi_entry_group_is_empty()`]: https://avahi.org/doxygen/html/publish_8h.html#af5a78ee1fda6678970536889d459d85c
     pub fn is_empty(&self) -> bool {
-        unsafe { avahi_entry_group_is_empty(self.0) != 0 }
+        unsafe { avahi_entry_group_is_empty(self.inner) != 0 }
     }
 
-    /// Delgate function for [`avahi_entry_group_add_service()`].
+    /// Delegate function for [`avahi_entry_group_add_service()`].
     ///
     /// Also propagates any error returned into a `Result`.
     ///
@@ -66,7 +75,7 @@ impl ManagedAvahiEntryGroup {
     ) -> Result<()> {
         avahi!(
             avahi_entry_group_add_service_strlst(
-                self.0,
+                self.inner,
                 interface,
                 protocol,
                 flags,
@@ -80,20 +89,23 @@ impl ManagedAvahiEntryGroup {
             "could not register service"
         )?;
 
-        avahi!(avahi_entry_group_commit(self.0), "could not commit service")
+        avahi!(
+            avahi_entry_group_commit(self.inner),
+            "could not commit service"
+        )
     }
 
     /// Delegate function for [`avahi_entry_group_reset()`].
     ///
     /// [`avahi_entry_group_reset()`]: https://avahi.org/doxygen/html/publish_8h.html#a1293bbccf878dbeb9916660022bc71b2
     pub fn reset(&mut self) {
-        unsafe { avahi_entry_group_reset(self.0) };
+        unsafe { avahi_entry_group_reset(self.inner) };
     }
 }
 
 impl Drop for ManagedAvahiEntryGroup {
     fn drop(&mut self) {
-        unsafe { avahi_entry_group_free(self.0) };
+        unsafe { avahi_entry_group_free(self.inner) };
     }
 }
 
@@ -105,7 +117,7 @@ impl Drop for ManagedAvahiEntryGroup {
 /// [avahi_entry_group_new()]: https://avahi.org/doxygen/html/publish_8h.html#abb17598f2b6ec3c3f69defdd488d568c
 #[derive(Builder, BuilderDelegate)]
 pub struct ManagedAvahiEntryGroupParams {
-    client: *mut AvahiClient,
+    client: Arc<ManagedAvahiClient>,
     callback: AvahiEntryGroupCallback,
     userdata: *mut c_void,
 }

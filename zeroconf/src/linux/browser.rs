@@ -73,7 +73,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
 
         self.client = Some(Arc::new(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
-                .poll(self.poll.as_ref().unwrap())
+                .poll(Arc::clone(self.poll.as_ref().unwrap()))
                 .flags(AvahiClientFlags(0))
                 .callback(Some(client_callback))
                 .userdata(ptr::null_mut())
@@ -91,7 +91,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
                 .flags(0)
                 .callback(Some(browse_callback))
                 .userdata(self.context.as_raw())
-                .client(self.context.client.as_ref().unwrap())
+                .client(Arc::clone(self.context.client.as_ref().unwrap()))
                 .build()?,
         )?);
 
@@ -182,7 +182,7 @@ fn handle_browser_new(
     let raw_context = context.as_raw();
     context.resolvers.insert(ManagedAvahiServiceResolver::new(
         ManagedAvahiServiceResolverParams::builder()
-            .client(context.client.as_ref().unwrap())
+            .client(Arc::clone(context.client.as_ref().unwrap()))
             .interface(interface)
             .protocol(protocol)
             .name(name)

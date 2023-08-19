@@ -7,7 +7,7 @@ use avahi_sys::{
     AvahiProtocol, AvahiServiceResolver, AvahiServiceResolverCallback,
 };
 use libc::{c_char, c_void};
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 /// Wraps the `AvahiServiceResolver` type from the raw Avahi bindings.
 ///
@@ -15,10 +15,13 @@ use std::collections::HashMap;
 /// `ManagedAvahiServiceResolver::new()` is invoked and calls the Avahi function responsible for
 /// freeing the client on `trait Drop`.
 #[derive(Debug)]
-pub struct ManagedAvahiServiceResolver(*mut AvahiServiceResolver);
+pub struct ManagedAvahiServiceResolver {
+    inner: *mut AvahiServiceResolver,
+    _client: Arc<ManagedAvahiClient>,
+}
 
 impl ManagedAvahiServiceResolver {
-    /// Intializes the underlying `*mut AvahiServiceResolver` and verifies it was created;
+    /// Initializes the underlying `*mut AvahiServiceResolver` and verifies it was created;
     /// returning `Err(String)` if unsuccessful.
     pub fn new(
         ManagedAvahiServiceResolverParams {
@@ -34,9 +37,9 @@ impl ManagedAvahiServiceResolver {
             userdata,
         }: ManagedAvahiServiceResolverParams,
     ) -> Result<Self> {
-        let resolver = unsafe {
+        let inner = unsafe {
             avahi_service_resolver_new(
-                client.inner(),
+                client.inner,
                 interface,
                 protocol,
                 name,
@@ -49,17 +52,20 @@ impl ManagedAvahiServiceResolver {
             )
         };
 
-        if resolver.is_null() {
+        if inner.is_null() {
             Err("could not initialize AvahiServiceResolver".into())
         } else {
-            Ok(Self(resolver))
+            Ok(Self {
+                inner,
+                _client: client,
+            })
         }
     }
 }
 
 impl Drop for ManagedAvahiServiceResolver {
     fn drop(&mut self) {
-        unsafe { avahi_service_resolver_free(self.0) };
+        unsafe { avahi_service_resolver_free(self.inner) };
     }
 }
 
@@ -70,8 +76,8 @@ impl Drop for ManagedAvahiServiceResolver {
 ///
 /// [`avahi_service_resolver_new()`]: https://avahi.org/doxygen/html/lookup_8h.html#a904611a4134ceb5919f6bb637df84124
 #[derive(Builder, BuilderDelegate)]
-pub struct ManagedAvahiServiceResolverParams<'a> {
-    client: &'a ManagedAvahiClient,
+pub struct ManagedAvahiServiceResolverParams {
+    client: Arc<ManagedAvahiClient>,
     interface: AvahiIfIndex,
     protocol: AvahiProtocol,
     name: *const c_char,
@@ -90,7 +96,7 @@ pub(crate) struct ServiceResolverSet {
 
 impl ServiceResolverSet {
     pub fn insert(&mut self, resolver: ManagedAvahiServiceResolver) {
-        self.resolvers.insert(resolver.0, resolver);
+        self.resolvers.insert(resolver.inner, resolver);
     }
 
     pub fn remove_raw(&mut self, raw: *mut AvahiServiceResolver) {
