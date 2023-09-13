@@ -58,16 +58,7 @@ impl ServiceType {
 
 impl ToString for ServiceType {
     fn to_string(&self) -> String {
-        format!(
-            "_{}._{}{}",
-            self.name,
-            self.protocol,
-            if !self.sub_types.is_empty() {
-                format!(",_{}", self.sub_types.join(",_"))
-            } else {
-                "".to_string()
-            }
-        )
+        format!("_{}._{}", self.name, self.protocol)
     }
 }
 

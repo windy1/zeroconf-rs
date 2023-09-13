@@ -7,10 +7,10 @@ use crate::ffi::UnwrapMutOrNull;
 use crate::linux::avahi_util;
 use crate::Result;
 use avahi_sys::{
-    avahi_client_errno, avahi_entry_group_add_service_strlst, avahi_entry_group_commit,
-    avahi_entry_group_free, avahi_entry_group_is_empty, avahi_entry_group_new,
-    avahi_entry_group_reset, AvahiEntryGroup, AvahiEntryGroupCallback, AvahiIfIndex, AvahiProtocol,
-    AvahiPublishFlags,
+    avahi_client_errno, avahi_entry_group_add_service_strlst,
+    avahi_entry_group_add_service_subtype, avahi_entry_group_commit, avahi_entry_group_free,
+    avahi_entry_group_is_empty, avahi_entry_group_new, avahi_entry_group_reset, AvahiEntryGroup,
+    AvahiEntryGroupCallback, AvahiIfIndex, AvahiProtocol, AvahiPublishFlags,
 };
 use libc::{c_char, c_void};
 
@@ -89,8 +89,42 @@ impl ManagedAvahiEntryGroup {
                 )
             },
             "could not register service",
-        )?;
+        )
+    }
 
+    /// Delegate function for [`avahi_entry_group_add_service_subtype()`].
+    ///
+    /// Also propagates any error returned into a `Result`.
+    ///
+    /// [`avahi_entry_group_add_service_subtype()`]: https://avahi.org/doxygen/html/publish_8h.html#a93841be69a152d3134b408c25bb4d5d5
+    pub fn add_service_subtype(
+        &mut self,
+        AddServiceSubtypeParams {
+            interface,
+            protocol,
+            flags,
+            name,
+            kind,
+            domain,
+            subtype,
+        }: AddServiceSubtypeParams,
+    ) -> Result<()> {
+        avahi_util::sys_exec(
+            || unsafe {
+                avahi_entry_group_add_service_subtype(
+                    self.inner, interface, protocol, flags, name, kind, domain, subtype,
+                )
+            },
+            "could not register service subtype",
+        )
+    }
+
+    /// Delegate function for [`avahi_entry_group_commit()`].
+    ///
+    /// Also propagates any error returned into a `Result`.
+    ///
+    /// [`avahi_entry_group_commit()`]: https://avahi.org/doxygen/html/publish_8h.html#a2375338d23af4281399404758840a2de
+    pub fn commit(&mut self) -> Result<()> {
         avahi_util::sys_exec(
             || unsafe { avahi_entry_group_commit(self.inner) },
             "could not commit service",
@@ -140,4 +174,20 @@ pub struct AddServiceParams<'a> {
     host: *const c_char,
     port: u16,
     txt: Option<&'a ManagedAvahiStringList>,
+}
+
+/// Holds parameters for `ManagedAvahiEntryGroup::add_service_subtype()`.
+///
+/// See [`avahi_entry_group_add_service_subtype()`] for more information about these parameters.
+///
+/// [`avahi_entry_group_add_service_subtype()`]: https://www.avahi.org/doxygen/html/publish_8h.html#a93841be69a152d3134b408c25bb4d5d5
+#[derive(Builder, BuilderDelegate)]
+pub struct AddServiceSubtypeParams {
+    interface: AvahiIfIndex,
+    protocol: AvahiProtocol,
+    flags: AvahiPublishFlags,
+    name: *const c_char,
+    kind: *const c_char,
+    domain: *const c_char,
+    subtype: *const c_char,
 }

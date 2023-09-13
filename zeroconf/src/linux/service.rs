@@ -2,7 +2,9 @@
 
 use super::avahi_util;
 use super::client::{self, ManagedAvahiClient, ManagedAvahiClientParams};
-use super::entry_group::{AddServiceParams, ManagedAvahiEntryGroup, ManagedAvahiEntryGroupParams};
+use super::entry_group::{
+    AddServiceParams, AddServiceSubtypeParams, ManagedAvahiEntryGroup, ManagedAvahiEntryGroupParams,
+};
 use super::poll::ManagedAvahiSimplePoll;
 use crate::ffi::{c_str, AsRaw, FromRaw, UnwrapOrNull};
 use crate::prelude::*;
@@ -30,10 +32,24 @@ pub struct AvahiMdnsService {
 
 impl TMdnsService for AvahiMdnsService {
     fn new(service_type: ServiceType, port: u16) -> Self {
+        let context = if service_type.sub_types().is_empty() {
+            Box::new(AvahiServiceContext::new(&service_type.to_string(), port))
+        } else {
+            Box::new(AvahiServiceContext::with_sub_types(
+                &service_type.to_string(),
+                port,
+                service_type
+                    .sub_types()
+                    .iter()
+                    .map(|subtype| subtype.as_str())
+                    .collect(),
+            ))
+        };
+
         Self {
             client: None,
             poll: None,
-            context: Box::new(AvahiServiceContext::new(&service_type.to_string(), port)),
+            context,
         }
     }
 
@@ -98,6 +114,7 @@ struct AvahiServiceContext {
     client: Option<Arc<ManagedAvahiClient>>,
     name: Option<CString>,
     kind: CString,
+    subtypes: Option<Vec<CString>>,
     port: u16,
     group: Option<ManagedAvahiEntryGroup>,
     txt_record: Option<TxtRecord>,
@@ -115,6 +132,32 @@ impl AvahiServiceContext {
             name: None,
             kind: c_string!(kind),
             port,
+            subtypes: None,
+            group: None,
+            txt_record: None,
+            interface_index: avahi_sys::AVAHI_IF_UNSPEC,
+            domain: None,
+            host: None,
+            registered_callback: None,
+            user_context: None,
+        }
+    }
+
+    fn with_sub_types(kind: &str, port: u16, sub_types: Vec<&str>) -> Self {
+        Self {
+            client: None,
+            name: None,
+            kind: c_string!(kind),
+            port,
+            subtypes: Some(
+                sub_types
+                    .iter()
+                    .map(|sub_type| {
+                        let sub_type = format!("_{sub_type}._sub.{kind}");
+                        c_string!(sub_type)
+                    })
+                    .collect(),
+            ),
             group: None,
             txt_record: None,
             interface_index: avahi_sys::AVAHI_IF_UNSPEC,
@@ -168,7 +211,7 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
     let group = context.group.as_mut().unwrap();
 
     if group.is_empty() {
-        debug!("Adding service");
+        debug!("Adding service: {}", context.kind.to_string_lossy());
 
         group.add_service(
             AddServiceParams::builder()
@@ -182,7 +225,27 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
                 .port(context.port)
                 .txt(context.txt_record.as_ref().map(|t| t.inner()))
                 .build()?,
-        )
+        )?;
+
+        if let Some(subtypes) = &context.subtypes {
+            for subtype in subtypes {
+                debug!("Adding service subtype: {}", subtype.to_string_lossy());
+
+                group.add_service_subtype(
+                    AddServiceSubtypeParams::builder()
+                        .interface(context.interface_index)
+                        .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
+                        .flags(0)
+                        .name(context.name.as_ref().unwrap().as_ptr())
+                        .kind(context.kind.as_ptr())
+                        .domain(context.domain.as_ref().map(|d| d.as_ptr()).unwrap_or_null())
+                        .subtype(subtype.as_ptr())
+                        .build()?,
+                )?;
+            }
+        }
+
+        group.commit()
     } else {
         Ok(())
     }
