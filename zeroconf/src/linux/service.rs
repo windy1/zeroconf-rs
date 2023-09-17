@@ -33,15 +33,19 @@ pub struct AvahiMdnsService {
 impl TMdnsService for AvahiMdnsService {
     fn new(service_type: ServiceType, port: u16) -> Self {
         let context = if service_type.sub_types().is_empty() {
-            Box::new(AvahiServiceContext::new(&service_type.to_string(), port))
+            Box::new(AvahiServiceContext::new(
+                &service_type.to_string(),
+                port,
+                vec![],
+            ))
         } else {
-            Box::new(AvahiServiceContext::with_sub_types(
+            Box::new(AvahiServiceContext::new(
                 &service_type.to_string(),
                 port,
                 service_type
                     .sub_types()
                     .iter()
-                    .map(|subtype| subtype.as_str())
+                    .map(|subtype| subtype.to_string())
                     .collect(),
             ))
         };
@@ -114,7 +118,7 @@ struct AvahiServiceContext {
     client: Option<Arc<ManagedAvahiClient>>,
     name: Option<CString>,
     kind: CString,
-    subtypes: Option<Vec<CString>>,
+    subtypes: Vec<CString>,
     port: u16,
     group: Option<ManagedAvahiEntryGroup>,
     txt_record: Option<TxtRecord>,
@@ -126,38 +130,16 @@ struct AvahiServiceContext {
 }
 
 impl AvahiServiceContext {
-    fn new(kind: &str, port: u16) -> Self {
+    fn new(kind: &str, port: u16, sub_types: Vec<String>) -> Self {
         Self {
             client: None,
             name: None,
             kind: c_string!(kind),
             port,
-            subtypes: None,
-            group: None,
-            txt_record: None,
-            interface_index: avahi_sys::AVAHI_IF_UNSPEC,
-            domain: None,
-            host: None,
-            registered_callback: None,
-            user_context: None,
-        }
-    }
-
-    fn with_sub_types(kind: &str, port: u16, sub_types: Vec<&str>) -> Self {
-        Self {
-            client: None,
-            name: None,
-            kind: c_string!(kind),
-            port,
-            subtypes: Some(
-                sub_types
-                    .iter()
-                    .map(|sub_type| {
-                        let sub_type = format!("_{sub_type}._sub.{kind}");
-                        c_string!(sub_type)
-                    })
-                    .collect(),
-            ),
+            subtypes: sub_types
+                .into_iter()
+                .map(|sub_type| c_string!(sub_type))
+                .collect(),
             group: None,
             txt_record: None,
             interface_index: avahi_sys::AVAHI_IF_UNSPEC,
@@ -227,8 +209,8 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
                 .build()?,
         )?;
 
-        if let Some(subtypes) = &context.subtypes {
-            for subtype in subtypes {
+        if !context.subtypes.is_empty() {
+            for subtype in &context.subtypes {
                 debug!("Adding service subtype: {}", subtype.to_string_lossy());
 
                 group.add_service_subtype(
