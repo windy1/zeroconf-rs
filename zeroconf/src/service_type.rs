@@ -49,7 +49,7 @@ impl FromStr for SubType {
         let subtype_part = parts[0];
         let service_kind_part = parts[1];
 
-        if !ServiceType::from_str(service_kind_part).is_ok() {
+        if ServiceType::from_str(service_kind_part).is_err() {
             return Err(format!(
                 "Could not parse SubType component for service kind from {service_kind_part}"
             )

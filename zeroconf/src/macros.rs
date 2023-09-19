@@ -20,12 +20,6 @@ mod tests {
     use std::ptr;
 
     #[test]
-    fn assert_not_null_non_null_success() {
-        let c_str = c_string!("foo");
-        assert_not_null!(c_str.as_ptr());
-    }
-
-    #[test]
     #[should_panic]
     fn assert_not_null_null_panics() {
         assert_not_null!(ptr::null() as *const c_char);

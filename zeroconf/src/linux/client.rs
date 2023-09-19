@@ -1,6 +1,6 @@
 //! Rust friendly `AvahiClient` wrappers/helpers
 
-use std::sync::Arc;
+use std::rc::Rc;
 
 use super::avahi_util;
 use super::poll::ManagedAvahiSimplePoll;
@@ -19,7 +19,7 @@ use libc::{c_int, c_void};
 #[derive(Debug)]
 pub struct ManagedAvahiClient {
     pub(crate) inner: *mut AvahiClient,
-    _poll: Arc<ManagedAvahiSimplePoll>,
+    _poll: Rc<ManagedAvahiSimplePoll>,
 }
 
 impl ManagedAvahiClient {
@@ -80,7 +80,7 @@ impl Drop for ManagedAvahiClient {
 /// [`avahi_client_new()`]: https://avahi.org/doxygen/html/client_8h.html#a07b2a33a3e7cbb18a0eb9d00eade6ae6
 #[derive(Builder, BuilderDelegate)]
 pub struct ManagedAvahiClientParams {
-    poll: Arc<ManagedAvahiSimplePoll>,
+    poll: Rc<ManagedAvahiSimplePoll>,
     flags: AvahiClientFlags,
     callback: AvahiClientCallback,
     userdata: *mut c_void,

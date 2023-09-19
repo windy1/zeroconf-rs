@@ -1,6 +1,6 @@
 //! Rust friendly `AvahiEntryGroup` wrappers/helpers
 
-use std::sync::Arc;
+use std::rc::Rc;
 
 use super::{client::ManagedAvahiClient, string_list::ManagedAvahiStringList};
 use crate::ffi::UnwrapMutOrNull;
@@ -21,7 +21,7 @@ use libc::{c_char, c_void};
 #[derive(Debug)]
 pub struct ManagedAvahiEntryGroup {
     inner: *mut AvahiEntryGroup,
-    _client: Arc<ManagedAvahiClient>,
+    _client: Rc<ManagedAvahiClient>,
 }
 
 impl ManagedAvahiEntryGroup {
@@ -153,7 +153,7 @@ impl Drop for ManagedAvahiEntryGroup {
 /// [avahi_entry_group_new()]: https://avahi.org/doxygen/html/publish_8h.html#abb17598f2b6ec3c3f69defdd488d568c
 #[derive(Builder, BuilderDelegate)]
 pub struct ManagedAvahiEntryGroupParams {
-    client: Arc<ManagedAvahiClient>,
+    client: Rc<ManagedAvahiClient>,
     callback: AvahiEntryGroupCallback,
     userdata: *mut c_void,
 }

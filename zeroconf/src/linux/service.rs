@@ -20,13 +20,14 @@ use libc::c_void;
 use std::any::Any;
 use std::ffi::CString;
 use std::fmt::{self, Formatter};
+use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct AvahiMdnsService {
-    client: Option<Arc<ManagedAvahiClient>>,
-    poll: Option<Arc<ManagedAvahiSimplePoll>>,
+    client: Option<Rc<ManagedAvahiClient>>,
+    poll: Option<Rc<ManagedAvahiSimplePoll>>,
     context: Box<AvahiServiceContext>,
 }
 
@@ -94,11 +95,11 @@ impl TMdnsService for AvahiMdnsService {
     fn register(&mut self) -> Result<EventLoop> {
         debug!("Registering service: {:?}", self);
 
-        self.poll = Some(Arc::new(ManagedAvahiSimplePoll::new()?));
+        self.poll = Some(Rc::new(ManagedAvahiSimplePoll::new()?));
 
-        self.client = Some(Arc::new(ManagedAvahiClient::new(
+        self.client = Some(Rc::new(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
-                .poll(Arc::clone(self.poll.as_ref().unwrap()))
+                .poll(Rc::clone(self.poll.as_ref().unwrap()))
                 .flags(AvahiClientFlags(0))
                 .callback(Some(client_callback))
                 .userdata(self.context.as_raw())
@@ -115,7 +116,7 @@ impl TMdnsService for AvahiMdnsService {
 
 #[derive(FromRaw, AsRaw)]
 struct AvahiServiceContext {
-    client: Option<Arc<ManagedAvahiClient>>,
+    client: Option<Rc<ManagedAvahiClient>>,
     name: Option<CString>,
     kind: CString,
     subtypes: Vec<CString>,
@@ -183,7 +184,7 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
 
         context.group = Some(ManagedAvahiEntryGroup::new(
             ManagedAvahiEntryGroupParams::builder()
-                .client(Arc::clone(context.client.as_ref().unwrap()))
+                .client(Rc::clone(context.client.as_ref().unwrap()))
                 .callback(Some(entry_group_callback))
                 .userdata(context.as_raw())
                 .build()?,

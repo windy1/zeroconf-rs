@@ -1,6 +1,6 @@
 //! Rust friendly `AvahiServiceBrowser` wrappers/helpers
 
-use std::sync::Arc;
+use std::rc::Rc;
 
 use super::client::ManagedAvahiClient;
 use crate::Result;
@@ -17,7 +17,7 @@ use libc::{c_char, c_void};
 #[derive(Debug)]
 pub struct ManagedAvahiServiceBrowser {
     inner: *mut AvahiServiceBrowser,
-    _client: Arc<ManagedAvahiClient>,
+    _client: Rc<ManagedAvahiClient>,
 }
 
 impl ManagedAvahiServiceBrowser {
@@ -73,7 +73,7 @@ impl Drop for ManagedAvahiServiceBrowser {
 /// [`avahi_service_browser_new()`]: https://avahi.org/doxygen/html/lookup_8h.html#a52d55a5156a7943012d03e6700880d2b
 #[derive(Builder, BuilderDelegate)]
 pub struct ManagedAvahiServiceBrowserParams {
-    client: Arc<ManagedAvahiClient>,
+    client: Rc<ManagedAvahiClient>,
     interface: AvahiIfIndex,
     protocol: AvahiProtocol,
     kind: *const c_char,
