@@ -57,13 +57,9 @@ pub fn format_regtype(service_type: ServiceType) -> CString {
     c_string!(regtype.join(","))
 }
 
+/// Parses the specified `&str` into a `ServiceType`
 pub fn parse_regtype(regtype: &str) -> Result<ServiceType> {
     let types = regtype.split(',').collect::<Vec<_>>();
-
-    if types.len() == 0 {
-        return Err("could not parse Bonjour regtype into ServiceType".into());
-    }
-
     let parts = types[0].split('.').collect::<Vec<_>>();
 
     if parts.len() != 2 {
@@ -93,6 +89,30 @@ fn lstrip_underscore(s: &str) -> &str {
 mod tests {
     use super::*;
     use crate::ServiceType;
+
+    #[test]
+    fn parse_regtype_success() {
+        assert_eq!(
+            parse_regtype("_http._tcp,_printer1,_printer2").unwrap(),
+            ServiceType::with_sub_types("http", "tcp", vec!["printer1", "printer2"]).unwrap()
+        );
+    }
+
+    #[test]
+    fn parse_regtype_success_no_subtypes() {
+        assert_eq!(
+            parse_regtype("_http._tcp").unwrap(),
+            ServiceType::new("http", "tcp").unwrap()
+        );
+    }
+
+    #[test]
+    fn parse_regtype_failure_invalid_regtype() {
+        assert_eq!(
+            parse_regtype("foobar"),
+            Err("invalid name and protocol".into())
+        );
+    }
 
     #[test]
     fn format_regtype_success() {
