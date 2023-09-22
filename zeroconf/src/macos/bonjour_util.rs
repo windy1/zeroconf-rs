@@ -1,7 +1,9 @@
 //! Utilities related to Bonjour
 
+use std::ffi::CString;
+
 use super::constants;
-use crate::NetworkInterface;
+use crate::{check_valid_characters, NetworkInterface, Result, ServiceType};
 use bonjour_sys::DNSServiceErrorType;
 
 /// Normalizes the specified domain `&str` to conform to a standard enforced by this crate.
@@ -27,12 +29,122 @@ pub fn interface_index(interface: NetworkInterface) -> u32 {
 }
 
 /// Executes the specified closure and returns a formatted `Result`
-pub fn sys_exec<F: FnOnce() -> DNSServiceErrorType>(func: F, message: &str) -> crate::Result<()> {
+pub fn sys_exec<F: FnOnce() -> DNSServiceErrorType>(func: F, message: &str) -> Result<()> {
     let err = func();
 
     if err < 0 {
-        crate::Result::Err(format!("{} (code: {})", message, err).into())
+        Result::Err(format!("{} (code: {})", message, err).into())
     } else {
-        crate::Result::Ok(())
+        Result::Ok(())
+    }
+}
+
+/// Formats the specified `ServiceType` as a `CString` for use with Bonjour
+pub fn format_regtype(service_type: ServiceType) -> CString {
+    let mut regtype = vec![format!(
+        "_{}._{}",
+        service_type.name(),
+        service_type.protocol()
+    )];
+
+    regtype.extend(
+        service_type
+            .sub_types()
+            .iter()
+            .map(|sub_type| format!("_{sub_type}")),
+    );
+
+    c_string!(regtype.join(","))
+}
+
+pub fn parse_regtype(regtype: &str) -> Result<ServiceType> {
+    let types = regtype.split(',').collect::<Vec<_>>();
+
+    if types.len() == 0 {
+        return Err("could not parse Bonjour regtype into ServiceType".into());
+    }
+
+    let parts = types[0].split('.').collect::<Vec<_>>();
+
+    if parts.len() != 2 {
+        return Err("invalid name and protocol".into());
+    }
+
+    let name = lstrip_underscore(check_valid_characters(parts[0])?);
+    let protocol = lstrip_underscore(check_valid_characters(parts[1])?);
+
+    let sub_types = types[1..]
+        .iter()
+        .map(|s| check_valid_characters(lstrip_underscore(s)))
+        .collect::<Result<Vec<_>>>()?;
+
+    ServiceType::with_sub_types(name, protocol, sub_types)
+}
+
+fn lstrip_underscore(s: &str) -> &str {
+    if let Some(stripped) = s.strip_prefix('_') {
+        stripped
+    } else {
+        s
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ServiceType;
+
+    #[test]
+    fn format_regtype_success() {
+        assert_eq!(
+            format_regtype(
+                ServiceType::with_sub_types("http", "tcp", vec!["printer1", "printer2"]).unwrap()
+            ),
+            c_string!("_http._tcp,_printer1,_printer2")
+        );
+    }
+
+    #[test]
+    fn format_regtype_success_no_subtypes() {
+        assert_eq!(
+            format_regtype(ServiceType::new("http", "tcp").unwrap()),
+            c_string!("_http._tcp")
+        );
+    }
+
+    #[test]
+    fn sys_exec_returns_error() {
+        assert_eq!(
+            sys_exec(|| -42, "uh oh spaghetti-o"),
+            Err("uh oh spaghetti-o (code: -42)".into())
+        );
+    }
+
+    #[test]
+    fn sys_exec_returns_ok() {
+        assert_eq!(sys_exec(|| 0, "success"), Ok(()));
+    }
+
+    #[test]
+    fn network_interface_unspec_maps_to_bonjour_if_unspec() {
+        assert_eq!(interface_index(NetworkInterface::Unspec), 0);
+    }
+
+    #[test]
+    fn network_interface_at_index_maps_to_index() {
+        assert_eq!(interface_index(NetworkInterface::AtIndex(42)), 42);
+    }
+
+    #[test]
+    fn normalize_domain_removes_trailing_dot() {
+        assert_eq!(
+            normalize_domain("foo.bar.baz."),
+            String::from("foo.bar.baz")
+        );
+    }
+
+    #[test]
+    fn normalize_domain_does_not_remove_trailing_dot_if_not_present() {
+        assert_eq!(normalize_domain("foo.bar.baz"), String::from("foo.bar.baz"));
     }
 }

@@ -13,7 +13,6 @@ use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_void};
 use std::any::Any;
 use std::ffi::CString;
-use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
@@ -33,7 +32,7 @@ impl TMdnsService for BonjourMdnsService {
     fn new(service_type: ServiceType, port: u16) -> Self {
         Self {
             service: Arc::default(),
-            kind: c_string!(service_type.to_string()),
+            kind: bonjour_util::format_regtype(service_type),
             port,
             name: None,
             domain: None,
@@ -164,7 +163,7 @@ unsafe fn handle_register(
 
     let result = ServiceRegistration::builder()
         .name(c_str::copy_raw(name))
-        .service_type(ServiceType::from_str(&kind)?)
+        .service_type(bonjour_util::parse_regtype(&kind)?)
         .domain(domain)
         .build()
         .expect("could not build ServiceRegistration");

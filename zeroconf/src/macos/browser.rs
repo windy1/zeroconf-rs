@@ -16,7 +16,6 @@ use std::ffi::CString;
 use std::fmt::{self, Formatter};
 use std::net::IpAddr;
 use std::ptr;
-use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
@@ -31,7 +30,7 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
     fn new(service_type: ServiceType) -> Self {
         Self {
             service: Arc::default(),
-            kind: c_string!(service_type.to_string()),
+            kind: bonjour_util::format_regtype(service_type),
             interface_index: constants::BONJOUR_IF_UNSPEC,
             context: Box::default(),
         }
@@ -263,7 +262,7 @@ unsafe fn handle_get_address_info(
 
     let result = ServiceDiscovery::builder()
         .name(ctx.resolved_name.take().unwrap())
-        .service_type(ServiceType::from_str(&kind)?)
+        .service_type(bonjour_util::parse_regtype(&kind)?)
         .domain(domain)
         .host_name(hostname)
         .address(ip)

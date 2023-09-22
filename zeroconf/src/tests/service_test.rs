@@ -16,10 +16,12 @@ fn service_register_is_browsable() {
 
     const TOTAL_TEST_TIME_S: u64 = 30;
     static SERVICE_NAME: &str = "service_register_is_browsable";
+
     let mut service = MdnsService::new(
         ServiceType::with_sub_types("http", "tcp", vec!["printer"]).unwrap(),
         8080,
     );
+
     let context: Arc<Mutex<Context>> = Arc::default();
 
     let mut txt = TxtRecord::new();
@@ -34,6 +36,7 @@ fn service_register_is_browsable() {
             ServiceType::new("http", "tcp").unwrap(),
             ServiceType::with_sub_types("http", "tcp", vec!["printer"]).unwrap(),
         ];
+
         for service in services_to_discover {
             let mut browser = MdnsBrowser::new(service);
 
@@ -67,11 +70,14 @@ fn service_register_is_browsable() {
 
             let event_loop = browser.browse_services().unwrap();
             let browse_start = std::time::Instant::now();
+
             loop {
                 event_loop.poll(Duration::from_secs(0)).unwrap();
+
                 if context.lock().unwrap().is_discovered {
                     break;
                 }
+
                 if browse_start.elapsed().as_secs() > TOTAL_TEST_TIME_S / 2 {
                     context.lock().unwrap().timed_out = true;
                     break;
@@ -82,14 +88,17 @@ fn service_register_is_browsable() {
 
     let event_loop = service.register().unwrap();
     let publish_start = std::time::Instant::now();
+
     loop {
         event_loop.poll(Duration::from_secs(0)).unwrap();
 
         let mut mtx = context.lock().unwrap();
+
         if mtx.is_discovered {
             assert_eq!(txt, mtx.txt.take().unwrap());
             break;
         }
+
         if publish_start.elapsed().as_secs() > TOTAL_TEST_TIME_S {
             mtx.timed_out = true;
             break;

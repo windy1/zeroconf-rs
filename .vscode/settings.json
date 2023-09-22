@@ -1,9 +1,11 @@
 {
-    "editor.formatOnSave": true,
-    "cSpell.words": [
-        "aprotocol",
-        "errno",
-        "strlst",
-        "userdata"
-    ]
+  "editor.formatOnSave": true,
+  "cSpell.words": [
+    "aprotocol",
+    "errno",
+    "regtype",
+    "strlst",
+    "unspec",
+    "userdata"
+  ]
 }
