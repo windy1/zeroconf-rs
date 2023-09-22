@@ -5,7 +5,8 @@ use zeroconf::prelude::*;
 use zeroconf::{MdnsBrowser, ServiceDiscovery, ServiceType};
 
 fn main() {
-    let mut browser = MdnsBrowser::new(ServiceType::new("http", "tcp").unwrap());
+    let mut browser =
+        MdnsBrowser::new(ServiceType::with_sub_types("http", "tcp", vec!["printer1"]).unwrap());
 
     browser.set_service_discovered_callback(Box::new(on_service_discovered));
 

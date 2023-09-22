@@ -10,7 +10,11 @@ pub struct Context {
 }
 
 fn main() {
-    let mut service = MdnsService::new(ServiceType::new("http", "tcp").unwrap(), 8080);
+    let mut service = MdnsService::new(
+        ServiceType::with_sub_types("http", "tcp", vec!["printer1", "printer2"]).unwrap(),
+        8080,
+    );
+
     let mut txt_record = TxtRecord::new();
     let context: Arc<Mutex<Context>> = Arc::default();
 

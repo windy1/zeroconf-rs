@@ -32,56 +32,50 @@ fn service_register_is_browsable() {
     service.set_txt_record(txt.clone());
 
     service.set_registered_callback(Box::new(|_, context| {
-        let services_to_discover = vec![
-            ServiceType::new("http", "tcp").unwrap(),
-            ServiceType::with_sub_types("http", "tcp", vec!["printer"]).unwrap(),
-        ];
+        let mut browser =
+            MdnsBrowser::new(ServiceType::with_sub_types("http", "tcp", vec!["printer"]).unwrap());
 
-        for service in services_to_discover {
-            let mut browser = MdnsBrowser::new(service);
+        let context = context
+            .as_ref()
+            .unwrap()
+            .downcast_ref::<Arc<Mutex<Context>>>()
+            .unwrap()
+            .clone();
 
-            let context = context
-                .as_ref()
-                .unwrap()
-                .downcast_ref::<Arc<Mutex<Context>>>()
-                .unwrap()
-                .clone();
+        browser.set_context(Box::new(context.clone()));
 
-            browser.set_context(Box::new(context.clone()));
+        browser.set_service_discovered_callback(Box::new(|service, context| {
+            let service = service.unwrap();
 
-            browser.set_service_discovered_callback(Box::new(|service, context| {
-                let service = service.unwrap();
+            if service.name() == SERVICE_NAME {
+                let mut mtx = context
+                    .as_ref()
+                    .unwrap()
+                    .downcast_ref::<Arc<Mutex<Context>>>()
+                    .unwrap()
+                    .lock()
+                    .unwrap();
 
-                if service.name() == SERVICE_NAME {
-                    let mut mtx = context
-                        .as_ref()
-                        .unwrap()
-                        .downcast_ref::<Arc<Mutex<Context>>>()
-                        .unwrap()
-                        .lock()
-                        .unwrap();
+                mtx.txt = service.txt().clone();
+                mtx.is_discovered = true;
 
-                    mtx.txt = service.txt().clone();
-                    mtx.is_discovered = true;
+                debug!("Service discovered");
+            }
+        }));
 
-                    debug!("Service discovered");
-                }
-            }));
+        let event_loop = browser.browse_services().unwrap();
+        let browse_start = std::time::Instant::now();
 
-            let event_loop = browser.browse_services().unwrap();
-            let browse_start = std::time::Instant::now();
+        loop {
+            event_loop.poll(Duration::from_secs(0)).unwrap();
 
-            loop {
-                event_loop.poll(Duration::from_secs(0)).unwrap();
+            if context.lock().unwrap().is_discovered {
+                break;
+            }
 
-                if context.lock().unwrap().is_discovered {
-                    break;
-                }
-
-                if browse_start.elapsed().as_secs() > TOTAL_TEST_TIME_S / 2 {
-                    context.lock().unwrap().timed_out = true;
-                    break;
-                }
+            if browse_start.elapsed().as_secs() > TOTAL_TEST_TIME_S / 2 {
+                context.lock().unwrap().timed_out = true;
+                break;
             }
         }
     }));
