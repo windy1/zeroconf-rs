@@ -22,8 +22,8 @@ pub trait TTxtRecord: Clone + PartialEq + Eq + Debug {
     /// implementation provides access to the underlying value pointer.
     fn get(&self, key: &str) -> Option<String>;
 
-    /// Removes the value at the specified key. Returns `Err` if no such key exists.
-    fn remove(&mut self, key: &str) -> Result<()>;
+    /// Removes the value at the specified key, returning the previous value if present.
+    fn remove(&mut self, key: &str) -> Option<String>;
 
     /// Returns true if the TXT record contains the specified key.
     fn contains_key(&self, key: &str) -> bool;
@@ -154,12 +154,34 @@ mod tests {
     }
 
     #[test]
+    fn get_miss_returns_none() {
+        crate::tests::setup();
+        let record = TxtRecord::new();
+        assert_eq!(record.get("foo"), None);
+    }
+
+    #[test]
     fn remove_success() {
         crate::tests::setup();
         let mut record = TxtRecord::new();
         record.insert("foo", "bar").unwrap();
         record.remove("foo").unwrap();
         assert!(record.get("foo").is_none());
+    }
+
+    #[test]
+    fn remove_returns_previous_value() {
+        crate::tests::setup();
+        let mut record = TxtRecord::new();
+        record.insert("foo", "bar").unwrap();
+        assert_eq!(record.remove("foo").unwrap(), "bar");
+    }
+
+    #[test]
+    fn remove_returns_none_if_missing() {
+        crate::tests::setup();
+        let mut record = TxtRecord::new();
+        assert!(record.remove("foo").is_none());
     }
 
     #[test]

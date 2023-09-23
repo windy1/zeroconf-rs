@@ -43,6 +43,7 @@ impl ManagedAvahiStringList {
     /// [`avahi_string_list_find()`]: https://avahi.org/doxygen/html/strlst_8h.html#aafc54c009a2a1608b517c15a7cf29944
     pub unsafe fn find(&mut self, key: *const c_char) -> Option<AvahiStringListNode> {
         let node = avahi_string_list_find(self.0, key);
+
         if !node.is_null() {
             Some(AvahiStringListNode::new(node))
         } else {
@@ -110,9 +111,10 @@ unsafe impl Sync for ManagedAvahiStringList {}
 /// Represents a node or sub-list in an `AvahiStringList`. This struct is similar to it's parent,
 /// but it does not free the `AvahiStringList` once dropped and is bound to the lifetime of it's
 /// parent.
-#[derive(new)]
+#[derive(new, Getters)]
 pub struct AvahiStringListNode<'a> {
     list: *mut AvahiStringList,
+    #[getter(skip)]
     phantom: PhantomData<&'a AvahiStringList>,
 }
 
@@ -120,6 +122,7 @@ impl<'a> AvahiStringListNode<'a> {
     /// Returns the next node in the list, or `None` if last node.
     pub fn next(self) -> Option<AvahiStringListNode<'a>> {
         let next = unsafe { avahi_string_list_get_next(self.list) };
+
         if next.is_null() {
             None
         } else {

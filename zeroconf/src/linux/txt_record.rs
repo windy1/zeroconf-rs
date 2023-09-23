@@ -38,11 +38,10 @@ impl TTxtRecord for AvahiTxtRecord {
         }
     }
 
-    fn remove(&mut self, key: &str) -> Result<()> {
+    fn remove(&mut self, key: &str) -> Option<String> {
         let mut list = ManagedAvahiStringList::new();
         let mut map = self.to_map();
-
-        map.remove(key);
+        let prev = map.remove(key);
 
         for (key, value) in map {
             let c_key = c_string!(key);
@@ -58,7 +57,7 @@ impl TTxtRecord for AvahiTxtRecord {
 
         self.0 = UnsafeCell::new(list);
 
-        Ok(())
+        prev
     }
 
     fn contains_key(&self, key: &str) -> bool {
@@ -131,6 +130,11 @@ impl Iterator for Iter<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut n = self.node.take()?;
+
+        if n.list().is_null() {
+            return None;
+        }
+
         let pair = n.get_pair();
         self.node = n.next();
 
