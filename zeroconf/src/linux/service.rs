@@ -55,31 +55,55 @@ impl TMdnsService for AvahiMdnsService {
     ///
     /// [`AvahiClient::host_name()`]: client/struct.ManagedAvahiClient.html#method.host_name
     fn set_name(&mut self, name: &str) {
-        self.context.name = Some(c_string!(name))
+        self.context.name = c_string!(name).into()
+    }
+
+    fn name(&self) -> Option<&str> {
+        self.context.name.as_ref().map(|n| n.to_str().unwrap())
     }
 
     fn set_network_interface(&mut self, interface: NetworkInterface) {
         self.context.interface_index = avahi_util::interface_index(interface)
     }
 
+    fn network_interface(&self) -> NetworkInterface {
+        avahi_util::interface_from_index(self.context.interface_index)
+    }
+
     fn set_domain(&mut self, domain: &str) {
-        self.context.domain = Some(c_string!(domain))
+        self.context.domain = c_string!(domain).into()
+    }
+
+    fn domain(&self) -> Option<&str> {
+        self.context.domain.as_ref().map(|d| d.to_str().unwrap())
     }
 
     fn set_host(&mut self, host: &str) {
-        self.context.host = Some(c_string!(host))
+        self.context.host = c_string!(host).into()
+    }
+
+    fn host(&self) -> Option<&str> {
+        self.context.host.as_ref().map(|h| h.to_str().unwrap())
     }
 
     fn set_txt_record(&mut self, txt_record: TxtRecord) {
-        self.context.txt_record = Some(txt_record)
+        self.context.txt_record = txt_record.into()
+    }
+
+    fn txt_record(&self) -> Option<&TxtRecord> {
+        self.context.txt_record.as_ref()
     }
 
     fn set_registered_callback(&mut self, registered_callback: Box<ServiceRegisteredCallback>) {
-        self.context.registered_callback = Some(registered_callback)
+        self.context.registered_callback = registered_callback.into()
     }
 
     fn set_context(&mut self, context: Box<dyn Any>) {
         self.context.user_context = Some(Arc::from(context))
+    }
+
+    fn context(&self) -> Option<&dyn Any> {
+        self.context.user_context.as_ref().map(|c| c.as_ref())
     }
 
     fn register(&mut self) -> Result<EventLoop> {

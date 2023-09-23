@@ -47,6 +47,14 @@ pub fn interface_index(interface: NetworkInterface) -> i32 {
     }
 }
 
+/// Converts the specified Avahi interface index to a [`NetworkInterface`].
+pub fn interface_from_index(index: i32) -> NetworkInterface {
+    match index {
+        avahi_sys::AVAHI_IF_UNSPEC => NetworkInterface::Unspec,
+        _ => NetworkInterface::AtIndex(index as u32),
+    }
+}
+
 /// Executes the specified closure and returns a formatted `Result`
 pub fn sys_exec<F: FnOnce() -> i32>(func: F, message: &str) -> crate::Result<()> {
     let err = func();
@@ -103,6 +111,19 @@ mod tests {
         AvahiAddress__bindgen_ty_1, AvahiIPv4Address, AvahiIPv6Address, AVAHI_PROTO_INET,
         AVAHI_PROTO_INET6,
     };
+
+    #[test]
+    fn interface_from_index_returns_unspec_for_avahi_unspec() {
+        assert_eq!(
+            interface_from_index(avahi_sys::AVAHI_IF_UNSPEC),
+            NetworkInterface::Unspec
+        );
+    }
+
+    #[test]
+    fn interface_from_index_returns_index_for_avahi_index() {
+        assert_eq!(interface_from_index(1), NetworkInterface::AtIndex(1));
+    }
 
     #[test]
     fn format_service_type_returns_valid_string() {
