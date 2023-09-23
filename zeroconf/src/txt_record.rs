@@ -202,6 +202,13 @@ mod tests {
     }
 
     #[test]
+    fn len_returns_zero_if_empty() {
+        crate::tests::setup();
+        let record = TxtRecord::new();
+        assert_eq!(record.len(), 0);
+    }
+
+    #[test]
     fn iter_success() {
         crate::tests::setup();
 
@@ -214,6 +221,17 @@ mod tests {
 
         for (key, value) in record.iter() {
             debug!("({:?}, {:?})", key, value);
+        }
+    }
+
+    #[test]
+    fn iter_works_if_empty() {
+        crate::tests::setup();
+
+        let record = TxtRecord::new();
+
+        for (key, value) in record.iter() {
+            panic!("({:?}, {:?})", key, value);
         }
     }
 
@@ -243,6 +261,17 @@ mod tests {
         for value in record.values() {
             debug!("{:?}", value);
         }
+    }
+
+    #[test]
+    fn is_empty_success() {
+        crate::tests::setup();
+
+        let mut record = TxtRecord::new();
+        assert!(record.is_empty());
+
+        record.insert("foo", "bar").unwrap();
+        assert!(!record.is_empty());
     }
 
     #[test]
