@@ -820,6 +820,7 @@ dependencies = [
 name = "zeroconf-service-example"
 version = "0.1.0"
 dependencies = [
+ "clap 4.4.4",
  "env_logger 0.10.0",
  "log",
  "zeroconf",

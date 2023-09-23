@@ -1,11 +1,29 @@
 #[macro_use]
 extern crate log;
 
+use clap::Parser;
+
 use std::any::Any;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use zeroconf::prelude::*;
 use zeroconf::{MdnsService, ServiceRegistration, ServiceType, TxtRecord};
+
+#[derive(Parser, Debug)]
+#[command(author, version, about)]
+struct Args {
+    /// Name of the service type to register
+    #[clap(short, long, default_value = "http")]
+    name: String,
+
+    /// Protocol of the service type to register
+    #[clap(short, long, default_value = "tcp")]
+    protocol: String,
+
+    /// Sub-types of the service type to register
+    #[clap(short, long)]
+    sub_types: Vec<String>,
+}
 
 #[derive(Default, Debug)]
 pub struct Context {
@@ -15,11 +33,15 @@ pub struct Context {
 fn main() {
     env_logger::init();
 
-    let mut service = MdnsService::new(
-        ServiceType::with_sub_types("http", "tcp", vec!["printer1", "printer2"]).unwrap(),
-        8080,
-    );
+    let Args {
+        name,
+        protocol,
+        sub_types,
+    } = Args::parse();
 
+    let sub_types = sub_types.iter().map(|s| s.as_str()).collect::<Vec<_>>();
+    let service_type = ServiceType::with_sub_types(&name, &protocol, sub_types).unwrap();
+    let mut service = MdnsService::new(service_type, 8080);
     let mut txt_record = TxtRecord::new();
     let context: Arc<Mutex<Context>> = Arc::default();
 
