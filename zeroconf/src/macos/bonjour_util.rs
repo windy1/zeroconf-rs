@@ -1,9 +1,9 @@
 //! Utilities related to Bonjour
 
-use std::ffi::CString;
+use std::{ffi::CString, str::FromStr};
 
 use super::constants;
-use crate::{check_valid_characters, NetworkInterface, Result, ServiceType};
+use crate::{check_valid_characters, lstrip_underscore, NetworkInterface, Result, ServiceType};
 use bonjour_sys::DNSServiceErrorType;
 
 /// Normalizes the specified domain `&str` to conform to a standard enforced by this crate.
@@ -59,24 +59,15 @@ pub fn format_regtype(service_type: &ServiceType) -> CString {
 
 /// Parses the specified `&str` into a `ServiceType`
 pub fn parse_regtype(regtype: &str) -> Result<ServiceType> {
-    // TODO: use shared func
-
     let types = regtype.split(',').collect::<Vec<_>>();
-    let parts = types[0].split('.').collect::<Vec<_>>();
-
-    if parts.len() != 2 {
-        return Err("invalid name and protocol".into());
-    }
-
-    let name = lstrip_underscore(check_valid_characters(parts[0])?);
-    let protocol = lstrip_underscore(check_valid_characters(parts[1])?);
+    let service_type = ServiceType::from_str(&types[0])?;
 
     let sub_types = types[1..]
         .iter()
         .map(|s| check_valid_characters(lstrip_underscore(s)))
         .collect::<Result<Vec<_>>>()?;
 
-    ServiceType::with_sub_types(name, protocol, sub_types)
+    ServiceType::with_sub_types(service_type.name(), service_type.protocol(), sub_types)
 }
 
 #[cfg(test)]
@@ -112,7 +103,7 @@ mod tests {
     fn format_regtype_success() {
         assert_eq!(
             format_regtype(
-                ServiceType::with_sub_types("http", "tcp", vec!["printer1", "printer2"]).unwrap()
+                &ServiceType::with_sub_types("http", "tcp", vec!["printer1", "printer2"]).unwrap()
             ),
             c_string!("_http._tcp,_printer1,_printer2")
         );
@@ -121,7 +112,7 @@ mod tests {
     #[test]
     fn format_regtype_success_no_subtypes() {
         assert_eq!(
-            format_regtype(ServiceType::new("http", "tcp").unwrap()),
+            format_regtype(&ServiceType::new("http", "tcp").unwrap()),
             c_string!("_http._tcp")
         );
     }
