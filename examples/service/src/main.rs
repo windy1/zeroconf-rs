@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate log;
+
 use std::any::Any;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -10,6 +13,8 @@ pub struct Context {
 }
 
 fn main() {
+    env_logger::init();
+
     let mut service = MdnsService::new(
         ServiceType::with_sub_types("http", "tcp", vec!["printer1", "printer2"]).unwrap(),
         8080,
@@ -39,7 +44,7 @@ fn on_service_registered(
 ) {
     let service = result.unwrap();
 
-    println!("Service registered: {:?}", service);
+    info!("Service registered: {:?}", service);
 
     let context = context
         .as_ref()
@@ -50,7 +55,7 @@ fn on_service_registered(
 
     context.lock().unwrap().service_name = service.name().clone();
 
-    println!("Context: {:?}", context);
+    info!("Context: {:?}", context);
 
     // ...
 }
