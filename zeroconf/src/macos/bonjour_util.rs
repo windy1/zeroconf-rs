@@ -28,6 +28,14 @@ pub fn interface_index(interface: NetworkInterface) -> u32 {
     }
 }
 
+/// Converts the specified Bonjour interface index to a [`NetworkInterface`].
+pub fn interface_from_index(index: u32) -> NetworkInterface {
+    match index {
+        constants::BONJOUR_IF_UNSPEC => NetworkInterface::Unspec,
+        _ => NetworkInterface::AtIndex(index),
+    }
+}
+
 /// Executes the specified closure and returns a formatted `Result`
 pub fn sys_exec<F: FnOnce() -> DNSServiceErrorType>(func: F, message: &str) -> Result<()> {
     let err = func();
