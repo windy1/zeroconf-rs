@@ -7,7 +7,7 @@ use avahi_sys::{
     AvahiProtocol, AvahiServiceResolver, AvahiServiceResolverCallback,
 };
 use libc::{c_char, c_void};
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, rc::Rc};
 
 /// Wraps the `AvahiServiceResolver` type from the raw Avahi bindings.
 ///
@@ -17,7 +17,7 @@ use std::{collections::HashMap, sync::Arc};
 #[derive(Debug)]
 pub struct ManagedAvahiServiceResolver {
     inner: *mut AvahiServiceResolver,
-    _client: Arc<ManagedAvahiClient>,
+    _client: Rc<ManagedAvahiClient>,
 }
 
 impl ManagedAvahiServiceResolver {
@@ -77,7 +77,7 @@ impl Drop for ManagedAvahiServiceResolver {
 /// [`avahi_service_resolver_new()`]: https://avahi.org/doxygen/html/lookup_8h.html#a904611a4134ceb5919f6bb637df84124
 #[derive(Builder, BuilderDelegate)]
 pub struct ManagedAvahiServiceResolverParams {
-    client: Arc<ManagedAvahiClient>,
+    client: Rc<ManagedAvahiClient>,
     interface: AvahiIfIndex,
     protocol: AvahiProtocol,
     name: *const c_char,

@@ -16,7 +16,6 @@ use std::ffi::CString;
 use std::fmt::{self, Formatter};
 use std::net::IpAddr;
 use std::ptr;
-use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
@@ -31,7 +30,7 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
     fn new(service_type: ServiceType) -> Self {
         Self {
             service: Arc::default(),
-            kind: c_string!(service_type.to_string()),
+            kind: bonjour_util::format_regtype(&service_type),
             interface_index: constants::BONJOUR_IF_UNSPEC,
             context: Box::default(),
         }
@@ -39,6 +38,10 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
 
     fn set_network_interface(&mut self, interface: NetworkInterface) {
         self.interface_index = bonjour_util::interface_index(interface);
+    }
+
+    fn network_interface(&self) -> NetworkInterface {
+        bonjour_util::interface_from_index(self.interface_index)
     }
 
     fn set_service_discovered_callback(
@@ -50,6 +53,10 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
 
     fn set_context(&mut self, context: Box<dyn Any>) {
         self.context.user_context = Some(Arc::from(context));
+    }
+
+    fn context(&self) -> Option<&dyn Any> {
+        self.context.user_context.as_ref().map(|c| c.as_ref())
     }
 
     fn browse_services(&mut self) -> Result<EventLoop> {
@@ -263,7 +270,7 @@ unsafe fn handle_get_address_info(
 
     let result = ServiceDiscovery::builder()
         .name(ctx.resolved_name.take().unwrap())
-        .service_type(ServiceType::from_str(&kind)?)
+        .service_type(bonjour_util::parse_regtype(&kind)?)
         .domain(domain)
         .host_name(hostname)
         .address(ip)

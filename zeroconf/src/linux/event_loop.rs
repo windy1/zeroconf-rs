@@ -4,12 +4,12 @@ use super::poll::ManagedAvahiSimplePoll;
 use crate::event_loop::TEventLoop;
 use crate::Result;
 use std::marker::PhantomData;
-use std::sync::Arc;
+use std::rc::Rc;
 use std::time::Duration;
 
 #[derive(new)]
 pub struct AvahiEventLoop<'a> {
-    poll: Arc<ManagedAvahiSimplePoll>,
+    poll: Rc<ManagedAvahiSimplePoll>,
     phantom: PhantomData<&'a ManagedAvahiSimplePoll>,
 }
 

@@ -47,7 +47,7 @@ pub trait UnwrapOrNull<T> {
 
 impl<T> UnwrapOrNull<T> for Option<*const T> {
     fn unwrap_or_null(&self) -> *const T {
-        self.unwrap_or_else(|| ptr::null() as *const T)
+        self.unwrap_or_else(ptr::null)
     }
 }
 
@@ -59,7 +59,7 @@ pub trait UnwrapMutOrNull<T> {
 
 impl<T> UnwrapMutOrNull<T> for Option<*mut T> {
     fn unwrap_mut_or_null(&mut self) -> *mut T {
-        self.unwrap_or_else(|| ptr::null_mut() as *mut T)
+        self.unwrap_or_else(ptr::null_mut)
     }
 }
 

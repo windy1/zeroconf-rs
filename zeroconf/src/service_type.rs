@@ -1,7 +1,8 @@
 //! Data type for constructing a service type
 
-use crate::Result;
 use std::str::FromStr;
+
+use crate::{error::Error, Result};
 
 /// Data type for constructing a service type to register as an mDNS service.
 #[derive(Default, Debug, Getters, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -15,8 +16,8 @@ impl ServiceType {
     /// Creates a new `ServiceType` with the specified name (e.g. `http`) and protocol (e.g. `tcp`)
     pub fn new(name: &str, protocol: &str) -> Result<Self> {
         Ok(Self {
-            name: Self::check_part(name)?.to_string(),
-            protocol: Self::check_part(protocol)?.to_string(),
+            name: check_valid_characters(name)?.to_string(),
+            protocol: check_valid_characters(protocol)?.to_string(),
             sub_types: vec![],
         })
     }
@@ -24,78 +25,51 @@ impl ServiceType {
     /// Creates a new `ServiceType` with the specified name (e.g. `http`) and protocol (e.g. `tcp`)
     /// and sub-types.
     pub fn with_sub_types(name: &str, protocol: &str, sub_types: Vec<&str>) -> Result<Self> {
-        for sub_type in &sub_types {
-            Self::check_part(sub_type)?;
-        }
-
         Ok(Self {
-            name: name.to_string(),
-            protocol: protocol.to_string(),
-            sub_types: sub_types.iter().map(|s| s.to_string()).collect(),
+            name: check_valid_characters(name)?.to_string(),
+            protocol: check_valid_characters(protocol)?.to_string(),
+            sub_types: sub_types
+                .into_iter()
+                .map(|s| check_valid_characters(s).map(|valid| valid.to_string()))
+                .collect::<Result<Vec<_>>>()?,
         })
-    }
-
-    fn check_part(part: &str) -> Result<&str> {
-        if part.contains('.') {
-            Err("invalid character: .".into())
-        } else if part.contains(',') {
-            Err("invalid character: ,".into())
-        } else if part.is_empty() {
-            Err("cannot be empty".into())
-        } else {
-            Ok(part)
-        }
-    }
-
-    fn lstrip_underscore(s: &str) -> &str {
-        if let Some(stripped) = s.strip_prefix('_') {
-            stripped
-        } else {
-            s
-        }
-    }
-}
-
-impl ToString for ServiceType {
-    fn to_string(&self) -> String {
-        format!(
-            "_{}._{}{}",
-            self.name,
-            self.protocol,
-            if !self.sub_types.is_empty() {
-                format!(",_{}", self.sub_types.join(",_"))
-            } else {
-                "".to_string()
-            }
-        )
     }
 }
 
 impl FromStr for ServiceType {
-    type Err = crate::error::Error;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let parts: Vec<&str> = s.split(',').collect();
-        if parts.is_empty() {
-            return Err("could not parse ServiceType from string".into());
-        }
+        let parts = s.split('.').collect::<Vec<_>>();
 
-        let head: Vec<&str> = parts[0].split('.').collect();
-        if head.len() != 2 {
+        if parts.len() != 2 {
             return Err("invalid name and protocol".into());
         }
 
-        let name = Self::lstrip_underscore(head[0]);
-        let protocol = Self::lstrip_underscore(head[1]);
+        let name = lstrip_underscore(check_valid_characters(parts[0])?);
+        let protocol = lstrip_underscore(check_valid_characters(parts[1])?);
 
-        let mut sub_types: Vec<&str> = vec![];
-        if parts.len() > 1 {
-            for part in parts.iter().skip(1) {
-                sub_types.push(Self::lstrip_underscore(part));
-            }
-        }
+        Self::new(name, protocol)
+    }
+}
 
-        ServiceType::with_sub_types(name, protocol, sub_types)
+pub fn check_valid_characters(part: &str) -> Result<&str> {
+    if part.contains('.') {
+        Err("invalid character: .".into())
+    } else if part.contains(',') {
+        Err("invalid character: ,".into())
+    } else if part.is_empty() {
+        Err("cannot be empty".into())
+    } else {
+        Ok(part)
+    }
+}
+
+pub fn lstrip_underscore(s: &str) -> &str {
+    if let Some(stripped) = s.strip_prefix('_') {
+        stripped
+    } else {
+        s
     }
 }
 
@@ -114,26 +88,9 @@ mod tests {
     }
 
     #[test]
-    fn must_have_name_and_protocol() {
+    fn from_str_requires_two_parts() {
         ServiceType::from_str("_http").expect_err("invalid name and protocol");
-    }
-
-    #[test]
-    fn to_string_success() {
-        assert_eq!(
-            ServiceType::new("http", "tcp").unwrap().to_string(),
-            "_http._tcp"
-        );
-    }
-
-    #[test]
-    fn to_string_with_sub_types_success() {
-        assert_eq!(
-            ServiceType::with_sub_types("http", "tcp", vec!["api-v1", "api-v2"])
-                .unwrap()
-                .to_string(),
-            "_http._tcp,_api-v1,_api-v2"
-        );
+        ServiceType::from_str("_http._tcp._foo").expect_err("invalid name and protocol");
     }
 
     #[test]
@@ -145,10 +102,32 @@ mod tests {
     }
 
     #[test]
-    fn from_str_with_sub_types_success() {
-        assert_eq!(
-            ServiceType::from_str("_http._tcp,api-v1,api-v2").unwrap(),
-            ServiceType::with_sub_types("http", "tcp", vec!["api-v1", "api-v2"]).unwrap()
-        );
+    fn check_valid_characters_returns_error_if_dot() {
+        check_valid_characters("foo.bar").expect_err("invalid character: .");
+    }
+
+    #[test]
+    fn check_valid_characters_returns_error_if_comma() {
+        check_valid_characters("foo,bar").expect_err("invalid character: ,");
+    }
+
+    #[test]
+    fn check_valid_characters_returns_error_if_empty() {
+        check_valid_characters("").expect_err("cannot be empty");
+    }
+
+    #[test]
+    fn check_valid_characters_success() {
+        assert_eq!(check_valid_characters("foo").unwrap(), "foo");
+    }
+
+    #[test]
+    fn lstrip_underscore_returns_stripped() {
+        assert_eq!(lstrip_underscore("_foo"), "foo");
+    }
+
+    #[test]
+    fn lstrip_underscore_returns_original() {
+        assert_eq!(lstrip_underscore("foo"), "foo");
     }
 }

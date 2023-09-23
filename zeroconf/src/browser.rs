@@ -15,6 +15,9 @@ pub trait TMdnsBrowser {
     /// on all available interfaces.
     fn set_network_interface(&mut self, interface: NetworkInterface);
 
+    /// Returns the network interface on which to browse for services on.
+    fn network_interface(&self) -> NetworkInterface;
+
     /// Sets the [`ServiceDiscoveredCallback`] that is invoked when the browser has discovered and
     /// resolved a service.
     ///
@@ -27,6 +30,9 @@ pub trait TMdnsBrowser {
     /// Sets the optional user context to pass through to the callback. This is useful if you need
     /// to share state between pre and post-callback. The context type must implement `Any`.
     fn set_context(&mut self, context: Box<dyn Any>);
+
+    /// Returns the optional user context to pass through to the callback.
+    fn context(&self) -> Option<&dyn Any>;
 
     /// Starts the browser. Returns an `EventLoop` which can be called to keep the browser alive.
     fn browse_services(&mut self) -> Result<EventLoop>;

@@ -2,7 +2,9 @@
 
 use super::avahi_util;
 use super::client::{self, ManagedAvahiClient, ManagedAvahiClientParams};
-use super::entry_group::{AddServiceParams, ManagedAvahiEntryGroup, ManagedAvahiEntryGroupParams};
+use super::entry_group::{
+    AddServiceParams, AddServiceSubtypeParams, ManagedAvahiEntryGroup, ManagedAvahiEntryGroupParams,
+};
 use super::poll::ManagedAvahiSimplePoll;
 use crate::ffi::{c_str, AsRaw, FromRaw, UnwrapOrNull};
 use crate::prelude::*;
@@ -18,22 +20,31 @@ use libc::c_void;
 use std::any::Any;
 use std::ffi::CString;
 use std::fmt::{self, Formatter};
+use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct AvahiMdnsService {
-    client: Option<Arc<ManagedAvahiClient>>,
-    poll: Option<Arc<ManagedAvahiSimplePoll>>,
+    client: Option<Rc<ManagedAvahiClient>>,
+    poll: Option<Rc<ManagedAvahiSimplePoll>>,
     context: Box<AvahiServiceContext>,
 }
 
 impl TMdnsService for AvahiMdnsService {
     fn new(service_type: ServiceType, port: u16) -> Self {
+        let kind = avahi_util::format_service_type(&service_type);
+
+        let sub_types = service_type
+            .sub_types()
+            .iter()
+            .map(|sub_type| c_string!(avahi_util::format_sub_type(sub_type, &kind)))
+            .collect::<Vec<_>>();
+
         Self {
             client: None,
             poll: None,
-            context: Box::new(AvahiServiceContext::new(&service_type.to_string(), port)),
+            context: Box::new(AvahiServiceContext::new(c_string!(kind), port, sub_types)),
         }
     }
 
@@ -44,41 +55,65 @@ impl TMdnsService for AvahiMdnsService {
     ///
     /// [`AvahiClient::host_name()`]: client/struct.ManagedAvahiClient.html#method.host_name
     fn set_name(&mut self, name: &str) {
-        self.context.name = Some(c_string!(name))
+        self.context.name = c_string!(name).into()
+    }
+
+    fn name(&self) -> Option<&str> {
+        self.context.name.as_ref().map(|n| n.to_str().unwrap())
     }
 
     fn set_network_interface(&mut self, interface: NetworkInterface) {
         self.context.interface_index = avahi_util::interface_index(interface)
     }
 
+    fn network_interface(&self) -> NetworkInterface {
+        avahi_util::interface_from_index(self.context.interface_index)
+    }
+
     fn set_domain(&mut self, domain: &str) {
-        self.context.domain = Some(c_string!(domain))
+        self.context.domain = c_string!(domain).into()
+    }
+
+    fn domain(&self) -> Option<&str> {
+        self.context.domain.as_ref().map(|d| d.to_str().unwrap())
     }
 
     fn set_host(&mut self, host: &str) {
-        self.context.host = Some(c_string!(host))
+        self.context.host = c_string!(host).into()
+    }
+
+    fn host(&self) -> Option<&str> {
+        self.context.host.as_ref().map(|h| h.to_str().unwrap())
     }
 
     fn set_txt_record(&mut self, txt_record: TxtRecord) {
-        self.context.txt_record = Some(txt_record)
+        self.context.txt_record = txt_record.into()
+    }
+
+    fn txt_record(&self) -> Option<&TxtRecord> {
+        self.context.txt_record.as_ref()
     }
 
     fn set_registered_callback(&mut self, registered_callback: Box<ServiceRegisteredCallback>) {
-        self.context.registered_callback = Some(registered_callback)
+        self.context.registered_callback = registered_callback.into()
     }
 
     fn set_context(&mut self, context: Box<dyn Any>) {
         self.context.user_context = Some(Arc::from(context))
     }
 
+    fn context(&self) -> Option<&dyn Any> {
+        self.context.user_context.as_ref().map(|c| c.as_ref())
+    }
+
     fn register(&mut self) -> Result<EventLoop> {
         debug!("Registering service: {:?}", self);
 
-        self.poll = Some(Arc::new(ManagedAvahiSimplePoll::new()?));
+        self.poll = Some(Rc::new(ManagedAvahiSimplePoll::new()?));
 
-        self.client = Some(Arc::new(ManagedAvahiClient::new(
+        self.client = Some(Rc::new(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
-                .poll(Arc::clone(self.poll.as_ref().unwrap()))
+                .poll(Rc::clone(self.poll.as_ref().unwrap()))
                 .flags(AvahiClientFlags(0))
                 .callback(Some(client_callback))
                 .userdata(self.context.as_raw())
@@ -95,9 +130,10 @@ impl TMdnsService for AvahiMdnsService {
 
 #[derive(FromRaw, AsRaw)]
 struct AvahiServiceContext {
-    client: Option<Arc<ManagedAvahiClient>>,
+    client: Option<Rc<ManagedAvahiClient>>,
     name: Option<CString>,
     kind: CString,
+    sub_types: Vec<CString>,
     port: u16,
     group: Option<ManagedAvahiEntryGroup>,
     txt_record: Option<TxtRecord>,
@@ -109,12 +145,13 @@ struct AvahiServiceContext {
 }
 
 impl AvahiServiceContext {
-    fn new(kind: &str, port: u16) -> Self {
+    fn new(kind: CString, port: u16, sub_types: Vec<CString>) -> Self {
         Self {
             client: None,
             name: None,
-            kind: c_string!(kind),
+            kind,
             port,
+            sub_types,
             group: None,
             txt_record: None,
             interface_index: avahi_sys::AVAHI_IF_UNSPEC,
@@ -147,10 +184,8 @@ impl fmt::Debug for AvahiServiceContext {
 
 unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
     if context.name.is_none() {
-        context.name = Some(c_string!(client::get_host_name(
-            context.client.as_ref().unwrap().inner
-        )?
-        .to_string()));
+        let host_name = client::get_host_name(context.client.as_ref().unwrap().inner)?;
+        context.name = Some(c_string!(host_name.to_string()));
     }
 
     if context.group.is_none() {
@@ -158,7 +193,7 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
 
         context.group = Some(ManagedAvahiEntryGroup::new(
             ManagedAvahiEntryGroupParams::builder()
-                .client(Arc::clone(context.client.as_ref().unwrap()))
+                .client(Rc::clone(context.client.as_ref().unwrap()))
                 .callback(Some(entry_group_callback))
                 .userdata(context.as_raw())
                 .build()?,
@@ -167,25 +202,43 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
 
     let group = context.group.as_mut().unwrap();
 
-    if group.is_empty() {
-        debug!("Adding service");
+    if !group.is_empty() {
+        return Ok(());
+    }
 
-        group.add_service(
-            AddServiceParams::builder()
+    debug!("Adding service: {}", context.kind.to_string_lossy());
+
+    group.add_service(
+        AddServiceParams::builder()
+            .interface(context.interface_index)
+            .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
+            .flags(0)
+            .name(context.name.as_ref().unwrap().as_ptr())
+            .kind(context.kind.as_ptr())
+            .domain(context.domain.as_ref().map(|d| d.as_ptr()).unwrap_or_null())
+            .host(context.host.as_ref().map(|h| h.as_ptr()).unwrap_or_null())
+            .port(context.port)
+            .txt(context.txt_record.as_ref().map(|t| t.inner()))
+            .build()?,
+    )?;
+
+    for sub_type in &context.sub_types {
+        debug!("Adding service subtype: {}", sub_type.to_string_lossy());
+
+        group.add_service_subtype(
+            AddServiceSubtypeParams::builder()
                 .interface(context.interface_index)
                 .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
                 .flags(0)
                 .name(context.name.as_ref().unwrap().as_ptr())
                 .kind(context.kind.as_ptr())
                 .domain(context.domain.as_ref().map(|d| d.as_ptr()).unwrap_or_null())
-                .host(context.host.as_ref().map(|h| h.as_ptr()).unwrap_or_null())
-                .port(context.port)
-                .txt(context.txt_record.as_ref().map(|t| t.inner()))
+                .subtype(sub_type.as_ptr())
                 .build()?,
-        )
-    } else {
-        Ok(())
+        )?;
     }
+
+    group.commit()
 }
 
 unsafe extern "C" fn entry_group_callback(

@@ -1,5 +1,2 @@
 [workspace]
-members = [
-    "browser",
-    "service",
-]
+members = ["browser", "service"]

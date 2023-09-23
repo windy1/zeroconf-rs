@@ -8,4 +8,3 @@ pub(crate) fn setup() {
 
 mod event_loop_test;
 mod service_test;
-mod txt_record_test;

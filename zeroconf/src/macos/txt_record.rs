@@ -43,13 +43,21 @@ impl TTxtRecord for BonjourTxtRecord {
         if value_raw.is_null() {
             None
         } else {
-            Some(unsafe { read_value(value_raw, value_len) })
+            unsafe { read_value(value_raw, value_len) }.into()
         }
     }
 
-    fn remove(&mut self, key: &str) -> Result<()> {
+    fn remove(&mut self, key: &str) -> Option<String> {
         let c_str = c_string!(key);
-        unsafe { self.0.remove_value(c_str.as_ptr() as *const c_char) }
+        let prev = self.get(key)?;
+
+        unsafe {
+            self.0
+                .remove_value(c_str.as_ptr() as *const c_char)
+                .unwrap()
+        };
+
+        prev.into()
     }
 
     fn contains_key(&self, key: &str) -> bool {

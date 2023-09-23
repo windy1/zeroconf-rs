@@ -13,7 +13,6 @@ use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_void};
 use std::any::Any;
 use std::ffi::CString;
-use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
@@ -33,7 +32,7 @@ impl TMdnsService for BonjourMdnsService {
     fn new(service_type: ServiceType, port: u16) -> Self {
         Self {
             service: Arc::default(),
-            kind: c_string!(service_type.to_string()),
+            kind: bonjour_util::format_regtype(&service_type),
             port,
             name: None,
             domain: None,
@@ -50,20 +49,40 @@ impl TMdnsService for BonjourMdnsService {
         self.name = Some(c_string!(name));
     }
 
+    fn name(&self) -> Option<&str> {
+        self.name.as_ref().map(|n| n.to_str().unwrap())
+    }
+
     fn set_network_interface(&mut self, interface: NetworkInterface) {
         self.interface_index = bonjour_util::interface_index(interface);
+    }
+
+    fn network_interface(&self) -> NetworkInterface {
+        bonjour_util::interface_from_index(self.interface_index)
     }
 
     fn set_domain(&mut self, domain: &str) {
         self.domain = Some(c_string!(domain));
     }
 
+    fn domain(&self) -> Option<&str> {
+        self.domain.as_ref().map(|d| d.to_str().unwrap())
+    }
+
     fn set_host(&mut self, host: &str) {
         self.host = Some(c_string!(host));
     }
 
+    fn host(&self) -> Option<&str> {
+        self.host.as_ref().map(|h| h.to_str().unwrap())
+    }
+
     fn set_txt_record(&mut self, txt_record: TxtRecord) {
         self.txt_record = Some(txt_record);
+    }
+
+    fn txt_record(&self) -> Option<&TxtRecord> {
+        self.txt_record.as_ref()
     }
 
     fn set_registered_callback(&mut self, registered_callback: Box<ServiceRegisteredCallback>) {
@@ -72,6 +91,10 @@ impl TMdnsService for BonjourMdnsService {
 
     fn set_context(&mut self, context: Box<dyn Any>) {
         self.context.user_context = Some(Arc::from(context));
+    }
+
+    fn context(&self) -> Option<&dyn Any> {
+        self.context.user_context.as_ref().map(|c| c.as_ref())
     }
 
     fn register(&mut self) -> Result<EventLoop> {
@@ -164,7 +187,7 @@ unsafe fn handle_register(
 
     let result = ServiceRegistration::builder()
         .name(c_str::copy_raw(name))
-        .service_type(ServiceType::from_str(&kind)?)
+        .service_type(bonjour_util::parse_regtype(&kind)?)
         .domain(domain)
         .build()
         .expect("could not build ServiceRegistration");
