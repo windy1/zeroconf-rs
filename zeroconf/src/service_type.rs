@@ -1,6 +1,8 @@
 //! Data type for constructing a service type
 
-use crate::Result;
+use std::str::FromStr;
+
+use crate::{error::Error, Result};
 
 /// Data type for constructing a service type to register as an mDNS service.
 #[derive(Default, Debug, Getters, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -34,6 +36,23 @@ impl ServiceType {
     }
 }
 
+impl FromStr for ServiceType {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        let parts = s.split('.').collect::<Vec<_>>();
+
+        if parts.len() != 2 {
+            return Err("invalid name and protocol".into());
+        }
+
+        let name = lstrip_underscore(check_valid_characters(parts[0])?);
+        let protocol = lstrip_underscore(check_valid_characters(parts[1])?);
+
+        Self::new(name, protocol)
+    }
+}
+
 pub fn check_valid_characters(part: &str) -> Result<&str> {
     if part.contains('.') {
         Err("invalid character: .".into())
@@ -43,6 +62,14 @@ pub fn check_valid_characters(part: &str) -> Result<&str> {
         Err("cannot be empty".into())
     } else {
         Ok(part)
+    }
+}
+
+pub fn lstrip_underscore(s: &str) -> &str {
+    if let Some(stripped) = s.strip_prefix('_') {
+        stripped
+    } else {
+        s
     }
 }
 

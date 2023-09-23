@@ -32,7 +32,7 @@ impl TMdnsService for BonjourMdnsService {
     fn new(service_type: ServiceType, port: u16) -> Self {
         Self {
             service: Arc::default(),
-            kind: bonjour_util::format_regtype(service_type),
+            kind: bonjour_util::format_regtype(&service_type),
             port,
             name: None,
             domain: None,

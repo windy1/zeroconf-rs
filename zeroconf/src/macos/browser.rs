@@ -30,7 +30,7 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
     fn new(service_type: ServiceType) -> Self {
         Self {
             service: Arc::default(),
-            kind: bonjour_util::format_regtype(service_type),
+            kind: bonjour_util::format_regtype(&service_type),
             interface_index: constants::BONJOUR_IF_UNSPEC,
             context: Box::default(),
         }

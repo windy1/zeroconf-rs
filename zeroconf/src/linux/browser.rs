@@ -42,16 +42,11 @@ pub struct AvahiMdnsBrowser {
 
 impl TMdnsBrowser for AvahiMdnsBrowser {
     fn new(service_type: ServiceType) -> Self {
-        let kind = if service_type.sub_types().is_empty() {
-            c_string!(service_type.to_string())
-        } else {
-            c_string!(service_type.sub_types()[0].to_string())
-        };
         Self {
             client: None,
             poll: None,
             browser: None,
-            kind,
+            kind: c_string!(avahi_util::format_service_type(&service_type)),
             context: Box::default(),
             interface_index: avahi_sys::AVAHI_IF_UNSPEC,
         }

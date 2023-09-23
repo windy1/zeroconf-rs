@@ -1,6 +1,6 @@
 //! Utilities related to Avahi
 
-use crate::NetworkInterface;
+use crate::{NetworkInterface, ServiceType};
 use avahi_sys::{avahi_address_snprint, avahi_strerror, AvahiAddress};
 use libc::c_char;
 use std::ffi::CStr;
@@ -65,6 +65,21 @@ pub fn sys_exec<F: FnOnce() -> i32>(func: F, message: &str) -> crate::Result<()>
     }
 }
 
+/// Formats the specified `ServiceType` as a `String` for use with Avahi
+pub fn format_service_type(service_type: &ServiceType) -> String {
+    format!("_{}._{}", service_type.name(), service_type.protocol())
+}
+
+/// Formats the specified `sub_type` string as a `String` for use with Avahi
+pub fn format_sub_type(sub_type: &str, kind: &str) -> String {
+    format!(
+        "{}{}._sub.{}",
+        if sub_type.starts_with('_') { "" } else { "_" },
+        sub_type,
+        kind
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -72,6 +87,27 @@ mod tests {
         AvahiAddress__bindgen_ty_1, AvahiIPv4Address, AvahiIPv6Address, AVAHI_PROTO_INET,
         AVAHI_PROTO_INET6,
     };
+
+    #[test]
+    fn format_service_type_returns_valid_string() {
+        assert_eq!(
+            format_service_type(&ServiceType::new("http", "tcp").unwrap()),
+            "_http._tcp"
+        );
+    }
+
+    #[test]
+    fn format_sub_type_returns_valid_string() {
+        assert_eq!(format_sub_type("foo", "_http._tcp"), "_foo._sub._http._tcp");
+    }
+
+    #[test]
+    fn format_sub_type_strips_leading_underscore() {
+        assert_eq!(
+            format_sub_type("_foo", "_http._tcp"),
+            "_foo._sub._http._tcp"
+        );
+    }
 
     #[test]
     fn get_error_returns_valid_error_string() {

@@ -40,7 +40,7 @@ pub fn sys_exec<F: FnOnce() -> DNSServiceErrorType>(func: F, message: &str) -> R
 }
 
 /// Formats the specified `ServiceType` as a `CString` for use with Bonjour
-pub fn format_regtype(service_type: ServiceType) -> CString {
+pub fn format_regtype(service_type: &ServiceType) -> CString {
     let mut regtype = vec![format!(
         "_{}._{}",
         service_type.name(),
@@ -59,6 +59,8 @@ pub fn format_regtype(service_type: ServiceType) -> CString {
 
 /// Parses the specified `&str` into a `ServiceType`
 pub fn parse_regtype(regtype: &str) -> Result<ServiceType> {
+    // TODO: use shared func
+
     let types = regtype.split(',').collect::<Vec<_>>();
     let parts = types[0].split('.').collect::<Vec<_>>();
 
@@ -75,14 +77,6 @@ pub fn parse_regtype(regtype: &str) -> Result<ServiceType> {
         .collect::<Result<Vec<_>>>()?;
 
     ServiceType::with_sub_types(name, protocol, sub_types)
-}
-
-fn lstrip_underscore(s: &str) -> &str {
-    if let Some(stripped) = s.strip_prefix('_') {
-        stripped
-    } else {
-        s
-    }
 }
 
 #[cfg(test)]

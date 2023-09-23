@@ -33,28 +33,18 @@ pub struct AvahiMdnsService {
 
 impl TMdnsService for AvahiMdnsService {
     fn new(service_type: ServiceType, port: u16) -> Self {
-        let context = if service_type.sub_types().is_empty() {
-            Box::new(AvahiServiceContext::new(
-                &service_type.to_string(),
-                port,
-                vec![],
-            ))
-        } else {
-            Box::new(AvahiServiceContext::new(
-                &service_type.to_string(),
-                port,
-                service_type
-                    .sub_types()
-                    .iter()
-                    .map(|subtype| subtype.to_string())
-                    .collect(),
-            ))
-        };
+        let kind = avahi_util::format_service_type(&service_type);
+
+        let sub_types = service_type
+            .sub_types()
+            .iter()
+            .map(|sub_type| c_string!(avahi_util::format_sub_type(sub_type, &kind)))
+            .collect::<Vec<_>>();
 
         Self {
             client: None,
             poll: None,
-            context,
+            context: Box::new(AvahiServiceContext::new(c_string!(kind), port, sub_types)),
         }
     }
 
@@ -119,7 +109,7 @@ struct AvahiServiceContext {
     client: Option<Rc<ManagedAvahiClient>>,
     name: Option<CString>,
     kind: CString,
-    subtypes: Vec<CString>,
+    sub_types: Vec<CString>,
     port: u16,
     group: Option<ManagedAvahiEntryGroup>,
     txt_record: Option<TxtRecord>,
@@ -131,16 +121,13 @@ struct AvahiServiceContext {
 }
 
 impl AvahiServiceContext {
-    fn new(kind: &str, port: u16, sub_types: Vec<String>) -> Self {
+    fn new(kind: CString, port: u16, sub_types: Vec<CString>) -> Self {
         Self {
             client: None,
             name: None,
-            kind: c_string!(kind),
+            kind,
             port,
-            subtypes: sub_types
-                .into_iter()
-                .map(|sub_type| c_string!(sub_type))
-                .collect(),
+            sub_types,
             group: None,
             txt_record: None,
             interface_index: avahi_sys::AVAHI_IF_UNSPEC,
@@ -210,22 +197,20 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
                 .build()?,
         )?;
 
-        if !context.subtypes.is_empty() {
-            for subtype in &context.subtypes {
-                debug!("Adding service subtype: {}", subtype.to_string_lossy());
+        for subtype in &context.sub_types {
+            debug!("Adding service subtype: {}", subtype.to_string_lossy());
 
-                group.add_service_subtype(
-                    AddServiceSubtypeParams::builder()
-                        .interface(context.interface_index)
-                        .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
-                        .flags(0)
-                        .name(context.name.as_ref().unwrap().as_ptr())
-                        .kind(context.kind.as_ptr())
-                        .domain(context.domain.as_ref().map(|d| d.as_ptr()).unwrap_or_null())
-                        .subtype(subtype.as_ptr())
-                        .build()?,
-                )?;
-            }
+            group.add_service_subtype(
+                AddServiceSubtypeParams::builder()
+                    .interface(context.interface_index)
+                    .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
+                    .flags(0)
+                    .name(context.name.as_ref().unwrap().as_ptr())
+                    .kind(context.kind.as_ptr())
+                    .domain(context.domain.as_ref().map(|d| d.as_ptr()).unwrap_or_null())
+                    .subtype(subtype.as_ptr())
+                    .build()?,
+            )?;
         }
 
         group.commit()

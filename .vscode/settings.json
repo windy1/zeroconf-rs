@@ -7,5 +7,6 @@
     "strlst",
     "unspec",
     "userdata"
-  ]
+  ],
+  "rust-analyzer.showUnlinkedFileNotification": false
 }
