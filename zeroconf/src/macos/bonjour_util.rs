@@ -33,9 +33,9 @@ pub fn sys_exec<F: FnOnce() -> DNSServiceErrorType>(func: F, message: &str) -> R
     let err = func();
 
     if err < 0 {
-        Result::Err(format!("{} (code: {})", message, err).into())
+        Err(format!("{} (code: {})", message, err).into())
     } else {
-        Result::Ok(())
+        Ok(())
     }
 }
 
