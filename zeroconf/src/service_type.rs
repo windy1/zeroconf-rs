@@ -86,4 +86,48 @@ mod tests {
         ServiceType::new("", "tcp").expect_err("cannot be empty");
         ServiceType::new("http", "").expect_err("cannot be empty");
     }
+
+    #[test]
+    fn from_str_requires_two_parts() {
+        ServiceType::from_str("_http").expect_err("invalid name and protocol");
+        ServiceType::from_str("_http._tcp._foo").expect_err("invalid name and protocol");
+    }
+
+    #[test]
+    fn from_str_success() {
+        assert_eq!(
+            ServiceType::from_str("_http._tcp").unwrap(),
+            ServiceType::new("http", "tcp").unwrap()
+        );
+    }
+
+    #[test]
+    fn check_valid_characters_returns_error_if_dot() {
+        check_valid_characters("foo.bar").expect_err("invalid character: .");
+    }
+
+    #[test]
+    fn check_valid_characters_returns_error_if_comma() {
+        check_valid_characters("foo,bar").expect_err("invalid character: ,");
+    }
+
+    #[test]
+    fn check_valid_characters_returns_error_if_empty() {
+        check_valid_characters("").expect_err("cannot be empty");
+    }
+
+    #[test]
+    fn check_valid_characters_success() {
+        assert_eq!(check_valid_characters("foo").unwrap(), "foo");
+    }
+
+    #[test]
+    fn lstrip_underscore_returns_stripped() {
+        assert_eq!(lstrip_underscore("_foo"), "foo");
+    }
+
+    #[test]
+    fn lstrip_underscore_returns_original() {
+        assert_eq!(lstrip_underscore("foo"), "foo");
+    }
 }
