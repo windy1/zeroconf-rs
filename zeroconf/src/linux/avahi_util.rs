@@ -75,7 +75,7 @@ pub fn format_browser_type(service_type: &ServiceType) -> String {
     let kind = format_service_type(service_type);
     let sub_types = service_type.sub_types();
 
-    if sub_types.len() == 0 {
+    if sub_types.is_empty() {
         return kind;
     }
 
