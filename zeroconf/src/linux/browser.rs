@@ -46,7 +46,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
             client: None,
             poll: None,
             browser: None,
-            kind: c_string!(avahi_util::format_service_type(&service_type)),
+            kind: c_string!(avahi_util::format_browser_type(&service_type)),
             context: Box::default(),
             interface_index: avahi_sys::AVAHI_IF_UNSPEC,
         }

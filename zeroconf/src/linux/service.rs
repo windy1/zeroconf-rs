@@ -160,10 +160,8 @@ impl fmt::Debug for AvahiServiceContext {
 
 unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
     if context.name.is_none() {
-        context.name = Some(c_string!(client::get_host_name(
-            context.client.as_ref().unwrap().inner
-        )?
-        .to_string()));
+        let host_name = client::get_host_name(context.client.as_ref().unwrap().inner)?;
+        context.name = Some(c_string!(host_name.to_string()));
     }
 
     if context.group.is_none() {
@@ -180,43 +178,43 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
 
     let group = context.group.as_mut().unwrap();
 
-    if group.is_empty() {
-        debug!("Adding service: {}", context.kind.to_string_lossy());
+    if !group.is_empty() {
+        return Ok(());
+    }
 
-        group.add_service(
-            AddServiceParams::builder()
+    debug!("Adding service: {}", context.kind.to_string_lossy());
+
+    group.add_service(
+        AddServiceParams::builder()
+            .interface(context.interface_index)
+            .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
+            .flags(0)
+            .name(context.name.as_ref().unwrap().as_ptr())
+            .kind(context.kind.as_ptr())
+            .domain(context.domain.as_ref().map(|d| d.as_ptr()).unwrap_or_null())
+            .host(context.host.as_ref().map(|h| h.as_ptr()).unwrap_or_null())
+            .port(context.port)
+            .txt(context.txt_record.as_ref().map(|t| t.inner()))
+            .build()?,
+    )?;
+
+    for sub_type in &context.sub_types {
+        debug!("Adding service subtype: {}", sub_type.to_string_lossy());
+
+        group.add_service_subtype(
+            AddServiceSubtypeParams::builder()
                 .interface(context.interface_index)
                 .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
                 .flags(0)
                 .name(context.name.as_ref().unwrap().as_ptr())
                 .kind(context.kind.as_ptr())
                 .domain(context.domain.as_ref().map(|d| d.as_ptr()).unwrap_or_null())
-                .host(context.host.as_ref().map(|h| h.as_ptr()).unwrap_or_null())
-                .port(context.port)
-                .txt(context.txt_record.as_ref().map(|t| t.inner()))
+                .subtype(sub_type.as_ptr())
                 .build()?,
         )?;
-
-        for subtype in &context.sub_types {
-            debug!("Adding service subtype: {}", subtype.to_string_lossy());
-
-            group.add_service_subtype(
-                AddServiceSubtypeParams::builder()
-                    .interface(context.interface_index)
-                    .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
-                    .flags(0)
-                    .name(context.name.as_ref().unwrap().as_ptr())
-                    .kind(context.kind.as_ptr())
-                    .domain(context.domain.as_ref().map(|d| d.as_ptr()).unwrap_or_null())
-                    .subtype(subtype.as_ptr())
-                    .build()?,
-            )?;
-        }
-
-        group.commit()
-    } else {
-        Ok(())
     }
+
+    group.commit()
 }
 
 unsafe extern "C" fn entry_group_callback(

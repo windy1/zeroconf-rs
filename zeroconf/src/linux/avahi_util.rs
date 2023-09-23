@@ -70,6 +70,22 @@ pub fn format_service_type(service_type: &ServiceType) -> String {
     format!("_{}._{}", service_type.name(), service_type.protocol())
 }
 
+/// Formats the specified `ServiceType` as a `String` for browsing Avahi services
+pub fn format_browser_type(service_type: &ServiceType) -> String {
+    let kind = format_service_type(service_type);
+    let sub_types = service_type.sub_types();
+
+    if sub_types.len() == 0 {
+        return kind;
+    }
+
+    if sub_types.len() > 1 {
+        warn!("browsing by multiple sub-types is not supported on Avahi devices, using first sub-type only");
+    }
+
+    format_sub_type(&sub_types[0], &kind)
+}
+
 /// Formats the specified `sub_type` string as a `String` for use with Avahi
 pub fn format_sub_type(sub_type: &str, kind: &str) -> String {
     format!(
