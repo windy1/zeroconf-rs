@@ -1,9 +1,10 @@
 //! Utilities related to Avahi
 
-use crate::{NetworkInterface, ServiceType};
 use avahi_sys::{avahi_address_snprint, avahi_strerror, AvahiAddress};
 use libc::c_char;
 use std::ffi::CStr;
+
+use crate::{NetworkInterface, Result, ServiceType};
 
 /// Converts the specified `*const AvahiAddress` to a `String`.
 ///
@@ -56,20 +57,13 @@ pub fn interface_from_index(index: i32) -> NetworkInterface {
 }
 
 /// Executes the specified closure and returns a formatted `Result`
-pub fn sys_exec<F: FnOnce() -> i32>(func: F, message: &str) -> crate::Result<()> {
+pub fn sys_exec<F: FnOnce() -> i32>(func: F, message: &str) -> Result<()> {
     let err = func();
 
     if err < 0 {
-        crate::Result::Err(
-            format!(
-                "{}: `{}`",
-                message,
-                crate::linux::avahi_util::get_error(err)
-            )
-            .into(),
-        )
+        Err(format!("{}: `{}`", message, get_error(err)).into())
     } else {
-        crate::Result::Ok(())
+        Ok(())
     }
 }
 
@@ -113,6 +107,32 @@ mod tests {
     };
 
     #[test]
+    fn sys_exec_returns_ok_for_success() {
+        assert!(sys_exec(|| 0, "test").is_ok());
+    }
+
+    #[test]
+    fn sys_exec_returns_error_for_failure() {
+        assert_eq!(
+            sys_exec(|| avahi_sys::AVAHI_ERR_FAILURE, "uh oh spaghetti-o"),
+            Err("uh oh spaghetti-o: `Operation failed`".into())
+        );
+    }
+
+    #[test]
+    fn interface_index_returns_unspec_for_unspec() {
+        assert_eq!(
+            interface_index(NetworkInterface::Unspec),
+            avahi_sys::AVAHI_IF_UNSPEC
+        );
+    }
+
+    #[test]
+    fn interface_index_returns_index_for_index() {
+        assert_eq!(interface_index(NetworkInterface::AtIndex(1)), 1);
+    }
+
+    #[test]
     fn interface_from_index_returns_unspec_for_avahi_unspec() {
         assert_eq!(
             interface_from_index(avahi_sys::AVAHI_IF_UNSPEC),
@@ -130,6 +150,24 @@ mod tests {
         assert_eq!(
             format_service_type(&ServiceType::new("http", "tcp").unwrap()),
             "_http._tcp"
+        );
+    }
+
+    #[test]
+    fn format_browser_type_returns_valid_string() {
+        assert_eq!(
+            format_browser_type(&ServiceType::new("http", "tcp").unwrap()),
+            "_http._tcp"
+        );
+    }
+
+    #[test]
+    fn format_browser_type_returns_string_with_sub_types() {
+        assert_eq!(
+            format_browser_type(
+                &ServiceType::with_sub_types("http", "tcp", vec!["printer1", "printer2"]).unwrap()
+            ),
+            "_printer1._sub._http._tcp"
         );
     }
 
