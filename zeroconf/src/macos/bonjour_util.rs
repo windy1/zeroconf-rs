@@ -60,7 +60,7 @@ pub fn format_regtype(service_type: &ServiceType) -> CString {
 /// Parses the specified `&str` into a `ServiceType`
 pub fn parse_regtype(regtype: &str) -> Result<ServiceType> {
     let types = regtype.split(',').collect::<Vec<_>>();
-    let service_type = ServiceType::from_str(&types[0])?;
+    let service_type = ServiceType::from_str(types[0])?;
 
     let sub_types = types[1..]
         .iter()
