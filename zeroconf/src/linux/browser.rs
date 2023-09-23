@@ -56,6 +56,10 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
         self.interface_index = avahi_util::interface_index(interface);
     }
 
+    fn network_interface(&self) -> NetworkInterface {
+        avahi_util::interface_from_index(self.interface_index)
+    }
+
     fn set_service_discovered_callback(
         &mut self,
         service_discovered_callback: Box<ServiceDiscoveredCallback>,
@@ -65,6 +69,10 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
 
     fn set_context(&mut self, context: Box<dyn Any>) {
         self.context.user_context = Some(Arc::from(context));
+    }
+
+    fn context(&self) -> Option<&dyn Any> {
+        self.context.user_context.as_ref().map(|c| c.as_ref())
     }
 
     fn browse_services(&mut self) -> Result<EventLoop> {
