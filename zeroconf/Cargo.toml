@@ -37,7 +37,7 @@ clap = { version = "4.4.4", features = ["derive"] }
 avahi-sys = "0.10.0"
 
 [target.'cfg(target_vendor = "apple")'.dependencies]
-bonjour-sys = "0.1.0"
+bonjour-sys = "0.1.1"
 
 [package.metadata.docs.rs]
 default-target = "x86_64-unknown-linux-gnu"
