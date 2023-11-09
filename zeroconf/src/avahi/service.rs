@@ -186,7 +186,7 @@ unsafe extern "C" fn client_callback(
     let context = AvahiServiceContext::from_raw(userdata);
 
     match state {
-        avahi_sys::AvahiServerState_AVAHI_SERVER_RUNNING => {
+        avahi_sys::AvahiClientState_AVAHI_CLIENT_S_RUNNING => {
             if let Err(e) = create_service(client, context) {
                 context.invoke_callback(Err(e))
             }
@@ -267,26 +267,24 @@ unsafe extern "C" fn entry_group_callback(
     state: AvahiEntryGroupState,
     userdata: *mut c_void,
 ) {
-    if let avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_ESTABLISHED = state {
-        let context = AvahiServiceContext::from_raw(userdata);
-        if let Err(e) = handle_group_established(context) {
-            context.invoke_callback(Err(e));
+    let context = AvahiServiceContext::from_raw(userdata);
+
+    match state {
+        avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_ESTABLISHED => {
+            context.invoke_callback(handle_group_established(context))
         }
+        _ => {}
     }
 }
 
-unsafe fn handle_group_established(context: &AvahiServiceContext) -> Result<()> {
+unsafe fn handle_group_established(context: &AvahiServiceContext) -> Result<ServiceRegistration> {
     debug!("Group established");
 
-    let result = ServiceRegistration::builder()
+    Ok(ServiceRegistration::builder()
         .name(c_str::copy_raw(context.name.as_ref().unwrap().as_ptr()))
         .service_type(ServiceType::from_str(&c_str::copy_raw(
             context.kind.as_ptr(),
         ))?)
         .domain("local".to_string())
-        .build()?;
-
-    context.invoke_callback(Ok(result));
-
-    Ok(())
+        .build()?)
 }
