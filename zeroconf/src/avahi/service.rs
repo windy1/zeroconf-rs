@@ -18,7 +18,7 @@ use avahi_sys::{
 };
 use libc::c_void;
 use std::any::Any;
-use std::ffi::CString;
+use std::ffi::{CStr, CString};
 use std::fmt::{self, Formatter};
 use std::rc::Rc;
 use std::str::FromStr;
@@ -227,14 +227,22 @@ unsafe fn create_service(
         return Ok(());
     }
 
+    let name = context.name.as_ref().unwrap().clone();
+
+    add_services(context, &name)
+}
+
+fn add_services(context: &mut AvahiServiceContext, name: &CStr) -> Result<()> {
     debug!("Adding service: {}", context.kind.to_string_lossy());
+
+    let group = context.group.as_mut().unwrap();
 
     group.add_service(
         AddServiceParams::builder()
             .interface(context.interface_index)
             .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
             .flags(0)
-            .name(context.name.as_ref().unwrap().as_ptr())
+            .name(name.as_ptr())
             .kind(context.kind.as_ptr())
             .domain(context.domain.as_ref().map(|d| d.as_ptr()).unwrap_or_null())
             .host(context.host.as_ref().map(|h| h.as_ptr()).unwrap_or_null())
@@ -251,7 +259,7 @@ unsafe fn create_service(
                 .interface(context.interface_index)
                 .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
                 .flags(0)
-                .name(context.name.as_ref().unwrap().as_ptr())
+                .name(name.as_ptr())
                 .kind(context.kind.as_ptr())
                 .domain(context.domain.as_ref().map(|d| d.as_ptr()).unwrap_or_null())
                 .subtype(sub_type.as_ptr())
@@ -276,6 +284,18 @@ unsafe extern "C" fn entry_group_callback(
         avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_FAILURE => context.invoke_callback(Err(
             avahi_util::get_last_error(context.group.as_ref().unwrap().get_client()).into(),
         )),
+        avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_COLLISION => {
+            let name = context.name.as_ref().unwrap().clone();
+
+            let result = add_services(
+                context,
+                avahi_util::alternative_service_name(name.as_c_str()),
+            );
+
+            if let Err(e) = result {
+                context.invoke_callback(Err(e))
+            }
+        }
         _ => {}
     }
 }
@@ -290,4 +310,88 @@ unsafe fn handle_group_established(context: &AvahiServiceContext) -> Result<Serv
         ))?)
         .domain("local".to_string())
         .build()?)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    use crate::{tests, MdnsService, ServiceType};
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
+
+    #[test]
+    fn name_collision_handled() {
+        tests::setup();
+
+        static SERVICE_NAME: &str = "name_collision_handled";
+
+        #[derive(Default, Debug)]
+        struct Context {
+            completed: bool,
+        }
+
+        let context: Arc<Mutex<Context>> = Arc::default();
+
+        let mut service1 = MdnsService::new(ServiceType::new("http", "tcp").unwrap(), 8080);
+
+        service1.set_context(Box::new(context.clone()));
+        service1.set_name(SERVICE_NAME);
+
+        service1.set_registered_callback(Box::new(|result, context| {
+            assert!(result.is_ok());
+
+            let mut service2 = MdnsService::new(ServiceType::new("http", "tcp").unwrap(), 8080);
+
+            service2.set_context(Box::new(context.clone()));
+            service2.set_name(SERVICE_NAME);
+
+            service2.set_registered_callback(Box::new(|result, context| {
+                assert!(result.is_ok());
+
+                let name = result.as_ref().unwrap().name();
+
+                println!("name = {}", name);
+
+                let mut mtx = context
+                    .as_ref()
+                    .unwrap()
+                    .downcast_ref::<Arc<Mutex<Context>>>()
+                    .unwrap()
+                    .lock()
+                    .unwrap();
+
+                mtx.completed = true;
+            }));
+
+            let event_loop = service2.register().unwrap();
+
+            loop {
+                event_loop.poll(Duration::from_secs(0)).unwrap();
+
+                let context = context
+                    .as_ref()
+                    .unwrap()
+                    .downcast_ref::<Arc<Mutex<Context>>>()
+                    .unwrap()
+                    .lock()
+                    .unwrap();
+
+                if context.completed {
+                    break;
+                }
+            }
+        }));
+
+        let event_loop = service1.register().unwrap();
+
+        loop {
+            event_loop.poll(Duration::from_secs(0)).unwrap();
+
+            let context = context.lock().unwrap();
+
+            if context.completed {
+                break;
+            }
+        }
+    }
 }
