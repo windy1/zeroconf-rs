@@ -131,6 +131,15 @@ impl ManagedAvahiEntryGroup {
     pub fn reset(&mut self) {
         unsafe { avahi_entry_group_reset(self.inner) };
     }
+
+    /// Delegate function for [`avahi_entry_group_get_client()`].
+    ///
+    /// # Safety
+    /// This function is unsafe because it returns a raw pointer to
+    /// the underlying `AvahiClient`.
+    pub unsafe fn get_client(&self) -> *mut AvahiClient {
+        avahi_sys::avahi_entry_group_get_client(self.inner)
+    }
 }
 
 impl Drop for ManagedAvahiEntryGroup {

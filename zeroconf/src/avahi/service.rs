@@ -186,7 +186,7 @@ unsafe extern "C" fn client_callback(
     let context = AvahiServiceContext::from_raw(userdata);
 
     match state {
-        avahi_sys::AvahiClientState_AVAHI_CLIENT_S_RUNNING => {
+        avahi_sys::AvahiServerState_AVAHI_SERVER_RUNNING => {
             if let Err(e) = create_service(client, context) {
                 context.invoke_callback(Err(e))
             }
@@ -273,6 +273,9 @@ unsafe extern "C" fn entry_group_callback(
         avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_ESTABLISHED => {
             context.invoke_callback(handle_group_established(context))
         }
+        avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_FAILURE => context.invoke_callback(Err(
+            avahi_util::get_last_error(context.group.as_ref().unwrap().get_client()).into(),
+        )),
         _ => {}
     }
 }
