@@ -1,12 +1,10 @@
 //! Rust friendly `AvahiServiceBrowser` wrappers/helpers
 
-use std::rc::Rc;
-
-use super::client::ManagedAvahiClient;
 use crate::Result;
 use avahi_sys::{
-    avahi_service_browser_free, avahi_service_browser_new, AvahiIfIndex, AvahiLookupFlags,
-    AvahiProtocol, AvahiServiceBrowser, AvahiServiceBrowserCallback,
+    avahi_service_browser_free, avahi_service_browser_get_client, avahi_service_browser_new,
+    AvahiClient, AvahiIfIndex, AvahiLookupFlags, AvahiProtocol, AvahiServiceBrowser,
+    AvahiServiceBrowserCallback,
 };
 use libc::{c_char, c_void};
 
@@ -17,7 +15,6 @@ use libc::{c_char, c_void};
 #[derive(Debug)]
 pub struct ManagedAvahiServiceBrowser {
     inner: *mut AvahiServiceBrowser,
-    _client: Rc<ManagedAvahiClient>,
 }
 
 impl ManagedAvahiServiceBrowser {
@@ -37,25 +34,24 @@ impl ManagedAvahiServiceBrowser {
     ) -> Result<Self> {
         let inner = unsafe {
             avahi_service_browser_new(
-                client.inner,
-                interface,
-                protocol,
-                kind,
-                domain,
-                flags,
-                callback,
-                userdata,
+                client, interface, protocol, kind, domain, flags, callback, userdata,
             )
         };
 
         if inner.is_null() {
             Err("could not initialize Avahi service browser".into())
         } else {
-            Ok(Self {
-                inner,
-                _client: client,
-            })
+            Ok(Self { inner })
         }
+    }
+
+    /// Returns the underlying `*mut AvahiServiceBrowser`.
+    ///
+    /// # Safety
+    /// This function leaks the internal raw pointer, useful for accessing within callbacks where
+    /// you are sure the pointer is still valid.
+    pub unsafe fn get_client(&self) -> *mut AvahiClient {
+        avahi_service_browser_get_client(self.inner)
     }
 }
 
@@ -73,7 +69,7 @@ impl Drop for ManagedAvahiServiceBrowser {
 /// [`avahi_service_browser_new()`]: https://avahi.org/doxygen/html/lookup_8h.html#a52d55a5156a7943012d03e6700880d2b
 #[derive(Builder, BuilderDelegate)]
 pub struct ManagedAvahiServiceBrowserParams {
-    client: Rc<ManagedAvahiClient>,
+    client: *mut AvahiClient,
     interface: AvahiIfIndex,
     protocol: AvahiProtocol,
     kind: *const c_char,
