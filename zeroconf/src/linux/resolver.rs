@@ -1,13 +1,12 @@
 //! Rust friendly `AvahiServiceResolver` wrappers/helpers
 
-use super::client::ManagedAvahiClient;
 use crate::Result;
 use avahi_sys::{
-    avahi_service_resolver_free, avahi_service_resolver_new, AvahiIfIndex, AvahiLookupFlags,
-    AvahiProtocol, AvahiServiceResolver, AvahiServiceResolverCallback,
+    avahi_service_resolver_free, avahi_service_resolver_new, AvahiClient, AvahiIfIndex,
+    AvahiLookupFlags, AvahiProtocol, AvahiServiceResolver, AvahiServiceResolverCallback,
 };
 use libc::{c_char, c_void};
-use std::{collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 /// Wraps the `AvahiServiceResolver` type from the raw Avahi bindings.
 ///
@@ -17,7 +16,6 @@ use std::{collections::HashMap, rc::Rc};
 #[derive(Debug)]
 pub struct ManagedAvahiServiceResolver {
     inner: *mut AvahiServiceResolver,
-    _client: Rc<ManagedAvahiClient>,
 }
 
 impl ManagedAvahiServiceResolver {
@@ -39,15 +37,7 @@ impl ManagedAvahiServiceResolver {
     ) -> Result<Self> {
         let inner = unsafe {
             avahi_service_resolver_new(
-                client.inner,
-                interface,
-                protocol,
-                name,
-                kind,
-                domain,
-                aprotocol,
-                flags,
-                callback,
+                client, interface, protocol, name, kind, domain, aprotocol, flags, callback,
                 userdata,
             )
         };
@@ -55,10 +45,7 @@ impl ManagedAvahiServiceResolver {
         if inner.is_null() {
             Err("could not initialize AvahiServiceResolver".into())
         } else {
-            Ok(Self {
-                inner,
-                _client: client,
-            })
+            Ok(Self { inner })
         }
     }
 }
@@ -77,7 +64,7 @@ impl Drop for ManagedAvahiServiceResolver {
 /// [`avahi_service_resolver_new()`]: https://avahi.org/doxygen/html/lookup_8h.html#a904611a4134ceb5919f6bb637df84124
 #[derive(Builder, BuilderDelegate)]
 pub struct ManagedAvahiServiceResolverParams {
-    client: Rc<ManagedAvahiClient>,
+    client: *mut AvahiClient,
     interface: AvahiIfIndex,
     protocol: AvahiProtocol,
     name: *const c_char,

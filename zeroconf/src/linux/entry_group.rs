@@ -1,16 +1,14 @@
 //! Rust friendly `AvahiEntryGroup` wrappers/helpers
 
-use std::rc::Rc;
-
-use super::{client::ManagedAvahiClient, string_list::ManagedAvahiStringList};
+use super::string_list::ManagedAvahiStringList;
 use crate::ffi::UnwrapMutOrNull;
 use crate::linux::avahi_util;
 use crate::Result;
 use avahi_sys::{
     avahi_client_errno, avahi_entry_group_add_service_strlst,
     avahi_entry_group_add_service_subtype, avahi_entry_group_commit, avahi_entry_group_free,
-    avahi_entry_group_is_empty, avahi_entry_group_new, avahi_entry_group_reset, AvahiEntryGroup,
-    AvahiEntryGroupCallback, AvahiIfIndex, AvahiProtocol, AvahiPublishFlags,
+    avahi_entry_group_is_empty, avahi_entry_group_new, avahi_entry_group_reset, AvahiClient,
+    AvahiEntryGroup, AvahiEntryGroupCallback, AvahiIfIndex, AvahiProtocol, AvahiPublishFlags,
 };
 use libc::{c_char, c_void};
 
@@ -21,7 +19,6 @@ use libc::{c_char, c_void};
 #[derive(Debug)]
 pub struct ManagedAvahiEntryGroup {
     inner: *mut AvahiEntryGroup,
-    _client: Rc<ManagedAvahiClient>,
 }
 
 impl ManagedAvahiEntryGroup {
@@ -34,16 +31,13 @@ impl ManagedAvahiEntryGroup {
             userdata,
         }: ManagedAvahiEntryGroupParams,
     ) -> Result<Self> {
-        let inner = unsafe { avahi_entry_group_new(client.inner, callback, userdata) };
+        let inner = unsafe { avahi_entry_group_new(client, callback, userdata) };
 
         if inner.is_null() {
-            let err = avahi_util::get_error(unsafe { avahi_client_errno(client.inner) });
+            let err = avahi_util::get_error(unsafe { avahi_client_errno(client) });
             Err(format!("could not initialize AvahiEntryGroup: {}", err).into())
         } else {
-            Ok(Self {
-                inner,
-                _client: client,
-            })
+            Ok(Self { inner })
         }
     }
 
@@ -153,7 +147,7 @@ impl Drop for ManagedAvahiEntryGroup {
 /// [avahi_entry_group_new()]: https://avahi.org/doxygen/html/publish_8h.html#abb17598f2b6ec3c3f69defdd488d568c
 #[derive(Builder, BuilderDelegate)]
 pub struct ManagedAvahiEntryGroupParams {
-    client: Rc<ManagedAvahiClient>,
+    client: *mut AvahiClient,
     callback: AvahiEntryGroupCallback,
     userdata: *mut c_void,
 }
