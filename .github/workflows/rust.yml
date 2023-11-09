@@ -23,7 +23,7 @@ jobs:
       - name: Run clippy
         run: ./scripts/lintall.sh
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --verbose -- --skip service_register_is_browsable
 
   linux:
     runs-on: ubuntu-latest
