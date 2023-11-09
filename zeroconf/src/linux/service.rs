@@ -162,7 +162,7 @@ impl AvahiServiceContext {
         if let Some(f) = &self.registered_callback {
             f(result, self.user_context.clone());
         } else {
-            panic!("attempted to invoke service callback but none was set");
+            warn!("attempted to invoke service callback but none was set");
         }
     }
 }
@@ -183,14 +183,15 @@ unsafe extern "C" fn client_callback(
     state: AvahiClientState,
     userdata: *mut c_void,
 ) {
+    let context = AvahiServiceContext::from_raw(userdata);
+
     match state {
-        avahi_sys::AvahiClientState_AVAHI_CLIENT_S_RUNNING => {
-            create_service(client, AvahiServiceContext::from_raw(userdata))
-                .unwrap_or_else(|e| panic!("failed to create service: {}", e))
+        avahi_sys::AvahiClientState_AVAHI_CLIENT_S_RUNNING => create_service(client, context)
+            .unwrap_or_else(|e| panic!("failed to create service: {}", e)),
+        avahi_sys::AvahiClientState_AVAHI_CLIENT_FAILURE => {
+            context.invoke_callback(Err(avahi_util::get_last_error(client).into()))
         }
-        _ => {
-            // TODO: handle other states
-        }
+        _ => {}
     }
 }
 
