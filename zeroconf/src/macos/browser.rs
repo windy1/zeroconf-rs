@@ -9,8 +9,12 @@ use crate::ffi::{c_str, AsRaw, FromRaw};
 use crate::prelude::*;
 use crate::{EventLoop, NetworkInterface, Result, ServiceType, TxtRecord};
 use crate::{ServiceDiscoveredCallback, ServiceDiscovery};
+#[cfg(target_vendor = "pc")]
+use bonjour_sys::sockaddr_in;
 use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
-use libc::{c_char, c_uchar, c_void, sockaddr_in};
+#[cfg(target_vendor = "apple")]
+use libc::sockaddr_in;
+use libc::{c_char, c_uchar, c_void};
 use std::any::Any;
 use std::ffi::CString;
 use std::fmt::{self, Formatter};
@@ -257,10 +261,20 @@ unsafe fn handle_get_address_info(
     let port: u16 = ctx.resolved_port.to_be();
 
     // on macOS the bytes are swapped for the ip
+    #[cfg(target_vendor = "apple")]
     let ip = {
         let address = address as *const sockaddr_in;
         assert_not_null!(address);
         let s_addr = (*address).sin_addr.s_addr.to_le_bytes();
+        IpAddr::from(s_addr).to_string()
+    };
+
+    #[cfg(target_vendor = "pc")]
+    let ip = {
+        let address = address as *const sockaddr_in;
+        assert_not_null!(address);
+        let s_un = (*address).sin_addr.S_un.S_un_b;
+        let s_addr = [s_un.s_b1, s_un.s_b2, s_un.s_b3, s_un.s_b4];
         IpAddr::from(s_addr).to_string()
     };
 

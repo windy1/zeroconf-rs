@@ -100,3 +100,49 @@ pub(crate) mod macos {
         }
     }
 }
+
+#[cfg(target_vendor = "pc")]
+pub(crate) mod macos {
+    use crate::Result;
+    use bonjour_sys::{select, timeval, fd_set};
+    use std::time::Duration;
+    use std::ptr;
+    #[cfg(target_vendor = "apple")]
+    use std::mem;
+
+    /// Performs a unix `select()` on the specified `sock_fd` and `timeout`. Returns the select result
+    /// or `Err` if the result is negative.
+    ///
+    /// # Safety
+    /// This function is unsafe because it directly interfaces with C-library system calls.
+    pub unsafe fn read_select(sock_fd: u64, timeout: Duration) -> Result<u32> {
+        if timeout.as_secs() > i32::MAX as u64 {
+            return Err("Invalid timeout duration, as_secs() value exceeds ::libc::c_long. ".into())
+        }
+
+        let mut timeout: timeval = timeval {
+            tv_sec: timeout.as_secs() as ::libc::c_long,
+            tv_usec: timeout.subsec_micros() as ::libc::c_long,
+        };
+
+        let mut set: fd_set = fd_set {
+            fd_count: 1,
+            fd_array: [0; 64]
+        };
+        set.fd_array[0] = sock_fd;
+
+        let result = select(
+            0,
+            &mut set,
+            ptr::null_mut(),
+            &mut set,
+            &mut timeout,
+        );
+
+        if result < 0 {
+            Err("select(): returned error status".into())
+        } else {
+            Ok(result as u32)
+        }
+    }
+}

@@ -15,6 +15,7 @@ categories = [
     "os",
     "os::linux-apis",
     "os::macos-apis",
+    "os::windows-apis",
 ]
 documentation = "https://docs.rs/zeroconf"
 
@@ -37,7 +38,10 @@ clap = { version = "4.4.4", features = ["derive"] }
 avahi-sys = "0.10.0"
 
 [target.'cfg(target_vendor = "apple")'.dependencies]
-bonjour-sys = "0.1.1"
+bonjour-sys = "0.2.0"
+
+[target.'cfg(target_vendor = "pc")'.dependencies]
+bonjour-sys = "0.2.0"
 
 [package.metadata.docs.rs]
 default-target = "x86_64-unknown-linux-gnu"

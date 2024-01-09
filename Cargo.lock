@@ -150,9 +150,7 @@ checksum = "327762f6e5a765692301e5bb513e0d9fef63be86bbc14528052b1cd3e6f03e07"
 
 [[package]]
 name = "bonjour-sys"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "749c457f0105b15077fedc900f9c3c032c98e12af5cd107477db657dfc82142b"
+version = "0.1.2"
 dependencies = [
  "bindgen 0.68.1",
  "libc",
