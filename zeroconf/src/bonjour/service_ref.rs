@@ -1,6 +1,6 @@
 //! Low level interface for interacting with `DNSserviceRef`
 
-use crate::{macos::bonjour_util, Result};
+use crate::{bonjour::bonjour_util, Result};
 use bonjour_sys::{
     DNSServiceBrowse, DNSServiceBrowseReply, DNSServiceFlags, DNSServiceGetAddrInfo,
     DNSServiceGetAddrInfoReply, DNSServiceProcessResult, DNSServiceProtocol, DNSServiceRef,

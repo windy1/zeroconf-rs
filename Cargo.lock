@@ -150,7 +150,8 @@ checksum = "327762f6e5a765692301e5bb513e0d9fef63be86bbc14528052b1cd3e6f03e07"
 
 [[package]]
 name = "bonjour-sys"
-version = "0.1.2"
+version = "0.2.0"
+source = "git+https://github.com/davidcorrigan714/bonjour-sys.git#3a3902e17acb304f6f66789617c5baae0cc829c7"
 dependencies = [
  "bindgen 0.68.1",
  "libc",
