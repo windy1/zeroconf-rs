@@ -12,7 +12,6 @@ keywords = ["zeroconf", "mdns", "avahi", "bonjour", "dnssd"]
 categories = [
     "api-bindings",
     "network-programming",
-    "os",
     "os::linux-apis",
     "os::macos-apis",
     "os::windows-apis",
