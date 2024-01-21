@@ -1,6 +1,6 @@
 //! Low level interface for interacting with `DNSserviceRef`
 
-use crate::{macos::bonjour_util, Result};
+use crate::{bonjour::bonjour_util, Result};
 use bonjour_sys::{
     DNSServiceBrowse, DNSServiceBrowseReply, DNSServiceFlags, DNSServiceGetAddrInfo,
     DNSServiceGetAddrInfoReply, DNSServiceProcessResult, DNSServiceProtocol, DNSServiceRef,
@@ -177,7 +177,16 @@ impl ManagedDNSServiceRef {
     /// Delegate function for [`DNSServiceRefSockFD`].
     ///
     /// [`DNSServiceRefSockFD`]: https://developer.apple.com/documentation/dnssd/1804698-dnsservicerefsockfd?language=objc
+    #[cfg(target_vendor = "apple")]
     pub fn sock_fd(&self) -> i32 {
+        unsafe { DNSServiceRefSockFD(self.0) }
+    }
+
+    /// Delegate function for [`DNSServiceRefSockFD`].
+    ///
+    /// [`DNSServiceRefSockFD`]: https://developer.apple.com/documentation/dnssd/1804698-dnsservicerefsockfd?language=objc
+    #[cfg(target_vendor = "pc")]
+    pub fn sock_fd(&self) -> u64 {
         unsafe { DNSServiceRefSockFD(self.0) }
     }
 }

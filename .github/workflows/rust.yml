@@ -13,7 +13,7 @@ jobs:
   macOS:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Prepare
         run: rustup component add clippy
       - name: Build
@@ -28,7 +28,7 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Prepare
         run: "rustup component add clippy && sudo apt -y install avahi-daemon libavahi-client-dev && sudo systemctl start avahi-daemon.service"
       - name: Build
@@ -37,5 +37,24 @@ jobs:
         run: ./scripts/checkfmt.sh
       - name: Run clippy
         run: ./scripts/lintall.sh
+      - name: Run tests
+        run: cargo test --verbose
+
+  windows-latest:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Bonjour
+        run: choco install -y bonjour
+      - name: Prepare
+        run: "rustup component add clippy"
+      - name: Build
+        shell: pwsh
+        run: ./scripts/buildall.ps1
+      - name: Check formatting
+        run: ./scripts/checkfmt.ps1
+      - name: Run clippy
+        shell: pwsh
+        run: ./scripts/lintall.ps1
       - name: Run tests
         run: cargo test --verbose

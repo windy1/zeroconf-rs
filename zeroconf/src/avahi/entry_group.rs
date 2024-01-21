@@ -3,8 +3,8 @@
 use std::rc::Rc;
 
 use super::{client::ManagedAvahiClient, string_list::ManagedAvahiStringList};
+use crate::avahi::avahi_util;
 use crate::ffi::UnwrapMutOrNull;
-use crate::linux::avahi_util;
 use crate::Result;
 use avahi_sys::{
     avahi_client_errno, avahi_entry_group_add_service_strlst,

@@ -230,6 +230,7 @@ mod tests {
 
         let record = TxtRecord::new();
 
+        #[allow(clippy::never_loop)]
         for (key, value) in record.iter() {
             panic!("({:?}, {:?})", key, value);
         }

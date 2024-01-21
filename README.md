@@ -12,9 +12,12 @@ On Linux:
 $ sudo apt install xorg-dev libxcb-shape0-dev libxcb-xfixes0-dev clang avahi-daemon libavahi-client-dev
 ```
 
+On Windows:
+
+Bonjour must be installed. It comes bundled with [iTunes](https://support.apple.com/en-us/HT210384) or [Bonjour Print Services](https://support.apple.com/kb/dl999). Further redistribution & bundling details are available on the [Apple Developer Site](https://developer.apple.com/licensing-trademarks/bonjour/).
+
 ## TODO
 
-* Windows support
 * You tell me...
 
 # Examples

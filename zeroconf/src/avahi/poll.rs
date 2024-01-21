@@ -1,7 +1,7 @@
 //! Rust friendly `AvahiSimplePoll` wrappers/helpers
 
 use crate::Result;
-use crate::{error::Error, linux::avahi_util};
+use crate::{avahi::avahi_util, error::Error};
 use avahi_sys::{
     avahi_simple_poll_free, avahi_simple_poll_iterate, avahi_simple_poll_loop,
     avahi_simple_poll_new, AvahiSimplePoll,
