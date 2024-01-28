@@ -186,9 +186,14 @@ unsafe extern "C" fn client_callback(
     let context = AvahiServiceContext::from_raw(userdata);
 
     match state {
-        avahi_sys::AvahiClientState_AVAHI_CLIENT_S_RUNNING => create_service(client, context)
-            .unwrap_or_else(|e| panic!("failed to create service: {}", e)),
-        avahi_sys::AvahiClientState_AVAHI_CLIENT_FAILURE => {
+        avahi_sys::AvahiServerState_AVAHI_SERVER_RUNNING => {
+            if let Err(e) = create_service(client, context) {
+                context.invoke_callback(Err(e))
+            }
+        }
+        avahi_sys::AvahiServerState_AVAHI_SERVER_INVALID
+        | avahi_sys::AvahiServerState_AVAHI_SERVER_COLLISION
+        | avahi_sys::AvahiServerState_AVAHI_SERVER_FAILURE => {
             context.invoke_callback(Err(avahi_util::get_last_error(client).into()))
         }
         _ => {}
