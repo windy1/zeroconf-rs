@@ -1,6 +1,8 @@
 //! Rust friendly `AvahiEntryGroup` wrappers/helpers
 
-use super::string_list::ManagedAvahiStringList;
+use std::rc::Rc;
+
+use super::{client::ManagedAvahiClient, string_list::ManagedAvahiStringList};
 use crate::avahi::avahi_util;
 use crate::ffi::UnwrapMutOrNull;
 use crate::Result;
@@ -19,6 +21,7 @@ use libc::{c_char, c_void};
 #[derive(Debug)]
 pub struct ManagedAvahiEntryGroup {
     inner: *mut AvahiEntryGroup,
+    _client: Rc<ManagedAvahiClient>,
 }
 
 impl ManagedAvahiEntryGroup {
@@ -31,13 +34,16 @@ impl ManagedAvahiEntryGroup {
             userdata,
         }: ManagedAvahiEntryGroupParams,
     ) -> Result<Self> {
-        let inner = unsafe { avahi_entry_group_new(client, callback, userdata) };
+        let inner = unsafe { avahi_entry_group_new(client.inner, callback, userdata) };
 
         if inner.is_null() {
-            let err = avahi_util::get_error(unsafe { avahi_client_errno(client) });
+            let err = avahi_util::get_error(unsafe { avahi_client_errno(client.inner) });
             Err(format!("could not initialize AvahiEntryGroup: {}", err).into())
         } else {
-            Ok(Self { inner })
+            Ok(Self {
+                inner,
+                _client: client,
+            })
         }
     }
 
@@ -156,7 +162,7 @@ impl Drop for ManagedAvahiEntryGroup {
 /// [avahi_entry_group_new()]: https://avahi.org/doxygen/html/publish_8h.html#abb17598f2b6ec3c3f69defdd488d568c
 #[derive(Builder, BuilderDelegate)]
 pub struct ManagedAvahiEntryGroupParams {
-    client: *mut AvahiClient,
+    client: Rc<ManagedAvahiClient>,
     callback: AvahiEntryGroupCallback,
     userdata: *mut c_void,
 }

@@ -242,7 +242,7 @@ pub type MdnsService = bonjour::service::BonjourMdnsService;
 
 /// Type alias for the platform-specific structure responsible for polling the mDNS event loop
 #[cfg(target_os = "linux")]
-pub type EventLoop<'a> = avahi::event_loop::AvahiEventLoop<'a>;
+pub type EventLoop = avahi::event_loop::AvahiEventLoop;
 /// Type alias for the platform-specific structure responsible for polling the mDNS event loop
 #[cfg(any(target_vendor = "apple", target_vendor = "pc"))]
 pub type EventLoop = bonjour::event_loop::BonjourEventLoop;
