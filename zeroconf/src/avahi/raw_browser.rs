@@ -1,5 +1,7 @@
 //! Rust friendly `AvahiServiceBrowser` wrappers/helpers
 
+use std::rc::Rc;
+
 use crate::Result;
 use avahi_sys::{
     avahi_service_browser_free, avahi_service_browser_get_client, avahi_service_browser_new,
@@ -8,6 +10,8 @@ use avahi_sys::{
 };
 use libc::{c_char, c_void};
 
+use super::client::ManagedAvahiClient;
+
 /// Wraps the `AvahiServiceBrowser` type from the raw Avahi bindings.
 ///
 /// This struct allocates a new `*mut AvahiServiceBrowser` when `ManagedAvahiServiceBrowser::new()`
@@ -15,6 +19,7 @@ use libc::{c_char, c_void};
 #[derive(Debug)]
 pub struct ManagedAvahiServiceBrowser {
     inner: *mut AvahiServiceBrowser,
+    _client: Rc<ManagedAvahiClient>,
 }
 
 impl ManagedAvahiServiceBrowser {
@@ -34,14 +39,24 @@ impl ManagedAvahiServiceBrowser {
     ) -> Result<Self> {
         let inner = unsafe {
             avahi_service_browser_new(
-                client, interface, protocol, kind, domain, flags, callback, userdata,
+                client.inner,
+                interface,
+                protocol,
+                kind,
+                domain,
+                flags,
+                callback,
+                userdata,
             )
         };
 
         if inner.is_null() {
             Err("could not initialize Avahi service browser".into())
         } else {
-            Ok(Self { inner })
+            Ok(Self {
+                inner,
+                _client: client,
+            })
         }
     }
 
@@ -69,7 +84,7 @@ impl Drop for ManagedAvahiServiceBrowser {
 /// [`avahi_service_browser_new()`]: https://avahi.org/doxygen/html/lookup_8h.html#a52d55a5156a7943012d03e6700880d2b
 #[derive(Builder, BuilderDelegate)]
 pub struct ManagedAvahiServiceBrowserParams {
-    client: *mut AvahiClient,
+    client: Rc<ManagedAvahiClient>,
     interface: AvahiIfIndex,
     protocol: AvahiProtocol,
     kind: *const c_char,

@@ -1,7 +1,7 @@
 //! Avahi implementation for cross-platform service.
 
 use super::avahi_util;
-use super::client::{self, ManagedAvahiClient, ManagedAvahiClientParams};
+use super::client::{ManagedAvahiClient, ManagedAvahiClientParams};
 use super::entry_group::{
     AddServiceParams, AddServiceSubtypeParams, ManagedAvahiEntryGroup, ManagedAvahiEntryGroupParams,
 };
@@ -29,7 +29,7 @@ pub struct AvahiMdnsService {
     // note: this declaration order is important, it ensures that each
     // component is dropped in the correct order
     context: Box<AvahiServiceContext>,
-    client: Option<ManagedAvahiClient>,
+    client: Option<Rc<ManagedAvahiClient>>,
     poll: Option<Rc<ManagedAvahiSimplePoll>>,
 }
 
@@ -113,14 +113,22 @@ impl TMdnsService for AvahiMdnsService {
 
         self.poll = Some(Rc::new(ManagedAvahiSimplePoll::new()?));
 
-        self.client = Some(ManagedAvahiClient::new(
+        self.client = Some(Rc::new(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
-                .poll(self.poll.as_ref().unwrap().inner())
+                .poll(self.poll.as_ref().unwrap().clone())
                 .flags(AvahiClientFlags(0))
                 .callback(Some(client_callback))
                 .userdata(self.context.as_raw())
                 .build()?,
-        )?);
+        )?));
+
+        self.context.client = self.client.clone();
+
+        unsafe {
+            if let Err(e) = create_service(&mut self.context) {
+                self.context.invoke_callback(Err(e))
+            }
+        }
 
         Ok(EventLoop::new(self.poll.as_ref().unwrap().clone()))
     }
@@ -128,6 +136,7 @@ impl TMdnsService for AvahiMdnsService {
 
 #[derive(FromRaw, AsRaw)]
 struct AvahiServiceContext {
+    client: Option<Rc<ManagedAvahiClient>>,
     name: Option<CString>,
     kind: CString,
     sub_types: Vec<CString>,
@@ -144,6 +153,7 @@ struct AvahiServiceContext {
 impl AvahiServiceContext {
     fn new(kind: CString, port: u16, sub_types: Vec<CString>) -> Self {
         Self {
+            client: None,
             name: None,
             kind,
             port,
@@ -186,11 +196,6 @@ unsafe extern "C" fn client_callback(
     let context = AvahiServiceContext::from_raw(userdata);
 
     match state {
-        avahi_sys::AvahiServerState_AVAHI_SERVER_RUNNING => {
-            if let Err(e) = create_service(client, context) {
-                context.invoke_callback(Err(e))
-            }
-        }
         avahi_sys::AvahiServerState_AVAHI_SERVER_INVALID
         | avahi_sys::AvahiServerState_AVAHI_SERVER_COLLISION
         | avahi_sys::AvahiServerState_AVAHI_SERVER_FAILURE => {
@@ -200,12 +205,14 @@ unsafe extern "C" fn client_callback(
     }
 }
 
-unsafe fn create_service(
-    client: *mut AvahiClient,
-    context: &mut AvahiServiceContext,
-) -> Result<()> {
+unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
     if context.name.is_none() {
-        let host_name = client::get_host_name(client)?;
+        let host_name = context
+            .client
+            .as_ref()
+            .ok_or("expected initialized client")?
+            .host_name()?;
+
         context.name = Some(c_string!(host_name.to_string()));
     }
 
@@ -214,7 +221,7 @@ unsafe fn create_service(
 
         context.group = Some(ManagedAvahiEntryGroup::new(
             ManagedAvahiEntryGroupParams::builder()
-                .client(client)
+                .client(Rc::clone(context.client.as_ref().unwrap()))
                 .callback(Some(entry_group_callback))
                 .userdata(context.as_raw())
                 .build()?,

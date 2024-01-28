@@ -12,12 +12,14 @@ use crate::{
 use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_void};
 use std::any::Any;
+use std::cell::RefCell;
 use std::ffi::CString;
-use std::sync::{Arc, Mutex};
+use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct BonjourMdnsService {
-    service: Arc<Mutex<ManagedDNSServiceRef>>,
+    service: Rc<RefCell<ManagedDNSServiceRef>>,
     kind: CString,
     port: u16,
     name: Option<CString>,
@@ -31,7 +33,7 @@ pub struct BonjourMdnsService {
 impl TMdnsService for BonjourMdnsService {
     fn new(service_type: ServiceType, port: u16) -> Self {
         Self {
-            service: Arc::default(),
+            service: Rc::default(),
             kind: bonjour_util::format_regtype(&service_type),
             port,
             name: None,
@@ -112,7 +114,7 @@ impl TMdnsService for BonjourMdnsService {
             .map(|t| t.inner().get_bytes_ptr())
             .unwrap_or_null();
 
-        self.service.lock().unwrap().register_service(
+        self.service.borrow_mut().register_service(
             RegisterServiceParams::builder()
                 .flags(constants::BONJOUR_RENAME_FLAGS)
                 .interface_index(self.interface_index)

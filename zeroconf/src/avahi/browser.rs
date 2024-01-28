@@ -33,7 +33,7 @@ use std::{fmt, ptr};
 #[derive(Debug)]
 pub struct AvahiMdnsBrowser {
     context: Box<AvahiBrowserContext>,
-    client: Option<ManagedAvahiClient>,
+    client: Option<Rc<ManagedAvahiClient>>,
     poll: Option<Rc<ManagedAvahiSimplePoll>>,
 }
 
@@ -77,14 +77,22 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
 
         self.poll = Some(Rc::new(ManagedAvahiSimplePoll::new()?));
 
-        self.client = Some(ManagedAvahiClient::new(
+        self.client = Some(Rc::new(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
-                .poll(self.poll.as_ref().unwrap().inner())
+                .poll(self.poll.as_ref().unwrap().clone())
                 .flags(AvahiClientFlags(0))
                 .callback(Some(client_callback))
                 .userdata(self.context.as_raw())
                 .build()?,
-        )?);
+        )?));
+
+        self.context.client = self.client.clone();
+
+        unsafe {
+            if let Err(e) = create_browser(&mut self.context) {
+                self.context.invoke_callback(Err(e));
+            }
+        }
 
         Ok(EventLoop::new(self.poll.as_ref().unwrap().clone()))
     }
@@ -92,6 +100,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
 
 #[derive(FromRaw, AsRaw)]
 struct AvahiBrowserContext {
+    client: Option<Rc<ManagedAvahiClient>>,
     resolvers: ServiceResolverSet,
     service_discovered_callback: Option<Box<ServiceDiscoveredCallback>>,
     user_context: Option<Arc<dyn Any>>,
@@ -103,6 +112,7 @@ struct AvahiBrowserContext {
 impl AvahiBrowserContext {
     fn new(kind: CString, interface_index: AvahiIfIndex) -> Self {
         Self {
+            client: None,
             resolvers: ServiceResolverSet::default(),
             service_discovered_callback: None,
             user_context: None,
@@ -136,23 +146,12 @@ unsafe extern "C" fn client_callback(
 ) {
     let context = AvahiBrowserContext::from_raw(userdata);
 
-    match state {
-        avahi_sys::AvahiClientState_AVAHI_CLIENT_S_RUNNING => {
-            if let Err(e) = create_browser(client, context) {
-                context.invoke_callback(Err(e));
-            }
-        }
-        avahi_sys::AvahiClientState_AVAHI_CLIENT_FAILURE => {
-            context.invoke_callback(Err(avahi_util::get_last_error(client).into()))
-        }
-        _ => {}
+    if state == avahi_sys::AvahiClientState_AVAHI_CLIENT_FAILURE {
+        context.invoke_callback(Err(avahi_util::get_last_error(client).into()));
     }
 }
 
-unsafe fn create_browser(
-    client: *mut AvahiClient,
-    context: &mut AvahiBrowserContext,
-) -> Result<()> {
+unsafe fn create_browser(context: &mut AvahiBrowserContext) -> Result<()> {
     context.browser = Some(ManagedAvahiServiceBrowser::new(
         ManagedAvahiServiceBrowserParams::builder()
             .interface(context.interface_index)
@@ -162,7 +161,7 @@ unsafe fn create_browser(
             .flags(0)
             .callback(Some(browse_callback))
             .userdata(context.as_raw())
-            .client(client)
+            .client(Rc::clone(context.client.as_ref().unwrap()))
             .build()?,
     )?);
 
@@ -205,9 +204,14 @@ unsafe fn handle_browser_new(
 ) -> Result<()> {
     let raw_context = context.as_raw();
 
+    let client = context
+        .client
+        .as_ref()
+        .ok_or("expected initialized client")?;
+
     context.resolvers.insert(ManagedAvahiServiceResolver::new(
         ManagedAvahiServiceResolverParams::builder()
-            .client(context.browser.as_ref().unwrap().get_client())
+            .client(client.clone())
             .interface(interface)
             .protocol(protocol)
             .name(name)

@@ -16,15 +16,17 @@ use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::sockaddr_in;
 use libc::{c_char, c_uchar, c_void};
 use std::any::Any;
+use std::cell::RefCell;
 use std::ffi::CString;
 use std::fmt::{self, Formatter};
 use std::net::IpAddr;
 use std::ptr;
-use std::sync::{Arc, Mutex};
+use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct BonjourMdnsBrowser {
-    service: Arc<Mutex<ManagedDNSServiceRef>>,
+    service: Rc<RefCell<ManagedDNSServiceRef>>,
     kind: CString,
     interface_index: u32,
     context: Box<BonjourBrowserContext>,
@@ -33,7 +35,7 @@ pub struct BonjourMdnsBrowser {
 impl TMdnsBrowser for BonjourMdnsBrowser {
     fn new(service_type: ServiceType) -> Self {
         Self {
-            service: Arc::default(),
+            service: Rc::default(),
             kind: bonjour_util::format_regtype(&service_type),
             interface_index: constants::BONJOUR_IF_UNSPEC,
             context: Box::default(),
@@ -66,7 +68,7 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
     fn browse_services(&mut self) -> Result<EventLoop> {
         debug!("Browsing services: {:?}", self);
 
-        self.service.lock().unwrap().browse_services(
+        self.service.borrow_mut().browse_services(
             BrowseServicesParams::builder()
                 .flags(0)
                 .interface_index(self.interface_index)
