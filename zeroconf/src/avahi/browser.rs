@@ -134,14 +134,18 @@ unsafe extern "C" fn client_callback(
     state: AvahiClientState,
     userdata: *mut c_void,
 ) {
+    let context = AvahiBrowserContext::from_raw(userdata);
+
     match state {
         avahi_sys::AvahiClientState_AVAHI_CLIENT_S_RUNNING => {
-            create_browser(client, AvahiBrowserContext::from_raw(userdata))
-                .unwrap_or_else(|e| panic!("failed to create browser: {}", e))
+            if let Err(e) = create_browser(client, context) {
+                context.invoke_callback(Err(e));
+            }
         }
-        _ => {
-            // TODO: handle other states
+        avahi_sys::AvahiClientState_AVAHI_CLIENT_FAILURE => {
+            context.invoke_callback(Err(avahi_util::get_last_error(client).into()))
         }
+        _ => {}
     }
 }
 
