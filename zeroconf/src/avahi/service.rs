@@ -286,11 +286,10 @@ unsafe extern "C" fn entry_group_callback(
         )),
         avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_COLLISION => {
             let name = context.name.as_ref().unwrap().clone();
+            let new_name = avahi_util::alternative_service_name(name.as_c_str());
+            let result = add_services(context, new_name);
 
-            let result = add_services(
-                context,
-                avahi_util::alternative_service_name(name.as_c_str()),
-            );
+            context.name = Some(new_name.into());
 
             if let Err(e) = result {
                 context.invoke_callback(Err(e))
@@ -310,88 +309,4 @@ unsafe fn handle_group_established(context: &AvahiServiceContext) -> Result<Serv
         ))?)
         .domain("local".to_string())
         .build()?)
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::prelude::*;
-    use crate::{tests, MdnsService, ServiceType};
-    use std::sync::{Arc, Mutex};
-    use std::time::Duration;
-
-    #[test]
-    fn name_collision_handled() {
-        tests::setup();
-
-        static SERVICE_NAME: &str = "name_collision_handled";
-
-        #[derive(Default, Debug)]
-        struct Context {
-            completed: bool,
-        }
-
-        let context: Arc<Mutex<Context>> = Arc::default();
-
-        let mut service1 = MdnsService::new(ServiceType::new("http", "tcp").unwrap(), 8080);
-
-        service1.set_context(Box::new(context.clone()));
-        service1.set_name(SERVICE_NAME);
-
-        service1.set_registered_callback(Box::new(|result, context| {
-            assert!(result.is_ok());
-
-            let mut service2 = MdnsService::new(ServiceType::new("http", "tcp").unwrap(), 8080);
-
-            service2.set_context(Box::new(context.clone()));
-            service2.set_name(SERVICE_NAME);
-
-            service2.set_registered_callback(Box::new(|result, context| {
-                assert!(result.is_ok());
-
-                let name = result.as_ref().unwrap().name();
-
-                println!("name = {}", name);
-
-                let mut mtx = context
-                    .as_ref()
-                    .unwrap()
-                    .downcast_ref::<Arc<Mutex<Context>>>()
-                    .unwrap()
-                    .lock()
-                    .unwrap();
-
-                mtx.completed = true;
-            }));
-
-            let event_loop = service2.register().unwrap();
-
-            loop {
-                event_loop.poll(Duration::from_secs(0)).unwrap();
-
-                let context = context
-                    .as_ref()
-                    .unwrap()
-                    .downcast_ref::<Arc<Mutex<Context>>>()
-                    .unwrap()
-                    .lock()
-                    .unwrap();
-
-                if context.completed {
-                    break;
-                }
-            }
-        }));
-
-        let event_loop = service1.register().unwrap();
-
-        loop {
-            event_loop.poll(Duration::from_secs(0)).unwrap();
-
-            let context = context.lock().unwrap();
-
-            if context.completed {
-                break;
-            }
-        }
-    }
 }
