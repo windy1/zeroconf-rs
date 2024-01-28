@@ -2,13 +2,15 @@
 
 use std::rc::Rc;
 
-use super::client::ManagedAvahiClient;
 use crate::Result;
 use avahi_sys::{
-    avahi_service_browser_free, avahi_service_browser_new, AvahiIfIndex, AvahiLookupFlags,
-    AvahiProtocol, AvahiServiceBrowser, AvahiServiceBrowserCallback,
+    avahi_service_browser_free, avahi_service_browser_get_client, avahi_service_browser_new,
+    AvahiClient, AvahiIfIndex, AvahiLookupFlags, AvahiProtocol, AvahiServiceBrowser,
+    AvahiServiceBrowserCallback,
 };
 use libc::{c_char, c_void};
+
+use super::client::ManagedAvahiClient;
 
 /// Wraps the `AvahiServiceBrowser` type from the raw Avahi bindings.
 ///
@@ -56,6 +58,15 @@ impl ManagedAvahiServiceBrowser {
                 _client: client,
             })
         }
+    }
+
+    /// Returns the underlying `*mut AvahiServiceBrowser`.
+    ///
+    /// # Safety
+    /// This function leaks the internal raw pointer, useful for accessing within callbacks where
+    /// you are sure the pointer is still valid.
+    pub unsafe fn get_client(&self) -> *mut AvahiClient {
+        avahi_service_browser_get_client(self.inner)
     }
 }
 

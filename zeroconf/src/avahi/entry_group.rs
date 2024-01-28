@@ -9,8 +9,8 @@ use crate::Result;
 use avahi_sys::{
     avahi_client_errno, avahi_entry_group_add_service_strlst,
     avahi_entry_group_add_service_subtype, avahi_entry_group_commit, avahi_entry_group_free,
-    avahi_entry_group_is_empty, avahi_entry_group_new, avahi_entry_group_reset, AvahiEntryGroup,
-    AvahiEntryGroupCallback, AvahiIfIndex, AvahiProtocol, AvahiPublishFlags,
+    avahi_entry_group_is_empty, avahi_entry_group_new, avahi_entry_group_reset, AvahiClient,
+    AvahiEntryGroup, AvahiEntryGroupCallback, AvahiIfIndex, AvahiProtocol, AvahiPublishFlags,
 };
 use libc::{c_char, c_void};
 
@@ -136,6 +136,15 @@ impl ManagedAvahiEntryGroup {
     /// [`avahi_entry_group_reset()`]: https://avahi.org/doxygen/html/publish_8h.html#a1293bbccf878dbeb9916660022bc71b2
     pub fn reset(&mut self) {
         unsafe { avahi_entry_group_reset(self.inner) };
+    }
+
+    /// Delegate function for [`avahi_entry_group_get_client()`].
+    ///
+    /// # Safety
+    /// This function is unsafe because it returns a raw pointer to
+    /// the underlying `AvahiClient`.
+    pub unsafe fn get_client(&self) -> *mut AvahiClient {
+        avahi_sys::avahi_entry_group_get_client(self.inner)
     }
 }
 

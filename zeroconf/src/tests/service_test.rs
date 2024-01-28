@@ -31,7 +31,9 @@ fn service_register_is_browsable() {
     service.set_context(Box::new(context.clone()));
     service.set_txt_record(txt.clone());
 
-    service.set_registered_callback(Box::new(|_, context| {
+    service.set_registered_callback(Box::new(|result, context| {
+        assert!(result.is_ok());
+
         let mut browser =
             MdnsBrowser::new(ServiceType::with_sub_types("http", "tcp", vec!["printer"]).unwrap());
 

@@ -2,8 +2,7 @@
 
 use std::rc::Rc;
 
-use super::avahi_util;
-use super::poll::ManagedAvahiSimplePoll;
+use super::{avahi_util, poll::ManagedAvahiSimplePoll};
 use crate::ffi::c_str;
 use crate::Result;
 use avahi_sys::{

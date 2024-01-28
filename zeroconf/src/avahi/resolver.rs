@@ -1,6 +1,5 @@
 //! Rust friendly `AvahiServiceResolver` wrappers/helpers
 
-use super::client::ManagedAvahiClient;
 use crate::Result;
 use avahi_sys::{
     avahi_service_resolver_free, avahi_service_resolver_new, AvahiIfIndex, AvahiLookupFlags,
@@ -8,6 +7,8 @@ use avahi_sys::{
 };
 use libc::{c_char, c_void};
 use std::{collections::HashMap, rc::Rc};
+
+use super::client::ManagedAvahiClient;
 
 /// Wraps the `AvahiServiceResolver` type from the raw Avahi bindings.
 ///
