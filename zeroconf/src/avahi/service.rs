@@ -18,7 +18,7 @@ use avahi_sys::{
 };
 use libc::c_void;
 use std::any::Any;
-use std::ffi::CString;
+use std::ffi::{CStr, CString};
 use std::fmt::{self, Formatter};
 use std::rc::Rc;
 use std::str::FromStr;
@@ -227,14 +227,22 @@ unsafe fn create_service(
         return Ok(());
     }
 
+    let name = context.name.as_ref().unwrap().clone();
+
+    add_services(context, &name)
+}
+
+fn add_services(context: &mut AvahiServiceContext, name: &CStr) -> Result<()> {
     debug!("Adding service: {}", context.kind.to_string_lossy());
+
+    let group = context.group.as_mut().unwrap();
 
     group.add_service(
         AddServiceParams::builder()
             .interface(context.interface_index)
             .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
             .flags(0)
-            .name(context.name.as_ref().unwrap().as_ptr())
+            .name(name.as_ptr())
             .kind(context.kind.as_ptr())
             .domain(context.domain.as_ref().map(|d| d.as_ptr()).unwrap_or_null())
             .host(context.host.as_ref().map(|h| h.as_ptr()).unwrap_or_null())
@@ -251,7 +259,7 @@ unsafe fn create_service(
                 .interface(context.interface_index)
                 .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
                 .flags(0)
-                .name(context.name.as_ref().unwrap().as_ptr())
+                .name(name.as_ptr())
                 .kind(context.kind.as_ptr())
                 .domain(context.domain.as_ref().map(|d| d.as_ptr()).unwrap_or_null())
                 .subtype(sub_type.as_ptr())
@@ -267,26 +275,38 @@ unsafe extern "C" fn entry_group_callback(
     state: AvahiEntryGroupState,
     userdata: *mut c_void,
 ) {
-    if let avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_ESTABLISHED = state {
-        let context = AvahiServiceContext::from_raw(userdata);
-        if let Err(e) = handle_group_established(context) {
-            context.invoke_callback(Err(e));
+    let context = AvahiServiceContext::from_raw(userdata);
+
+    match state {
+        avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_ESTABLISHED => {
+            context.invoke_callback(handle_group_established(context))
         }
+        avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_FAILURE => context.invoke_callback(Err(
+            avahi_util::get_last_error(context.group.as_ref().unwrap().get_client()).into(),
+        )),
+        avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_COLLISION => {
+            let name = context.name.as_ref().unwrap().clone();
+            let new_name = avahi_util::alternative_service_name(name.as_c_str());
+            let result = add_services(context, new_name);
+
+            context.name = Some(new_name.into());
+
+            if let Err(e) = result {
+                context.invoke_callback(Err(e))
+            }
+        }
+        _ => {}
     }
 }
 
-unsafe fn handle_group_established(context: &AvahiServiceContext) -> Result<()> {
+unsafe fn handle_group_established(context: &AvahiServiceContext) -> Result<ServiceRegistration> {
     debug!("Group established");
 
-    let result = ServiceRegistration::builder()
+    Ok(ServiceRegistration::builder()
         .name(c_str::copy_raw(context.name.as_ref().unwrap().as_ptr()))
         .service_type(ServiceType::from_str(&c_str::copy_raw(
             context.kind.as_ptr(),
         ))?)
         .domain("local".to_string())
-        .build()?;
-
-    context.invoke_callback(Ok(result));
-
-    Ok(())
+        .build()?)
 }

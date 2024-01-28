@@ -1,6 +1,9 @@
 //! Utilities related to Avahi
 
-use avahi_sys::{avahi_address_snprint, avahi_strerror, AvahiAddress, AvahiClient};
+use avahi_sys::{
+    avahi_address_snprint, avahi_alternative_service_name, avahi_strerror, AvahiAddress,
+    AvahiClient,
+};
 use libc::c_char;
 use std::ffi::CStr;
 
@@ -104,6 +107,10 @@ pub fn format_sub_type(sub_type: &str, kind: &str) -> String {
         sub_type,
         kind
     )
+}
+
+pub fn alternative_service_name(name: &CStr) -> &CStr {
+    unsafe { CStr::from_ptr(avahi_alternative_service_name(name.as_ptr())) }
 }
 
 #[cfg(test)]
