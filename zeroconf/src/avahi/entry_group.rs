@@ -1,8 +1,6 @@
 //! Rust friendly `AvahiEntryGroup` wrappers/helpers
 
-use std::rc::Rc;
-
-use super::{client::ManagedAvahiClient, string_list::ManagedAvahiStringList};
+use super::string_list::ManagedAvahiStringList;
 use crate::avahi::avahi_util;
 use crate::ffi::UnwrapMutOrNull;
 use crate::Result;
