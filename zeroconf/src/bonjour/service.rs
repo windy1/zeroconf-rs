@@ -52,7 +52,7 @@ impl TMdnsService for BonjourMdnsService {
     }
 
     fn name(&self) -> Option<&str> {
-        self.name.as_ref().map(|n| n.to_str().unwrap())
+        self.name.as_ref().map(c_str::to_str)
     }
 
     fn set_network_interface(&mut self, interface: NetworkInterface) {
@@ -68,7 +68,7 @@ impl TMdnsService for BonjourMdnsService {
     }
 
     fn domain(&self) -> Option<&str> {
-        self.domain.as_ref().map(|d| d.to_str().unwrap())
+        self.domain.as_ref().map(c_str::to_str)
     }
 
     fn set_host(&mut self, host: &str) {
@@ -76,7 +76,7 @@ impl TMdnsService for BonjourMdnsService {
     }
 
     fn host(&self) -> Option<&str> {
-        self.host.as_ref().map(|h| h.to_str().unwrap())
+        self.host.as_ref().map(c_str::to_str)
     }
 
     fn set_txt_record(&mut self, txt_record: TxtRecord) {

@@ -1,5 +1,6 @@
 //! Utilities related to Avahi
 
+use crate::ffi::c_str;
 use avahi_sys::{
     avahi_address_snprint, avahi_alternative_service_name, avahi_strerror, AvahiAddress,
     AvahiClient,
@@ -27,7 +28,7 @@ pub unsafe fn avahi_address_to_string(addr: *const AvahiAddress) -> String {
         addr,
     );
 
-    String::from(addr_str.to_str().unwrap())
+    String::from(c_str::to_str(addr_str))
         .trim_matches(char::from(0))
         .to_string()
 }

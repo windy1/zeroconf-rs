@@ -79,7 +79,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
 
         self.client = Some(Rc::new(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
-                .poll(self.poll.as_ref().unwrap().clone())
+                .poll(self.poll.as_ref()?.clone())
                 .flags(AvahiClientFlags(0))
                 .callback(Some(client_callback))
                 .userdata(self.context.as_raw())
@@ -94,7 +94,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
             }
         }
 
-        Ok(EventLoop::new(self.poll.as_ref().unwrap().clone()))
+        Ok(EventLoop::new(self.poll.as_ref()?.clone()))
     }
 }
 
@@ -161,7 +161,7 @@ unsafe fn create_browser(context: &mut AvahiBrowserContext) -> Result<()> {
             .flags(0)
             .callback(Some(browse_callback))
             .userdata(context.as_raw())
-            .client(Rc::clone(context.client.as_ref().unwrap()))
+            .client(Rc::clone(context.client.as_ref()?))
             .build()?,
     )?);
 
@@ -305,8 +305,7 @@ unsafe fn handle_resolver_found(
         .address(address)
         .port(port)
         .txt(txt)
-        .build()
-        .unwrap();
+        .build()?;
 
     debug!("Service resolved: {:?}", result);
 

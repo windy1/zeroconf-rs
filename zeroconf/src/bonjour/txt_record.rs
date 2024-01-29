@@ -1,6 +1,7 @@
 //! Bonjour implementation for cross-platform TXT record.
 
 use super::txt_record_ref::ManagedTXTRecordRef;
+use crate::ffi::c_str;
 use crate::txt_record::TTxtRecord;
 use crate::Result;
 use libc::{c_char, c_void};
@@ -54,7 +55,7 @@ impl TTxtRecord for BonjourTxtRecord {
         unsafe {
             self.0
                 .remove_value(c_str.as_ptr() as *const c_char)
-                .unwrap()
+                .expect("could not remove value")
         };
 
         prev.into()
@@ -134,12 +135,12 @@ impl Iterator for Iter<'_> {
                     &mut value_len,
                     &mut value,
                 )
-                .unwrap();
+                .expect("could not get item at index");
         }
 
         assert_not_null!(value);
 
-        let key = String::from(raw_key.to_str().unwrap())
+        let key = String::from(c_str::to_str(&raw_key))
             .trim_matches(char::from(0))
             .to_string();
 
@@ -176,5 +177,5 @@ impl<'a> Iterator for Values<'a> {
 unsafe fn read_value(value: *const c_void, value_len: u8) -> String {
     let value_len = value_len as usize;
     let value_raw = slice::from_raw_parts(value as *const u8, value_len);
-    String::from_utf8(value_raw.to_vec()).unwrap()
+    String::from_utf8(value_raw.to_vec()).expect("could not read value")
 }
