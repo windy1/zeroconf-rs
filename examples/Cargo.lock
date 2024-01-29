@@ -732,7 +732,7 @@ checksum = "ed94fce61571a4006852b7389a063ab983c02eb1bb37b47f8272ce92d06d9538"
 
 [[package]]
 name = "zeroconf"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "avahi-sys",
  "bonjour-sys",
@@ -757,7 +757,7 @@ dependencies = [
 
 [[package]]
 name = "zeroconf-macros"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "quote",
  "syn 2.0.37",
