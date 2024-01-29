@@ -11,7 +11,7 @@ macro_rules! c_string {
         ::std::ffi::CString::from_vec_unchecked(vec![0; $len])
     };
     ($x:expr) => {
-        ::std::ffi::CString::new($x).unwrap()
+        ::std::ffi::CString::new($x).expect("could not create new CString")
     };
 }
 
@@ -35,6 +35,9 @@ mod tests {
 
     #[test]
     fn c_string_success() {
-        assert_eq!(c_string!("foo"), CString::new("foo").unwrap());
+        assert_eq!(
+            c_string!("foo"),
+            CString::new("foo").expect("could not create new CString")
+        );
     }
 }

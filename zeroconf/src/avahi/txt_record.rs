@@ -139,8 +139,14 @@ impl Iterator for Iter<'_> {
         self.node = n.next();
 
         Some((
-            pair.key().as_str().unwrap().to_string(),
-            pair.value().as_str().unwrap().to_string(),
+            pair.key()
+                .as_str()
+                .expect("could not key as str")
+                .to_string(),
+            pair.value()
+                .as_str()
+                .expect("could not get value as str")
+                .to_string(),
         ))
     }
 }

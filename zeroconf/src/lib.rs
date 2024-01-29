@@ -49,7 +49,7 @@
 //!     service_name: String,
 //! }
 //!
-//! fn main() {
+//! fn main() -> zeroconf::Result<()> {
 //!     env_logger::init();
 //!
 //!     let Args {
@@ -59,23 +59,23 @@
 //!     } = Args::parse();
 //!
 //!     let sub_types = sub_types.iter().map(|s| s.as_str()).collect::<Vec<_>>();
-//!     let service_type = ServiceType::with_sub_types(&name, &protocol, sub_types).unwrap();
+//!     let service_type = ServiceType::with_sub_types(&name, &protocol, sub_types)?;
 //!     let mut service = MdnsService::new(service_type, 8080);
 //!     let mut txt_record = TxtRecord::new();
 //!     let context: Arc<Mutex<Context>> = Arc::default();
 //!
-//!     txt_record.insert("foo", "bar").unwrap();
+//!     txt_record.insert("foo", "bar")?;
 //!
 //!     service.set_name("zeroconf_example_service");
 //!     service.set_registered_callback(Box::new(on_service_registered));
 //!     service.set_context(Box::new(context));
 //!     service.set_txt_record(txt_record);
 //!
-//!     let event_loop = service.register().unwrap();
+//!     let event_loop = service.register()?;
 //!
 //!     loop {
 //!         // calling `poll()` will keep this service alive
-//!         event_loop.poll(Duration::from_secs(0)).unwrap();
+//!         event_loop.poll(Duration::from_secs(0))?;
 //!     }
 //! }
 //!
@@ -83,18 +83,21 @@
 //!     result: zeroconf::Result<ServiceRegistration>,
 //!     context: Option<Arc<dyn Any>>,
 //! ) {
-//!     let service = result.unwrap();
+//!     let service = result.expect("failed to register service");
 //!
 //!     info!("Service registered: {:?}", service);
 //!
 //!     let context = context
 //!         .as_ref()
-//!         .unwrap()
+//!         .expect("could not get context")
 //!         .downcast_ref::<Arc<Mutex<Context>>>()
-//!         .unwrap()
+//!         .expect("error down-casting context")
 //!         .clone();
 //!
-//!     context.lock().unwrap().service_name = service.name().clone();
+//!     context
+//!         .lock()
+//!         .expect("failed to obtain context lock")
+//!         .service_name = service.name().clone();
 //!
 //!     info!("Context: {:?}", context);
 //!
@@ -132,7 +135,7 @@
 //!     sub_type: Option<String>,
 //! }
 //!
-//! fn main() {
+//! fn main() -> zeroconf::Result<()> {
 //!     env_logger::init();
 //!
 //!     let Args {
@@ -153,11 +156,11 @@
 //!
 //!     browser.set_service_discovered_callback(Box::new(on_service_discovered));
 //!
-//!     let event_loop = browser.browse_services().unwrap();
+//!     let event_loop = browser.browse_services()?;
 //!
 //!     loop {
 //!         // calling `poll()` will keep this browser alive
-//!         event_loop.poll(Duration::from_secs(0)).unwrap();
+//!         event_loop.poll(Duration::from_secs(0))?;
 //!     }
 //! }
 //!
@@ -165,7 +168,10 @@
 //!     result: zeroconf::Result<ServiceDiscovery>,
 //!     _context: Option<Arc<dyn Any>>,
 //! ) {
-//!     info!("Service discovered: {:?}", result.unwrap());
+//!     info!(
+//!         "Service discovered: {:?}",
+//!         result.expect("service discovery failed")
+//!     );
 //!
 //!     // ...
 //! }

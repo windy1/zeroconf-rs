@@ -59,7 +59,9 @@ impl From<HashMap<String, String>> for TxtRecord {
     fn from(map: HashMap<String, String>) -> TxtRecord {
         let mut record = TxtRecord::new();
         for (key, value) in map {
-            record.insert(&key, &value).unwrap();
+            record
+                .insert(&key, &value)
+                .expect("could not insert key/value pair");
         }
         record
     }
@@ -114,7 +116,8 @@ impl<'de> Visitor<'de> for TxtRecordVisitor {
         let mut map = TxtRecord::new();
 
         while let Some((key, value)) = access.next_entry()? {
-            map.insert(key, value).unwrap();
+            map.insert(key, value)
+                .expect("could not insert key/value pair");
         }
 
         Ok(map)

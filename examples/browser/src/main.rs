@@ -26,7 +26,7 @@ struct Args {
     sub_type: Option<String>,
 }
 
-fn main() {
+fn main() -> zeroconf::Result<()> {
     env_logger::init();
 
     let Args {
@@ -47,11 +47,11 @@ fn main() {
 
     browser.set_service_discovered_callback(Box::new(on_service_discovered));
 
-    let event_loop = browser.browse_services().unwrap();
+    let event_loop = browser.browse_services()?;
 
     loop {
         // calling `poll()` will keep this browser alive
-        event_loop.poll(Duration::from_secs(0)).unwrap();
+        event_loop.poll(Duration::from_secs(0))?;
     }
 }
 
@@ -59,7 +59,10 @@ fn on_service_discovered(
     result: zeroconf::Result<ServiceDiscovery>,
     _context: Option<Arc<dyn Any>>,
 ) {
-    info!("Service discovered: {:?}", result.unwrap());
+    info!(
+        "Service discovered: {:?}",
+        result.expect("service discovery failed")
+    );
 
     // ...
 }

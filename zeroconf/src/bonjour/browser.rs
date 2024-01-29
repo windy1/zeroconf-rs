@@ -281,11 +281,26 @@ unsafe fn handle_get_address_info(
     };
 
     let hostname = c_str::copy_raw(hostname);
-    let domain = bonjour_util::normalize_domain(&ctx.resolved_domain.take().unwrap());
-    let kind = bonjour_util::normalize_domain(&ctx.resolved_kind.take().unwrap());
+
+    let domain = bonjour_util::normalize_domain(
+        &ctx.resolved_domain
+            .take()
+            .ok_or("could not get domain from BonjourBrowserContext")?,
+    );
+
+    let kind = bonjour_util::normalize_domain(
+        &ctx.resolved_kind
+            .take()
+            .ok_or("could not get kind from BonjourBrowserContext")?,
+    );
+
+    let name = ctx
+        .resolved_name
+        .take()
+        .ok_or("could not get name from BonjourBrowserContext")?;
 
     let result = ServiceDiscovery::builder()
-        .name(ctx.resolved_name.take().unwrap())
+        .name(name)
         .service_type(bonjour_util::parse_regtype(&kind)?)
         .domain(domain)
         .host_name(hostname)
