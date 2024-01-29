@@ -79,7 +79,12 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
 
         self.client = Some(Rc::new(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
-                .poll(self.poll.as_ref()?.clone())
+                .poll(
+                    self.poll
+                        .as_ref()
+                        .ok_or("could not get poll as ref")?
+                        .clone(),
+                )
                 .flags(AvahiClientFlags(0))
                 .callback(Some(client_callback))
                 .userdata(self.context.as_raw())
@@ -94,7 +99,12 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
             }
         }
 
-        Ok(EventLoop::new(self.poll.as_ref()?.clone()))
+        Ok(EventLoop::new(
+            self.poll
+                .as_ref()
+                .ok_or("could not get poll as ref")?
+                .clone(),
+        ))
     }
 }
 
@@ -161,7 +171,12 @@ unsafe fn create_browser(context: &mut AvahiBrowserContext) -> Result<()> {
             .flags(0)
             .callback(Some(browse_callback))
             .userdata(context.as_raw())
-            .client(Rc::clone(context.client.as_ref()?))
+            .client(Rc::clone(
+                context
+                    .client
+                    .as_ref()
+                    .ok_or("could not get client as ref")?,
+            ))
             .build()?,
     )?);
 

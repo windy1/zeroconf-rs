@@ -18,7 +18,7 @@ use avahi_sys::{
 };
 use libc::c_void;
 use std::any::Any;
-use std::ffi::{c_str, CStr, CString};
+use std::ffi::{CStr, CString};
 use std::fmt::{self, Formatter};
 use std::rc::Rc;
 use std::str::FromStr;
@@ -61,7 +61,7 @@ impl TMdnsService for AvahiMdnsService {
     }
 
     fn name(&self) -> Option<&str> {
-        self.context.name.as_ref().map(|n| c_str::to_str(n))
+        self.context.name.as_ref().map(c_str::to_str)
     }
 
     fn set_network_interface(&mut self, interface: NetworkInterface) {
@@ -77,7 +77,7 @@ impl TMdnsService for AvahiMdnsService {
     }
 
     fn domain(&self) -> Option<&str> {
-        self.context.domain.as_ref().map(|d| c_str::to_str(d))
+        self.context.domain.as_ref().map(c_str::to_str)
     }
 
     fn set_host(&mut self, host: &str) {
@@ -85,7 +85,7 @@ impl TMdnsService for AvahiMdnsService {
     }
 
     fn host(&self) -> Option<&str> {
-        self.context.host.as_ref().map(|h| c_str::to_str(h))
+        self.context.host.as_ref().map(c_str::to_str)
     }
 
     fn set_txt_record(&mut self, txt_record: TxtRecord) {
@@ -115,7 +115,12 @@ impl TMdnsService for AvahiMdnsService {
 
         self.client = Some(Rc::new(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
-                .poll(self.poll.as_ref()?.clone())
+                .poll(
+                    self.poll
+                        .as_ref()
+                        .ok_or("could not get poll as ref")?
+                        .clone(),
+                )
                 .flags(AvahiClientFlags(0))
                 .callback(Some(client_callback))
                 .userdata(self.context.as_raw())
@@ -130,7 +135,12 @@ impl TMdnsService for AvahiMdnsService {
             }
         }
 
-        Ok(EventLoop::new(self.poll.as_ref()?.clone()))
+        Ok(EventLoop::new(
+            self.poll
+                .as_ref()
+                .ok_or("could not get poll as ref")?
+                .clone(),
+        ))
     }
 }
 
@@ -221,20 +231,32 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
 
         context.group = Some(ManagedAvahiEntryGroup::new(
             ManagedAvahiEntryGroupParams::builder()
-                .client(Rc::clone(context.client.as_ref()?))
+                .client(Rc::clone(
+                    context
+                        .client
+                        .as_ref()
+                        .ok_or("could not get client as ref")?,
+                ))
                 .callback(Some(entry_group_callback))
                 .userdata(context.as_raw())
                 .build()?,
         )?);
     }
 
-    let group = context.group.as_mut()?;
+    let group = context
+        .group
+        .as_mut()
+        .ok_or("could not borrow group as mut")?;
 
     if !group.is_empty() {
         return Ok(());
     }
 
-    let name = context.name.as_ref()?.clone();
+    let name = context
+        .name
+        .as_ref()
+        .ok_or("could not get name as ref")?
+        .clone();
 
     add_services(context, &name)
 }
@@ -242,7 +264,10 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
 fn add_services(context: &mut AvahiServiceContext, name: &CStr) -> Result<()> {
     debug!("Adding service: {}", context.kind.to_string_lossy());
 
-    let group = context.group.as_mut()?;
+    let group = context
+        .group
+        .as_mut()
+        .ok_or("could not borrow group as mut")?;
 
     group.add_service(
         AddServiceParams::builder()
@@ -294,7 +319,7 @@ unsafe extern "C" fn entry_group_callback(
             context.invoke_callback(handle_group_established(context))
         }
         avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_FAILURE => {
-            context.invoke_callback(Err(avahi_util::get_last_error(client).into()))
+            context.invoke_callback(Err(avahi_util::get_last_error(client.inner).into()))
         }
         avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_COLLISION => {
             let name = context
@@ -319,8 +344,16 @@ unsafe extern "C" fn entry_group_callback(
 unsafe fn handle_group_established(context: &AvahiServiceContext) -> Result<ServiceRegistration> {
     debug!("Group established");
 
+    let name = c_str::copy_raw(
+        context
+            .name
+            .as_ref()
+            .ok_or("could not get name as ref")?
+            .as_ptr(),
+    );
+
     Ok(ServiceRegistration::builder()
-        .name(c_str::copy_raw(context.name.as_ref()?.as_ptr()))
+        .name(name)
         .service_type(ServiceType::from_str(&c_str::copy_raw(
             context.kind.as_ptr(),
         ))?)

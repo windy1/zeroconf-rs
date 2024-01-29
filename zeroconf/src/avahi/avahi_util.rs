@@ -28,7 +28,7 @@ pub unsafe fn avahi_address_to_string(addr: *const AvahiAddress) -> String {
         addr,
     );
 
-    String::from(c_str::to_str(addr_str))
+    String::from(c_str::to_str(&addr_str))
         .trim_matches(char::from(0))
         .to_string()
 }
