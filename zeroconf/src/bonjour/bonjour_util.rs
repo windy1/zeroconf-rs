@@ -11,7 +11,12 @@ use bonjour_sys::DNSServiceErrorType;
 /// Bonjour suffixes domains with a final `'.'` character in some contexts but is not required by
 /// the standard. This function removes the final dot if present.
 pub fn normalize_domain(domain: &str) -> String {
-    if domain.chars().nth(domain.len() - 1).unwrap() == '.' {
+    let end = domain
+        .chars()
+        .nth(domain.len() - 1)
+        .expect("could not index domain string");
+
+    if end == '.' {
         String::from(&domain[..domain.len() - 1])
     } else {
         String::from(domain)
