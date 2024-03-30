@@ -103,3 +103,13 @@ fn service_register_is_browsable() {
 
     assert!(!context.lock().unwrap().timed_out);
 }
+
+#[test]
+fn service_register_segfault_on_drop() {
+    super::setup();
+    let service_type = ServiceType::new("http", "tcp").unwrap();
+    let mut service = MdnsService::new(service_type, 8080);
+    let service_event_loop = service.register().unwrap();
+    drop(service);
+    service_event_loop.poll(Duration::from_secs(1)).unwrap();
+}
