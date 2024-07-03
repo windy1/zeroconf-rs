@@ -177,15 +177,6 @@ impl ManagedDNSServiceRef {
     /// Delegate function for [`DNSServiceRefSockFD`].
     ///
     /// [`DNSServiceRefSockFD`]: https://developer.apple.com/documentation/dnssd/1804698-dnsservicerefsockfd?language=objc
-    #[cfg(target_vendor = "apple")]
-    pub fn sock_fd(&self) -> i32 {
-        unsafe { DNSServiceRefSockFD(self.0) }
-    }
-
-    /// Delegate function for [`DNSServiceRefSockFD`].
-    ///
-    /// [`DNSServiceRefSockFD`]: https://developer.apple.com/documentation/dnssd/1804698-dnsservicerefsockfd?language=objc
-    #[cfg(target_vendor = "pc")]
     pub fn sock_fd(&self) -> dnssd_sock_t {
         unsafe { DNSServiceRefSockFD(self.0) }
     }
