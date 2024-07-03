@@ -2,7 +2,7 @@
 
 use crate::{bonjour::bonjour_util, Result};
 use bonjour_sys::{
-    DNSServiceBrowse, DNSServiceBrowseReply, DNSServiceFlags, DNSServiceGetAddrInfo,
+    dnssd_sock_t, DNSServiceBrowse, DNSServiceBrowseReply, DNSServiceFlags, DNSServiceGetAddrInfo,
     DNSServiceGetAddrInfoReply, DNSServiceProcessResult, DNSServiceProtocol, DNSServiceRef,
     DNSServiceRefDeallocate, DNSServiceRefSockFD, DNSServiceRegister, DNSServiceRegisterReply,
     DNSServiceResolve, DNSServiceResolveReply,
@@ -186,7 +186,7 @@ impl ManagedDNSServiceRef {
     ///
     /// [`DNSServiceRefSockFD`]: https://developer.apple.com/documentation/dnssd/1804698-dnsservicerefsockfd?language=objc
     #[cfg(target_vendor = "pc")]
-    pub fn sock_fd(&self) -> u64 {
+    pub fn sock_fd(&self) -> dnssd_sock_t {
         unsafe { DNSServiceRefSockFD(self.0) }
     }
 }

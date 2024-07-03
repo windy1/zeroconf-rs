@@ -104,7 +104,7 @@ pub(crate) mod bonjour {
 #[cfg(target_vendor = "pc")]
 pub(crate) mod bonjour {
     use crate::Result;
-    use bonjour_sys::{fd_set, select, timeval};
+    use bonjour_sys::{dnssd_sock_t, fd_set, select, timeval};
     #[cfg(target_vendor = "apple")]
     use std::mem;
     use std::ptr;
@@ -115,7 +115,7 @@ pub(crate) mod bonjour {
     ///
     /// # Safety
     /// This function is unsafe because it directly interfaces with C-library system calls.
-    pub unsafe fn read_select(sock_fd: u64, timeout: Duration) -> Result<u32> {
+    pub unsafe fn read_select(sock_fd: dnssd_sock_t, timeout: Duration) -> Result<u32> {
         if timeout.as_secs() > i32::MAX as u64 {
             return Err(
                 "Invalid timeout duration, as_secs() value exceeds ::libc::c_long. ".into(),
