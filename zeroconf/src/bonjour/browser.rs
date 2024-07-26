@@ -115,7 +115,7 @@ impl fmt::Debug for BonjourBrowserContext {
     }
 }
 
-unsafe extern "C" fn browse_callback(
+unsafe extern "system" fn browse_callback(
     _sd_ref: DNSServiceRef,
     _flags: DNSServiceFlags,
     interface_index: u32,
@@ -160,7 +160,7 @@ unsafe fn handle_browse(
     )
 }
 
-unsafe extern "C" fn resolve_callback(
+unsafe extern "system" fn resolve_callback(
     _sd_ref: DNSServiceRef,
     _flags: DNSServiceFlags,
     interface_index: u32,
@@ -224,7 +224,7 @@ unsafe fn handle_resolve(
     )
 }
 
-unsafe extern "C" fn get_address_info_callback(
+unsafe extern "system" fn get_address_info_callback(
     _sd_ref: DNSServiceRef,
     _flags: DNSServiceFlags,
     _interface_index: u32,

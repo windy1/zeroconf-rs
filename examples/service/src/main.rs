@@ -78,7 +78,7 @@ fn on_service_registered(
     context
         .lock()
         .expect("failed to obtain context lock")
-        .service_name = service.name().clone();
+        .service_name = service.name().to_string();
 
     info!("Context: {:?}", context);
 

@@ -1,6 +1,6 @@
 [package]
 name = "zeroconf"
-version = "0.14.1"
+version = "0.14.2"
 authors = ["Walker Crouse <walkercrouse@hotmail.com>"]
 edition = "2018"
 description = "cross-platform library that wraps ZeroConf/mDNS implementations like Bonjour or Avahi"
@@ -37,10 +37,10 @@ clap = { version = "4.4.4", features = ["derive"] }
 avahi-sys = "0.10.1"
 
 [target.'cfg(target_vendor = "apple")'.dependencies]
-bonjour-sys = "0.2.0"
+bonjour-sys = "0.3.0"
 
 [target.'cfg(target_vendor = "pc")'.dependencies]
-bonjour-sys = "0.2.0"
+bonjour-sys = "0.3.0"
 
 [package.metadata.docs.rs]
 default-target = "x86_64-unknown-linux-gnu"

@@ -58,7 +58,7 @@ fn service_register_is_browsable() {
                     .lock()
                     .unwrap();
 
-                mtx.txt = service.txt().clone();
+                mtx.txt.clone_from(service.txt());
                 mtx.is_discovered = true;
 
                 debug!("Service discovered");

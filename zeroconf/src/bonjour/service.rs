@@ -158,7 +158,7 @@ impl BonjourServiceContext {
     }
 }
 
-unsafe extern "C" fn register_callback(
+unsafe extern "system" fn register_callback(
     _sd_ref: DNSServiceRef,
     _flags: DNSServiceFlags,
     error: DNSServiceErrorType,
