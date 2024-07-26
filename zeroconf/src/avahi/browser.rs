@@ -91,7 +91,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
                 .build()?,
         )?));
 
-        self.context.client = self.client.clone();
+        self.context.client.clone_from(&self.client);
 
         unsafe {
             if let Err(e) = create_browser(&mut self.context) {

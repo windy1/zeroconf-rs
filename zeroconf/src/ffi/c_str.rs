@@ -4,11 +4,13 @@ use libc::c_char;
 use std::ffi::{CStr, CString};
 
 /// Helper trait to map to `Option<*const c_char>`.
+#[cfg(not(target_os = "linux"))]
 pub trait AsCChars {
     /// Maps the type to a `Option<*const c_char>`.
     fn as_c_chars(&self) -> Option<*const c_char>;
 }
 
+#[cfg(not(target_os = "linux"))]
 impl AsCChars for Option<&CString> {
     fn as_c_chars(&self) -> Option<*const c_char> {
         self.map(|s| s.as_ptr() as *const c_char)
