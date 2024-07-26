@@ -17,20 +17,6 @@ pub trait FromRaw<T> {
     }
 }
 
-/// Helper trait to convert and clone a raw `*mut c_void` to it's rust type
-pub trait CloneRaw<T: FromRaw<T> + Clone> {
-    /// Converts and clones the specified `*mut c_void` to a `Box<T>`.
-    ///
-    /// # Safety
-    /// This function is unsafe due to a call to the unsafe function [`FromRaw::from_raw()`].
-    ///
-    /// [`FromRaw::from_raw()`]: trait.FromRaw.html#method.from_raw
-    unsafe fn clone_raw(raw: *mut c_void) -> Box<T> {
-        assert_not_null!(raw);
-        Box::new(T::from_raw(raw).clone())
-    }
-}
-
 /// Helper trait to convert self to a raw `*mut c_void`
 pub trait AsRaw {
     /// Converts self to a raw `*mut c_void` by cast.
@@ -48,18 +34,6 @@ pub trait UnwrapOrNull<T> {
 impl<T> UnwrapOrNull<T> for Option<*const T> {
     fn unwrap_or_null(&self) -> *const T {
         self.unwrap_or_else(ptr::null)
-    }
-}
-
-/// Helper trait to unwrap a type to a `*mut T` or a null-pointer if not present.
-pub trait UnwrapMutOrNull<T> {
-    /// Unwraps this type to `*mut T` or `ptr::null_mut()` if not present.
-    fn unwrap_mut_or_null(&mut self) -> *mut T;
-}
-
-impl<T> UnwrapMutOrNull<T> for Option<*mut T> {
-    fn unwrap_mut_or_null(&mut self) -> *mut T {
-        self.unwrap_or_else(ptr::null_mut)
     }
 }
 
