@@ -12,14 +12,13 @@ use crate::{
 use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_void};
 use std::any::Any;
-use std::cell::RefCell;
 use std::ffi::CString;
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub struct BonjourMdnsService {
-    service: Arc<RefCell<ManagedDNSServiceRef>>,
+    service: Arc<Mutex<ManagedDNSServiceRef>>,
     kind: CString,
     port: u16,
     name: Option<CString>,
@@ -114,21 +113,24 @@ impl TMdnsService for BonjourMdnsService {
             .map(|t| t.inner().get_bytes_ptr())
             .unwrap_or_null();
 
-        self.service.borrow_mut().register_service(
-            RegisterServiceParams::builder()
-                .flags(constants::BONJOUR_RENAME_FLAGS)
-                .interface_index(self.interface_index)
-                .name(self.name.as_ref().as_c_chars().unwrap_or_null())
-                .regtype(self.kind.as_ptr())
-                .domain(self.domain.as_ref().as_c_chars().unwrap_or_null())
-                .host(self.host.as_ref().as_c_chars().unwrap_or_null())
-                .port(self.port)
-                .txt_len(txt_len)
-                .txt_record(txt_record)
-                .callback(Some(register_callback))
-                .context(self.context.as_raw())
-                .build()?,
-        )?;
+        self.service
+            .lock()
+            .expect("should be able to obtain lock on service")
+            .register_service(
+                RegisterServiceParams::builder()
+                    .flags(constants::BONJOUR_RENAME_FLAGS)
+                    .interface_index(self.interface_index)
+                    .name(self.name.as_ref().as_c_chars().unwrap_or_null())
+                    .regtype(self.kind.as_ptr())
+                    .domain(self.domain.as_ref().as_c_chars().unwrap_or_null())
+                    .host(self.host.as_ref().as_c_chars().unwrap_or_null())
+                    .port(self.port)
+                    .txt_len(txt_len)
+                    .txt_record(txt_record)
+                    .callback(Some(register_callback))
+                    .context(self.context.as_raw())
+                    .build()?,
+            )?;
 
         Ok(EventLoop::new(self.service.clone()))
     }

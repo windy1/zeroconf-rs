@@ -3,13 +3,11 @@
 use super::service_ref::ManagedDNSServiceRef;
 use crate::event_loop::TEventLoop;
 use crate::{ffi, Result};
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::time::Duration;
 
 #[derive(new)]
 pub struct BonjourEventLoop {
-    service: Arc<RefCell<ManagedDNSServiceRef>>,
+    service: Arc<Mutex<ManagedDNSServiceRef>>,
 }
 
 impl TEventLoop for BonjourEventLoop {
