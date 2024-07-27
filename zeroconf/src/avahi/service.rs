@@ -29,8 +29,8 @@ pub struct AvahiMdnsService {
     // note: this declaration order is important, it ensures that each
     // component is dropped in the correct order
     context: Box<AvahiServiceContext>,
-    client: Option<Rc<ManagedAvahiClient>>,
-    poll: Option<Rc<ManagedAvahiSimplePoll>>,
+    client: Option<Arc<ManagedAvahiClient>>,
+    poll: Option<Arc<ManagedAvahiSimplePoll>>,
 }
 
 impl TMdnsService for AvahiMdnsService {
@@ -146,7 +146,7 @@ impl TMdnsService for AvahiMdnsService {
 
 #[derive(FromRaw, AsRaw)]
 struct AvahiServiceContext {
-    client: Option<Rc<ManagedAvahiClient>>,
+    client: Option<Arc<ManagedAvahiClient>>,
     name: Option<CString>,
     kind: CString,
     sub_types: Vec<CString>,

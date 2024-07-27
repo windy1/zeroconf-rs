@@ -9,7 +9,7 @@ use std::time::Duration;
 
 #[derive(new)]
 pub struct BonjourEventLoop {
-    service: Rc<RefCell<ManagedDNSServiceRef>>,
+    service: Arc<RefCell<ManagedDNSServiceRef>>,
 }
 
 impl TEventLoop for BonjourEventLoop {

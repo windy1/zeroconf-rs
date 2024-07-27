@@ -18,7 +18,7 @@ use super::client::ManagedAvahiClient;
 #[derive(Debug)]
 pub struct ManagedAvahiServiceResolver {
     inner: *mut AvahiServiceResolver,
-    _client: Rc<ManagedAvahiClient>,
+    _client: Arc<ManagedAvahiClient>,
 }
 
 impl ManagedAvahiServiceResolver {
@@ -78,7 +78,7 @@ impl Drop for ManagedAvahiServiceResolver {
 /// [`avahi_service_resolver_new()`]: https://avahi.org/doxygen/html/lookup_8h.html#a904611a4134ceb5919f6bb637df84124
 #[derive(Builder, BuilderDelegate)]
 pub struct ManagedAvahiServiceResolverParams {
-    client: Rc<ManagedAvahiClient>,
+    client: Arc<ManagedAvahiClient>,
     interface: AvahiIfIndex,
     protocol: AvahiProtocol,
     name: *const c_char,

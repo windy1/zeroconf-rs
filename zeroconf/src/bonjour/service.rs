@@ -19,7 +19,7 @@ use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct BonjourMdnsService {
-    service: Rc<RefCell<ManagedDNSServiceRef>>,
+    service: Arc<RefCell<ManagedDNSServiceRef>>,
     kind: CString,
     port: u16,
     name: Option<CString>,

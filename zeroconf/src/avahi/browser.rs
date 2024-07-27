@@ -33,8 +33,8 @@ use std::{fmt, ptr};
 #[derive(Debug)]
 pub struct AvahiMdnsBrowser {
     context: Box<AvahiBrowserContext>,
-    client: Option<Rc<ManagedAvahiClient>>,
-    poll: Option<Rc<ManagedAvahiSimplePoll>>,
+    client: Option<Arc<ManagedAvahiClient>>,
+    poll: Option<Arc<ManagedAvahiSimplePoll>>,
 }
 
 impl TMdnsBrowser for AvahiMdnsBrowser {
@@ -110,7 +110,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
 
 #[derive(FromRaw, AsRaw)]
 struct AvahiBrowserContext {
-    client: Option<Rc<ManagedAvahiClient>>,
+    client: Option<Arc<ManagedAvahiClient>>,
     resolvers: ServiceResolverSet,
     service_discovered_callback: Option<Box<ServiceDiscoveredCallback>>,
     user_context: Option<Arc<dyn Any>>,

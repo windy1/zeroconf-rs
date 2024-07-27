@@ -26,7 +26,7 @@ use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct BonjourMdnsBrowser {
-    service: Rc<RefCell<ManagedDNSServiceRef>>,
+    service: Arc<RefCell<ManagedDNSServiceRef>>,
     kind: CString,
     interface_index: u32,
     context: Box<BonjourBrowserContext>,

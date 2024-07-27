@@ -8,7 +8,7 @@ use std::time::Duration;
 
 #[derive(new)]
 pub struct AvahiEventLoop {
-    poll: Rc<ManagedAvahiSimplePoll>,
+    poll: Arc<ManagedAvahiSimplePoll>,
 }
 
 impl TEventLoop for AvahiEventLoop {
