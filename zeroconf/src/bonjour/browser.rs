@@ -16,13 +16,11 @@ use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::sockaddr_in;
 use libc::{c_char, c_uchar, c_void};
 use std::any::Any;
-use std::cell::RefCell;
 use std::ffi::CString;
 use std::fmt::{self, Formatter};
 use std::net::IpAddr;
 use std::ptr;
-use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub struct BonjourMdnsBrowser {
@@ -35,7 +33,7 @@ pub struct BonjourMdnsBrowser {
 impl TMdnsBrowser for BonjourMdnsBrowser {
     fn new(service_type: ServiceType) -> Self {
         Self {
-            service: Rc::default(),
+            service: Arc::default(),
             kind: bonjour_util::format_regtype(&service_type),
             interface_index: constants::BONJOUR_IF_UNSPEC,
             context: Box::default(),
@@ -68,16 +66,19 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
     fn browse_services(&mut self) -> Result<EventLoop> {
         debug!("Browsing services: {:?}", self);
 
-        self.service.borrow_mut().browse_services(
-            BrowseServicesParams::builder()
-                .flags(0)
-                .interface_index(self.interface_index)
-                .regtype(self.kind.as_ptr())
-                .domain(ptr::null_mut())
-                .callback(Some(browse_callback))
-                .context(self.context.as_raw())
-                .build()?,
-        )?;
+        self.service
+            .lock()
+            .expect("should have been able to obtain lock on service ref")
+            .browse_services(
+                BrowseServicesParams::builder()
+                    .flags(0)
+                    .interface_index(self.interface_index)
+                    .regtype(self.kind.as_ptr())
+                    .domain(ptr::null_mut())
+                    .callback(Some(browse_callback))
+                    .context(self.context.as_raw())
+                    .build()?,
+            )?;
 
         Ok(EventLoop::new(self.service.clone()))
     }

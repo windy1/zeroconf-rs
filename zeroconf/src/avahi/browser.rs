@@ -75,9 +75,9 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
     fn browse_services(&mut self) -> Result<EventLoop> {
         debug!("Browsing services: {:?}", self);
 
-        self.poll = Some(Rc::new(ManagedAvahiSimplePoll::new()?));
+        self.poll = Some(Arc::new(ManagedAvahiSimplePoll::new()?));
 
-        self.client = Some(Rc::new(ManagedAvahiClient::new(
+        self.client = Some(Arc::new(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
                 .poll(
                     self.poll
@@ -171,7 +171,7 @@ unsafe fn create_browser(context: &mut AvahiBrowserContext) -> Result<()> {
             .flags(0)
             .callback(Some(browse_callback))
             .userdata(context.as_raw())
-            .client(Rc::clone(
+            .client(Arc::clone(
                 context
                     .client
                     .as_ref()

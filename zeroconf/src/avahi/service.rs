@@ -111,9 +111,9 @@ impl TMdnsService for AvahiMdnsService {
     fn register(&mut self) -> Result<EventLoop> {
         debug!("Registering service: {:?}", self);
 
-        self.poll = Some(Rc::new(ManagedAvahiSimplePoll::new()?));
+        self.poll = Some(Arc::new(ManagedAvahiSimplePoll::new()?));
 
-        self.client = Some(Rc::new(ManagedAvahiClient::new(
+        self.client = Some(Arc::new(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
                 .poll(
                     self.poll
@@ -231,7 +231,7 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
 
         context.group = Some(ManagedAvahiEntryGroup::new(
             ManagedAvahiEntryGroupParams::builder()
-                .client(Rc::clone(
+                .client(Arc::clone(
                     context
                         .client
                         .as_ref()

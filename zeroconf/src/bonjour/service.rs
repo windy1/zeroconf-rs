@@ -13,7 +13,6 @@ use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_void};
 use std::any::Any;
 use std::ffi::CString;
-use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
@@ -32,7 +31,7 @@ pub struct BonjourMdnsService {
 impl TMdnsService for BonjourMdnsService {
     fn new(service_type: ServiceType, port: u16) -> Self {
         Self {
-            service: Rc::default(),
+            service: Arc::default(),
             kind: bonjour_util::format_regtype(&service_type),
             port,
             name: None,
