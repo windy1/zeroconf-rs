@@ -31,3 +31,5 @@ impl TEventLoop for BonjourEventLoop {
         }
     }
 }
+
+unsafe impl Send for BonjourEventLoop {}
