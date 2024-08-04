@@ -140,6 +140,7 @@ struct BonjourServiceContext {
     registered_callback: Option<Box<ServiceRegisteredCallback>>,
     user_context: Option<Arc<dyn Any>>,
 }
+
 // Necessary for BonjourMdnsService, cant be `derive`d because of registered_callback
 impl std::fmt::Debug for BonjourServiceContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -158,6 +159,8 @@ impl BonjourServiceContext {
         }
     }
 }
+
+unsafe impl Send for BonjourServiceContext {}
 
 unsafe extern "system" fn register_callback(
     _sd_ref: DNSServiceRef,
