@@ -12,14 +12,12 @@ use crate::{
 use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 use libc::{c_char, c_void};
 use std::any::Any;
-use std::cell::RefCell;
 use std::ffi::CString;
-use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub struct BonjourMdnsService {
-    service: Rc<RefCell<ManagedDNSServiceRef>>,
+    service: Arc<Mutex<ManagedDNSServiceRef>>,
     kind: CString,
     port: u16,
     name: Option<CString>,
@@ -33,7 +31,7 @@ pub struct BonjourMdnsService {
 impl TMdnsService for BonjourMdnsService {
     fn new(service_type: ServiceType, port: u16) -> Self {
         Self {
-            service: Rc::default(),
+            service: Arc::default(),
             kind: bonjour_util::format_regtype(&service_type),
             port,
             name: None,
@@ -114,21 +112,24 @@ impl TMdnsService for BonjourMdnsService {
             .map(|t| t.inner().get_bytes_ptr())
             .unwrap_or_null();
 
-        self.service.borrow_mut().register_service(
-            RegisterServiceParams::builder()
-                .flags(constants::BONJOUR_RENAME_FLAGS)
-                .interface_index(self.interface_index)
-                .name(self.name.as_ref().as_c_chars().unwrap_or_null())
-                .regtype(self.kind.as_ptr())
-                .domain(self.domain.as_ref().as_c_chars().unwrap_or_null())
-                .host(self.host.as_ref().as_c_chars().unwrap_or_null())
-                .port(self.port)
-                .txt_len(txt_len)
-                .txt_record(txt_record)
-                .callback(Some(register_callback))
-                .context(self.context.as_raw())
-                .build()?,
-        )?;
+        self.service
+            .lock()
+            .expect("should be able to obtain lock on service")
+            .register_service(
+                RegisterServiceParams::builder()
+                    .flags(constants::BONJOUR_RENAME_FLAGS)
+                    .interface_index(self.interface_index)
+                    .name(self.name.as_ref().as_c_chars().unwrap_or_null())
+                    .regtype(self.kind.as_ptr())
+                    .domain(self.domain.as_ref().as_c_chars().unwrap_or_null())
+                    .host(self.host.as_ref().as_c_chars().unwrap_or_null())
+                    .port(self.port)
+                    .txt_len(txt_len)
+                    .txt_record(txt_record)
+                    .callback(Some(register_callback))
+                    .context(self.context.as_raw())
+                    .build()?,
+            )?;
 
         Ok(EventLoop::new(self.service.clone()))
     }
@@ -139,6 +140,7 @@ struct BonjourServiceContext {
     registered_callback: Option<Box<ServiceRegisteredCallback>>,
     user_context: Option<Arc<dyn Any>>,
 }
+
 // Necessary for BonjourMdnsService, cant be `derive`d because of registered_callback
 impl std::fmt::Debug for BonjourServiceContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

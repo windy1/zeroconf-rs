@@ -198,6 +198,8 @@ impl Drop for ManagedDNSServiceRef {
     }
 }
 
+unsafe impl Send for ManagedDNSServiceRef {}
+
 /// Holds parameters for `ManagedDNSServiceRef::register_service()`.
 #[derive(Builder, BuilderDelegate)]
 pub struct RegisterServiceParams {

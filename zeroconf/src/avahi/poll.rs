@@ -68,3 +68,6 @@ impl Drop for ManagedAvahiSimplePoll {
         unsafe { avahi_simple_poll_free(self.0) };
     }
 }
+
+unsafe impl Send for ManagedAvahiSimplePoll {}
+unsafe impl Sync for ManagedAvahiSimplePoll {}

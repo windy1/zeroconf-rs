@@ -25,7 +25,6 @@ use avahi_sys::{
 use libc::{c_char, c_void};
 use std::any::Any;
 use std::ffi::CString;
-use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::{fmt, ptr};
@@ -33,8 +32,8 @@ use std::{fmt, ptr};
 #[derive(Debug)]
 pub struct AvahiMdnsBrowser {
     context: Box<AvahiBrowserContext>,
-    client: Option<Rc<ManagedAvahiClient>>,
-    poll: Option<Rc<ManagedAvahiSimplePoll>>,
+    client: Option<Arc<ManagedAvahiClient>>,
+    poll: Option<Arc<ManagedAvahiSimplePoll>>,
 }
 
 impl TMdnsBrowser for AvahiMdnsBrowser {
@@ -75,9 +74,9 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
     fn browse_services(&mut self) -> Result<EventLoop> {
         debug!("Browsing services: {:?}", self);
 
-        self.poll = Some(Rc::new(ManagedAvahiSimplePoll::new()?));
+        self.poll = Some(Arc::new(ManagedAvahiSimplePoll::new()?));
 
-        self.client = Some(Rc::new(ManagedAvahiClient::new(
+        self.client = Some(Arc::new(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
                 .poll(
                     self.poll
@@ -110,7 +109,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
 
 #[derive(FromRaw, AsRaw)]
 struct AvahiBrowserContext {
-    client: Option<Rc<ManagedAvahiClient>>,
+    client: Option<Arc<ManagedAvahiClient>>,
     resolvers: ServiceResolverSet,
     service_discovered_callback: Option<Box<ServiceDiscoveredCallback>>,
     user_context: Option<Arc<dyn Any>>,
@@ -171,7 +170,7 @@ unsafe fn create_browser(context: &mut AvahiBrowserContext) -> Result<()> {
             .flags(0)
             .callback(Some(browse_callback))
             .userdata(context.as_raw())
-            .client(Rc::clone(
+            .client(Arc::clone(
                 context
                     .client
                     .as_ref()

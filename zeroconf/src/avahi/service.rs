@@ -20,7 +20,6 @@ use libc::c_void;
 use std::any::Any;
 use std::ffi::{CStr, CString};
 use std::fmt::{self, Formatter};
-use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -29,8 +28,8 @@ pub struct AvahiMdnsService {
     // note: this declaration order is important, it ensures that each
     // component is dropped in the correct order
     context: Box<AvahiServiceContext>,
-    client: Option<Rc<ManagedAvahiClient>>,
-    poll: Option<Rc<ManagedAvahiSimplePoll>>,
+    client: Option<Arc<ManagedAvahiClient>>,
+    poll: Option<Arc<ManagedAvahiSimplePoll>>,
 }
 
 impl TMdnsService for AvahiMdnsService {
@@ -111,9 +110,9 @@ impl TMdnsService for AvahiMdnsService {
     fn register(&mut self) -> Result<EventLoop> {
         debug!("Registering service: {:?}", self);
 
-        self.poll = Some(Rc::new(ManagedAvahiSimplePoll::new()?));
+        self.poll = Some(Arc::new(ManagedAvahiSimplePoll::new()?));
 
-        self.client = Some(Rc::new(ManagedAvahiClient::new(
+        self.client = Some(Arc::new(ManagedAvahiClient::new(
             ManagedAvahiClientParams::builder()
                 .poll(
                     self.poll
@@ -146,7 +145,7 @@ impl TMdnsService for AvahiMdnsService {
 
 #[derive(FromRaw, AsRaw)]
 struct AvahiServiceContext {
-    client: Option<Rc<ManagedAvahiClient>>,
+    client: Option<Arc<ManagedAvahiClient>>,
     name: Option<CString>,
     kind: CString,
     sub_types: Vec<CString>,
@@ -231,7 +230,7 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
 
         context.group = Some(ManagedAvahiEntryGroup::new(
             ManagedAvahiEntryGroupParams::builder()
-                .client(Rc::clone(
+                .client(Arc::clone(
                     context
                         .client
                         .as_ref()

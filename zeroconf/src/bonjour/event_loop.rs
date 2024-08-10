@@ -3,13 +3,12 @@
 use super::service_ref::ManagedDNSServiceRef;
 use crate::event_loop::TEventLoop;
 use crate::{ffi, Result};
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 #[derive(new)]
 pub struct BonjourEventLoop {
-    service: Rc<RefCell<ManagedDNSServiceRef>>,
+    service: Arc<Mutex<ManagedDNSServiceRef>>,
 }
 
 impl TEventLoop for BonjourEventLoop {
@@ -19,7 +18,10 @@ impl TEventLoop for BonjourEventLoop {
     /// `select()` on the underlying socket with the specified timeout. If the socket contains no
     /// new data, the blocking call is not made.
     fn poll(&self, timeout: Duration) -> Result<()> {
-        let service = self.service.borrow();
+        let service = self
+            .service
+            .lock()
+            .expect("should have been able to obtain lock on service ref");
         let select = unsafe { ffi::bonjour::read_select(service.sock_fd(), timeout)? };
 
         if select > 0 {

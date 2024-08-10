@@ -188,7 +188,6 @@ impl fmt::Debug for ManagedTXTRecordRef {
 }
 
 unsafe impl Send for ManagedTXTRecordRef {}
-unsafe impl Sync for ManagedTXTRecordRef {}
 
 fn _get_count(length: u16, data: *const c_void) -> u16 {
     unsafe { TXTRecordGetCount(length, data) }
