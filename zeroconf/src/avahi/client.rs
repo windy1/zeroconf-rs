@@ -72,6 +72,9 @@ impl Drop for ManagedAvahiClient {
     }
 }
 
+unsafe impl Send for ManagedAvahiClient {}
+unsafe impl Sync for ManagedAvahiClient {}
+
 /// Holds parameters for initializing a new `ManagedAvahiClient` with `ManagedAvahiClient::new()`.
 ///
 /// See [`avahi_client_new()`] for more information about these parameters.
