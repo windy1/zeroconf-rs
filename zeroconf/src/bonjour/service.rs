@@ -160,8 +160,6 @@ impl BonjourServiceContext {
     }
 }
 
-unsafe impl Send for BonjourServiceContext {}
-
 unsafe extern "system" fn register_callback(
     _sd_ref: DNSServiceRef,
     _flags: DNSServiceFlags,
