@@ -3,7 +3,7 @@
 use super::poll::ManagedAvahiSimplePoll;
 use crate::event_loop::TEventLoop;
 use crate::Result;
-use std::rc::Rc;
+use std::sync::Arc;
 use std::time::Duration;
 
 #[derive(new)]

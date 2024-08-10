@@ -20,7 +20,6 @@ use libc::c_void;
 use std::any::Any;
 use std::ffi::{CStr, CString};
 use std::fmt::{self, Formatter};
-use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
 

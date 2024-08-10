@@ -6,7 +6,7 @@ use avahi_sys::{
     AvahiProtocol, AvahiServiceResolver, AvahiServiceResolverCallback,
 };
 use libc::{c_char, c_void};
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, sync::Arc};
 
 use super::client::ManagedAvahiClient;
 

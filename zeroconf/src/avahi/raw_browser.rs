@@ -1,6 +1,6 @@
 //! Rust friendly `AvahiServiceBrowser` wrappers/helpers
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::Result;
 use avahi_sys::{

@@ -25,7 +25,6 @@ use avahi_sys::{
 use libc::{c_char, c_void};
 use std::any::Any;
 use std::ffi::CString;
-use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::{fmt, ptr};

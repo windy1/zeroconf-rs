@@ -1,6 +1,6 @@
 //! Rust friendly `AvahiClient` wrappers/helpers
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use super::{avahi_util, poll::ManagedAvahiSimplePoll};
 use crate::ffi::c_str;
