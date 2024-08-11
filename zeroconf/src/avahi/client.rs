@@ -24,7 +24,10 @@ pub struct ManagedAvahiClient {
 impl ManagedAvahiClient {
     /// Initializes the underlying `*mut AvahiClient` and verifies it was created; returning
     /// `Err(String)` if unsuccessful.
-    pub fn new(
+    ///
+    /// # Safety
+    /// This function is unsafe because of the raw pointer dereference.
+    pub unsafe fn new(
         ManagedAvahiClientParams {
             poll,
             flags,
@@ -34,15 +37,13 @@ impl ManagedAvahiClient {
     ) -> Result<Self> {
         let mut err: c_int = 0;
 
-        let inner = unsafe {
-            avahi_client_new(
-                avahi_simple_poll_get(poll.inner()),
-                flags,
-                callback,
-                userdata,
-                &mut err,
-            )
-        };
+        let inner = avahi_client_new(
+            avahi_simple_poll_get(poll.inner()),
+            flags,
+            callback,
+            userdata,
+            &mut err,
+        );
 
         if inner.is_null() {
             return Err("could not initialize AvahiClient".into());
@@ -61,8 +62,11 @@ impl ManagedAvahiClient {
     /// Delegate function for [`avahi_client_get_host_name()`].
     ///
     /// [`avahi_client_get_host_name()`]: https://avahi.org/doxygen/html/client_8h.html#a89378618c3c592a255551c308ba300bf
-    pub fn host_name<'a>(&self) -> Result<&'a str> {
-        unsafe { get_host_name(self.inner) }
+    ///
+    /// # Safety
+    /// This function is unsafe because of the raw pointer dereference.
+    pub unsafe fn host_name<'a>(&self) -> Result<&'a str> {
+        get_host_name(self.inner)
     }
 }
 

@@ -34,12 +34,13 @@ pub unsafe fn avahi_address_to_string(addr: *const AvahiAddress) -> String {
 }
 
 /// Returns the `&str` message associated with the specified error code.
-pub fn get_error<'a>(code: i32) -> &'a str {
-    unsafe {
-        CStr::from_ptr(avahi_strerror(code))
-            .to_str()
-            .expect("could not fetch Avahi error string")
-    }
+///
+/// # Safety
+/// This function is unsafe because of internal Avahi calls.
+pub unsafe fn get_error<'a>(code: i32) -> &'a str {
+    CStr::from_ptr(avahi_strerror(code))
+        .to_str()
+        .expect("could not fetch Avahi error string")
 }
 
 /// Returns the last error message associated with the specified `*mut AvahiClient`.
@@ -69,7 +70,10 @@ pub fn interface_from_index(index: i32) -> NetworkInterface {
 }
 
 /// Executes the specified closure and returns a formatted `Result`
-pub fn sys_exec<F: FnOnce() -> i32>(func: F, message: &str) -> Result<()> {
+///
+/// # Safety
+/// This function is unsafe because of the call to `get_error`.
+pub unsafe fn sys_exec<F: FnOnce() -> i32>(func: F, message: &str) -> Result<()> {
     let err = func();
 
     if err < 0 {
@@ -110,8 +114,12 @@ pub fn format_sub_type(sub_type: &str, kind: &str) -> String {
     )
 }
 
-pub fn alternative_service_name(name: &CStr) -> &CStr {
-    unsafe { CStr::from_ptr(avahi_alternative_service_name(name.as_ptr())) }
+/// Returns an alternative service name for the specified `CStr`
+///
+/// # Safety
+/// This function is unsafe because of the call to `avahi_alternative_service_name`.
+pub unsafe fn alternative_service_name(name: &CStr) -> &CStr {
+    CStr::from_ptr(avahi_alternative_service_name(name.as_ptr()))
 }
 
 #[cfg(test)]
@@ -124,13 +132,13 @@ mod tests {
 
     #[test]
     fn sys_exec_returns_ok_for_success() {
-        assert!(sys_exec(|| 0, "test").is_ok());
+        assert!(unsafe { sys_exec(|| 0, "test") }.is_ok());
     }
 
     #[test]
     fn sys_exec_returns_error_for_failure() {
         assert_eq!(
-            sys_exec(|| avahi_sys::AVAHI_ERR_FAILURE, "uh oh spaghetti-o"),
+            unsafe { sys_exec(|| avahi_sys::AVAHI_ERR_FAILURE, "uh oh spaghetti-o") },
             Err("uh oh spaghetti-o: `Operation failed`".into())
         );
     }
@@ -202,7 +210,10 @@ mod tests {
 
     #[test]
     fn get_error_returns_valid_error_string() {
-        assert_eq!(get_error(avahi_sys::AVAHI_ERR_FAILURE), "Operation failed");
+        assert_eq!(
+            unsafe { get_error(avahi_sys::AVAHI_ERR_FAILURE) },
+            "Operation failed"
+        );
     }
 
     #[test]

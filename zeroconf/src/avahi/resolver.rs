@@ -24,7 +24,10 @@ pub struct ManagedAvahiServiceResolver {
 impl ManagedAvahiServiceResolver {
     /// Initializes the underlying `*mut AvahiServiceResolver` and verifies it was created;
     /// returning `Err(String)` if unsuccessful.
-    pub fn new(
+    ///
+    /// # Safety
+    /// This function is unsafe because of the raw pointer dereference.
+    pub unsafe fn new(
         ManagedAvahiServiceResolverParams {
             client,
             interface,
@@ -38,20 +41,18 @@ impl ManagedAvahiServiceResolver {
             userdata,
         }: ManagedAvahiServiceResolverParams,
     ) -> Result<Self> {
-        let inner = unsafe {
-            avahi_service_resolver_new(
-                client.inner,
-                interface,
-                protocol,
-                name,
-                kind,
-                domain,
-                aprotocol,
-                flags,
-                callback,
-                userdata,
-            )
-        };
+        let inner = avahi_service_resolver_new(
+            client.inner,
+            interface,
+            protocol,
+            name,
+            kind,
+            domain,
+            aprotocol,
+            flags,
+            callback,
+            userdata,
+        );
 
         if inner.is_null() {
             Err("could not initialize AvahiServiceResolver".into())

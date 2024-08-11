@@ -10,7 +10,7 @@ pub struct AvahiTxtRecord(UnsafeCell<ManagedAvahiStringList>);
 
 impl TTxtRecord for AvahiTxtRecord {
     fn new() -> Self {
-        Self(UnsafeCell::default())
+        Self(UnsafeCell::new(unsafe { ManagedAvahiStringList::new() }))
     }
 
     fn insert(&mut self, key: &str, value: &str) -> Result<()> {
@@ -39,7 +39,7 @@ impl TTxtRecord for AvahiTxtRecord {
     }
 
     fn remove(&mut self, key: &str) -> Option<String> {
-        let mut list = ManagedAvahiStringList::new();
+        let mut list = unsafe { ManagedAvahiStringList::new() };
         let mut map = self.to_map();
         let prev = map.remove(key);
 
@@ -70,7 +70,7 @@ impl TTxtRecord for AvahiTxtRecord {
     }
 
     fn len(&self) -> usize {
-        self.inner().length() as usize
+        unsafe { self.inner().length() as usize }
     }
 
     fn iter<'a>(&'a self) -> Box<dyn Iterator<Item = (String, String)> + 'a> {
@@ -105,7 +105,7 @@ impl From<ManagedAvahiStringList> for AvahiTxtRecord {
 
 impl Clone for AvahiTxtRecord {
     fn clone(&self) -> Self {
-        Self::from(self.inner().clone())
+        Self::from(unsafe { self.inner().clone() })
     }
 }
 
@@ -135,19 +135,18 @@ impl Iterator for Iter<'_> {
             return None;
         }
 
-        let pair = n.get_pair();
-        self.node = n.next();
+        let pair = unsafe { n.get_pair() };
+        self.node = unsafe { n.next() };
 
-        Some((
-            pair.key()
-                .as_str()
-                .expect("could not key as str")
-                .to_string(),
-            pair.value()
-                .as_str()
-                .expect("could not get value as str")
-                .to_string(),
-        ))
+        let key = unsafe { pair.key().as_str() }
+            .expect("could not key as str")
+            .to_string();
+
+        let value = unsafe { pair.value().as_str() }
+            .expect("could not get value as str")
+            .to_string();
+
+        Some((key, value))
     }
 }
 

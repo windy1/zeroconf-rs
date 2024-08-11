@@ -19,8 +19,11 @@ pub struct ManagedAvahiStringList(*mut AvahiStringList);
 
 impl ManagedAvahiStringList {
     /// Creates a new empty TXT record
-    pub fn new() -> Self {
-        Self(unsafe { avahi_string_list_new(ptr::null()) })
+    ///
+    /// # Safety
+    /// This function is unsafe because of the call to `avahi_string_list_new()`.
+    pub unsafe fn new() -> Self {
+        Self(avahi_string_list_new(ptr::null()))
     }
 
     /// Delegate function for [`avahi_string_list_add_pair()`].
@@ -54,15 +57,21 @@ impl ManagedAvahiStringList {
     /// Delegate function for [`avahi_string_list_length()`].
     ///
     /// [`avahi_string_list_length()`]: https://avahi.org/doxygen/html/strlst_8h.html#a806c571b338e882390a180b1360c1456
-    pub fn length(&self) -> u32 {
-        unsafe { avahi_string_list_length(self.0) }
+    ///
+    /// # Safety
+    /// This function is unsafe because of the call to `avahi_string_list_length()`.
+    pub unsafe fn length(&self) -> u32 {
+        avahi_string_list_length(self.0)
     }
 
     /// Delegate function for [`avahi_string_list_to_string()`].
     ///
     /// [`avahi_string_list_to_string()`]: https://avahi.org/doxygen/html/strlst_8h.html#a5c4b9ab709f22f7741c165ca3756a78b
-    pub fn to_string(&self) -> AvahiString {
-        unsafe { avahi_string_list_to_string(self.0).into() }
+    ///
+    /// # Safety
+    /// This function is unsafe because of the call to `avahi_string_list_to_string()`.
+    pub unsafe fn to_string(&self) -> AvahiString {
+        avahi_string_list_to_string(self.0).into()
     }
 
     /// Returns the first node in the list.
@@ -70,18 +79,20 @@ impl ManagedAvahiStringList {
         AvahiStringListNode::new(self.0)
     }
 
-    pub(super) fn clone_raw(raw: *mut AvahiStringList) -> Self {
-        Self(unsafe { avahi_string_list_copy(raw) })
+    /// Creates a copy of this `AvahiStringList`.
+    ///
+    /// # Safety
+    /// This function is unsafe because of the call to `avahi_string_list_copy()`.
+    pub unsafe fn clone(&self) -> Self {
+        Self::clone_raw(self.0)
+    }
+
+    pub(super) unsafe fn clone_raw(raw: *mut AvahiStringList) -> Self {
+        Self(avahi_string_list_copy(raw))
     }
 
     pub(super) fn inner(&self) -> *mut AvahiStringList {
         self.0
-    }
-}
-
-impl Clone for ManagedAvahiStringList {
-    fn clone(&self) -> Self {
-        Self::clone_raw(self.0)
     }
 }
 
@@ -92,12 +103,6 @@ impl PartialEq for ManagedAvahiStringList {
 }
 
 impl Eq for ManagedAvahiStringList {}
-
-impl Default for ManagedAvahiStringList {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 impl Drop for ManagedAvahiStringList {
     fn drop(&mut self) {
@@ -120,8 +125,11 @@ pub struct AvahiStringListNode<'a> {
 
 impl<'a> AvahiStringListNode<'a> {
     /// Returns the next node in the list, or `None` if last node.
-    pub fn next(self) -> Option<AvahiStringListNode<'a>> {
-        let next = unsafe { avahi_string_list_get_next(self.list) };
+    ///
+    /// # Safety
+    /// This function is unsafe because of the call to `avahi_string_list_get_next()`.
+    pub unsafe fn next(self) -> Option<AvahiStringListNode<'a>> {
+        let next = avahi_string_list_get_next(self.list);
 
         if next.is_null() {
             None
@@ -131,14 +139,15 @@ impl<'a> AvahiStringListNode<'a> {
     }
 
     /// Returns the `AvahiPair` for this list.
-    pub fn get_pair(&mut self) -> AvahiPair {
+    ///
+    /// # Safety
+    /// This function is unsafe because of the call to `avahi_string_list_get_pair()`.
+    pub unsafe fn get_pair(&mut self) -> AvahiPair {
         let mut key: *mut c_char = ptr::null_mut();
         let mut value: *mut c_char = ptr::null_mut();
         let mut value_size: usize = 0;
 
-        unsafe {
-            avahi_string_list_get_pair(self.list, &mut key, &mut value, &mut value_size);
-        }
+        avahi_string_list_get_pair(self.list, &mut key, &mut value, &mut value_size);
 
         AvahiPair::new(key.into(), value.into(), value_size)
     }
@@ -159,11 +168,14 @@ pub struct AvahiString(*mut c_char);
 
 impl AvahiString {
     /// Returns this `AvahiStr` as a `&str` or `None` if null.
-    pub fn as_str(&self) -> Option<&str> {
+    ///
+    /// # Safety
+    /// This function is unsafe because of the call to `c_str::raw_to_str()`.
+    pub unsafe fn as_str(&self) -> Option<&str> {
         if self.0.is_null() {
             None
         } else {
-            Some(unsafe { c_str::raw_to_str(self.0) })
+            Some(c_str::raw_to_str(self.0))
         }
     }
 }
@@ -191,7 +203,7 @@ mod tests {
     fn add_get_pair_success() {
         crate::tests::setup();
 
-        let mut list = ManagedAvahiStringList::new();
+        let mut list = unsafe { ManagedAvahiStringList::new() };
         let key1 = c_string!("foo");
         let value1 = c_string!("bar");
 
@@ -230,7 +242,7 @@ mod tests {
     fn add_pair_replaces_success() {
         crate::tests::setup();
 
-        let mut list = ManagedAvahiStringList::new();
+        let mut list = unsafe { ManagedAvahiStringList::new() };
         let key = c_string!("foo");
         let value = c_string!("bar");
 
@@ -261,7 +273,7 @@ mod tests {
     fn length_success() {
         crate::tests::setup();
 
-        let mut list = ManagedAvahiStringList::new();
+        let mut list = unsafe { ManagedAvahiStringList::new() };
         let key = c_string!("foo");
         let value = c_string!("bar");
 
@@ -279,7 +291,7 @@ mod tests {
     fn to_string_success() {
         crate::tests::setup();
 
-        let mut list = ManagedAvahiStringList::new();
+        let mut list = unsafe { ManagedAvahiStringList::new() };
         let key = c_string!("foo");
         let value = c_string!("bar");
 
@@ -297,7 +309,7 @@ mod tests {
     fn equals_success() {
         crate::tests::setup();
 
-        let mut list = ManagedAvahiStringList::new();
+        let mut list = unsafe { ManagedAvahiStringList::new() };
         let key = c_string!("foo");
         let value = c_string!("bar");
 
@@ -315,7 +327,7 @@ mod tests {
     fn iterate_success() {
         crate::tests::setup();
 
-        let mut list = ManagedAvahiStringList::new();
+        let mut list = unsafe { ManagedAvahiStringList::new() };
         let key1 = c_string!("foo");
         let value1 = c_string!("bar");
         let key2 = c_string!("hello");
@@ -338,14 +350,14 @@ mod tests {
 
         while node.is_some() {
             let mut n = node.unwrap();
-            let pair = n.get_pair();
+            let pair = unsafe { n.get_pair() };
 
             map.insert(
-                pair.key().as_str().unwrap().to_string(),
-                pair.value().as_str().unwrap().to_string(),
+                unsafe { pair.key().as_str() }.unwrap().to_string(),
+                unsafe { pair.value().as_str() }.unwrap().to_string(),
             );
 
-            node = n.next();
+            node = unsafe { n.next() };
         }
 
         let expected: HashMap<String, String> = hashmap! {

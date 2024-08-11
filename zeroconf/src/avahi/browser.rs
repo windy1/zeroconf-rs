@@ -74,21 +74,22 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
     fn browse_services(&mut self) -> Result<EventLoop> {
         debug!("Browsing services: {:?}", self);
 
-        self.poll = Some(Arc::new(ManagedAvahiSimplePoll::new()?));
+        self.poll = Some(Arc::new(unsafe { ManagedAvahiSimplePoll::new() }?));
 
-        self.client = Some(Arc::new(ManagedAvahiClient::new(
-            ManagedAvahiClientParams::builder()
-                .poll(
-                    self.poll
-                        .as_ref()
-                        .ok_or("could not get poll as ref")?
-                        .clone(),
-                )
-                .flags(AvahiClientFlags(0))
-                .callback(Some(client_callback))
-                .userdata(self.context.as_raw())
-                .build()?,
-        )?));
+        let poll = self
+            .poll
+            .as_ref()
+            .ok_or("could not get poll as ref")?
+            .clone();
+
+        let client_params = ManagedAvahiClientParams::builder()
+            .poll(poll)
+            .flags(AvahiClientFlags(0))
+            .callback(Some(client_callback))
+            .userdata(self.context.as_raw())
+            .build()?;
+
+        self.client = Some(Arc::new(unsafe { ManagedAvahiClient::new(client_params) }?));
 
         self.context.client.clone_from(&self.client);
 

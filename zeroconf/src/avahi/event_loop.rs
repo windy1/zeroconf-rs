@@ -19,6 +19,6 @@ impl TEventLoop for AvahiEventLoop {
     /// does not respect the `timeout` parameter, the `timeout` passed
     /// here will have no effect -- ie will return immediately.
     fn poll(&self, timeout: Duration) -> Result<()> {
-        self.poll.iterate(timeout)
+        unsafe { self.poll.iterate(timeout) }
     }
 }
