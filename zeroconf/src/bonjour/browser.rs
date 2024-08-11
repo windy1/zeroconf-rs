@@ -66,19 +66,21 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
     fn browse_services(&mut self) -> Result<EventLoop> {
         debug!("Browsing services: {:?}", self);
 
-        self.service
+        let mut service_lock = self
+            .service
             .lock()
-            .expect("should have been able to obtain lock on service ref")
-            .browse_services(
-                BrowseServicesParams::builder()
-                    .flags(0)
-                    .interface_index(self.interface_index)
-                    .regtype(self.kind.as_ptr())
-                    .domain(ptr::null_mut())
-                    .callback(Some(browse_callback))
-                    .context(self.context.as_raw())
-                    .build()?,
-            )?;
+            .expect("should have been able to obtain lock on service ref");
+
+        let browse_params = BrowseServicesParams::builder()
+            .flags(0)
+            .interface_index(self.interface_index)
+            .regtype(self.kind.as_ptr())
+            .domain(ptr::null_mut())
+            .callback(Some(browse_callback))
+            .context(self.context.as_raw())
+            .build()?;
+
+        unsafe { service_lock.browse_services(browse_params)? };
 
         Ok(EventLoop::new(self.service.clone()))
     }

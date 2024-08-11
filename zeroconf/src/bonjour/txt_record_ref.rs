@@ -19,28 +19,33 @@ pub struct ManagedTXTRecordRef(TXTRecordRef);
 
 impl ManagedTXTRecordRef {
     /// Creates a new empty TXT record
-    pub fn new() -> Self {
-        let record = unsafe {
-            let mut record: TXTRecordRef = mem::zeroed();
-            TXTRecordCreate(&mut record, 0, ptr::null_mut());
-            record
-        };
-
+    ///
+    /// # Safety
+    /// This function is unsafe because it calls a C function.
+    pub unsafe fn new() -> Self {
+        let mut record: TXTRecordRef = mem::zeroed();
+        TXTRecordCreate(&mut record, 0, ptr::null_mut());
         Self(record)
     }
 
     /// Delegate function for [`TXTRecordGetBytes()`].
     ///
     /// [`TXTRecordGetBytes()`]: https://developer.apple.com/documentation/dnssd/1804717-txtrecordgetbytesptr?language=objc
-    pub fn get_bytes_ptr(&self) -> *const c_void {
-        unsafe { TXTRecordGetBytesPtr(&self.0) }
+    ///
+    /// # Safety
+    /// This function is unsafe because it makes no guarantees about the raw pointer arguments
+    pub unsafe fn get_bytes_ptr(&self) -> *const c_void {
+        TXTRecordGetBytesPtr(&self.0)
     }
 
     /// Delegate function for [`TXTRecordGetLength()`].
     ///
     /// [`TXTRecordGetLength()`]: https://developer.apple.com/documentation/dnssd/1804720-txtrecordgetlength?language=objc
-    pub fn get_length(&self) -> u16 {
-        unsafe { TXTRecordGetLength(&self.0) }
+    ///
+    /// # Safety
+    /// This function is unsafe because it makes no guarantees about the raw pointer arguments
+    pub unsafe fn get_length(&self) -> u16 {
+        TXTRecordGetLength(&self.0)
     }
 
     /// Delegate function for [`TXTRecordRemoveValue()`].
@@ -52,7 +57,7 @@ impl ManagedTXTRecordRef {
     /// [`TXTRecordRemoveValue()`]: https://developer.apple.com/documentation/dnssd/1804721-txtrecordremovevalue?language=objc
     pub unsafe fn remove_value(&mut self, key: *const c_char) -> Result<()> {
         bonjour_util::sys_exec(
-            || unsafe { TXTRecordRemoveValue(&mut self.0, key) },
+            || TXTRecordRemoveValue(&mut self.0, key),
             "could not remove TXT record value",
         )
     }
@@ -71,7 +76,7 @@ impl ManagedTXTRecordRef {
         value: *const c_void,
     ) -> Result<()> {
         bonjour_util::sys_exec(
-            || unsafe { TXTRecordSetValue(&mut self.0, key, value_size, value) },
+            || TXTRecordSetValue(&mut self.0, key, value_size, value),
             "could not set TXT record value",
         )
     }
@@ -90,7 +95,10 @@ impl ManagedTXTRecordRef {
     /// Delegate function for [`TXTRecordGetCount`].
     ///
     /// [`TXTRecordGetCount`]: https://developer.apple.com/documentation/dnssd/1804706-txtrecordgetcount?language=objc
-    pub fn get_count(&self) -> u16 {
+    ///
+    /// # Safety
+    /// This function is unsafe because it makes no guarantees about it's raw pointer arguments
+    pub unsafe fn get_count(&self) -> u16 {
         _get_count(self.get_length(), self.get_bytes_ptr())
     }
 
@@ -123,12 +131,21 @@ impl ManagedTXTRecordRef {
     /// Delegate function for [`TXTRecordGetValuePtr`].
     ///
     /// # Safety
-    /// This function is unsafe because it makes no guarantees about it's rew pointer arguments
+    /// This function is unsafe because it makes no guarantees about it's raw pointer arguments
     /// that are dereferenced.
     ///
     /// [`TXTRecordGetValuePtr`]: https://developer.apple.com/documentation/dnssd/1804709-txtrecordgetvalueptr?language=objc
     pub unsafe fn get_value_ptr(&self, key: *const c_char, value_len: *mut u8) -> *const c_void {
         TXTRecordGetValuePtr(self.get_length(), self.get_bytes_ptr(), key, value_len)
+    }
+
+    /// Returns a copy of the TXT record.
+    ///
+    /// # Safety
+    /// This function is unsafe because it makes no guarantees about the raw pointer arguments
+    pub unsafe fn clone(&self) -> Self {
+        Self::clone_raw(self.get_bytes_ptr() as *const c_uchar, self.get_length())
+            .expect("could not clone TXT record")
     }
 
     pub(crate) unsafe fn clone_raw(raw: *const c_uchar, size: u16) -> Result<Self> {
@@ -160,21 +177,6 @@ impl ManagedTXTRecordRef {
     }
 }
 
-impl Default for ManagedTXTRecordRef {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Clone for ManagedTXTRecordRef {
-    fn clone(&self) -> Self {
-        unsafe {
-            Self::clone_raw(self.get_bytes_ptr() as *const c_uchar, self.get_length())
-                .expect("could not clone TXT record")
-        }
-    }
-}
-
 impl Drop for ManagedTXTRecordRef {
     fn drop(&mut self) {
         unsafe { TXTRecordDeallocate(&mut self.0) };
@@ -189,11 +191,11 @@ impl fmt::Debug for ManagedTXTRecordRef {
 
 unsafe impl Send for ManagedTXTRecordRef {}
 
-fn _get_count(length: u16, data: *const c_void) -> u16 {
-    unsafe { TXTRecordGetCount(length, data) }
+unsafe fn _get_count(length: u16, data: *const c_void) -> u16 {
+    TXTRecordGetCount(length, data)
 }
 
-fn _get_item_at_index(
+unsafe fn _get_item_at_index(
     length: u16,
     data: *const c_void,
     item_index: u16,
@@ -203,9 +205,7 @@ fn _get_item_at_index(
     value: *mut *const c_void,
 ) -> Result<()> {
     bonjour_util::sys_exec(
-        || unsafe {
-            TXTRecordGetItemAtIndex(length, data, item_index, key_buf_len, key, value_len, value)
-        },
+        || TXTRecordGetItemAtIndex(length, data, item_index, key_buf_len, key, value_len, value),
         "could get item at index for TXT record",
     )
 }
@@ -217,7 +217,7 @@ mod tests {
 
     #[test]
     fn set_value_success() {
-        let mut record = ManagedTXTRecordRef::new();
+        let mut record = unsafe { ManagedTXTRecordRef::new() };
         let key = c_string!("foo");
         let value = c_string!("bar");
         let value_size = mem::size_of_val(&value) as u8;
@@ -245,7 +245,7 @@ mod tests {
 
     #[test]
     fn set_value_null_success() {
-        let mut record = ManagedTXTRecordRef::new();
+        let mut record = unsafe { ManagedTXTRecordRef::new() };
         let key = c_string!("foo");
         let value_size = 0;
 
@@ -263,7 +263,7 @@ mod tests {
 
     #[test]
     fn remove_value_success() {
-        let mut record = ManagedTXTRecordRef::new();
+        let mut record = unsafe { ManagedTXTRecordRef::new() };
         let key = c_string!("foo");
         let value = c_string!("bar");
         let value_size = mem::size_of_val(&value) as u8;
@@ -289,7 +289,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn remove_value_missing_key_panics() {
-        let mut record = ManagedTXTRecordRef::new();
+        let mut record = unsafe { ManagedTXTRecordRef::new() };
         let key = c_string!("foo");
         unsafe {
             record.remove_value(key.as_ptr() as *const c_char).unwrap();
@@ -298,7 +298,7 @@ mod tests {
 
     #[test]
     fn contains_key_success() {
-        let mut record = ManagedTXTRecordRef::new();
+        let mut record = unsafe { ManagedTXTRecordRef::new() };
         let key = c_string!("foo");
         let value = c_string!("bar");
         let value_size = mem::size_of_val(&value) as u8;
@@ -323,7 +323,7 @@ mod tests {
 
     #[test]
     fn get_count_success() {
-        let mut record = ManagedTXTRecordRef::new();
+        let mut record = unsafe { ManagedTXTRecordRef::new() };
         let key = c_string!("foo");
         let value = c_string!("bar");
         let value_size = mem::size_of_val(&value) as u8;
@@ -338,12 +338,12 @@ mod tests {
                 .unwrap();
         }
 
-        assert_eq!(record.get_count(), 1);
+        assert_eq!(unsafe { record.get_count() }, 1);
     }
 
     #[test]
     fn get_item_at_index() {
-        let mut record = ManagedTXTRecordRef::new();
+        let mut record = unsafe { ManagedTXTRecordRef::new() };
         let key = c_string!("foo");
         let value = c_string!("bar");
         let value_size = mem::size_of_val(&value) as u8;

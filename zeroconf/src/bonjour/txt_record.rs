@@ -9,12 +9,11 @@ use std::ffi::CString;
 use std::{ptr, slice};
 
 /// Interface for interfacing with Bonjour's TXT record capabilities.
-#[derive(Clone)]
 pub struct BonjourTxtRecord(ManagedTXTRecordRef);
 
 impl TTxtRecord for BonjourTxtRecord {
     fn new() -> Self {
-        Self(ManagedTXTRecordRef::new())
+        Self(unsafe { ManagedTXTRecordRef::new() })
     }
 
     fn insert(&mut self, key: &str, value: &str) -> Result<()> {
@@ -67,7 +66,7 @@ impl TTxtRecord for BonjourTxtRecord {
     }
 
     fn len(&self) -> usize {
-        self.0.get_count() as usize
+        unsafe { self.0.get_count() as usize }
     }
 
     fn iter<'a>(&'a self) -> Box<dyn Iterator<Item = (String, String)> + 'a> {
@@ -80,6 +79,12 @@ impl TTxtRecord for BonjourTxtRecord {
 
     fn values<'a>(&'a self) -> Box<dyn Iterator<Item = String> + 'a> {
         Box::new(Values(Iter::new(self)))
+    }
+}
+
+impl Clone for BonjourTxtRecord {
+    fn clone(&self) -> Self {
+        Self(unsafe { self.0.clone() })
     }
 }
 

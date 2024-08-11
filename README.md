@@ -4,6 +4,9 @@
 such as [Bonjour] or [Avahi], providing an easy and idiomatic way to both register and
 browse services.
 
+Check-out [zeroconf-tokio](https://github.com/windy1/zeroconf-tokio) if you are interested in using `zeroconf` in an
+async setting.
+
 ## Prerequisites
 
 On Linux:

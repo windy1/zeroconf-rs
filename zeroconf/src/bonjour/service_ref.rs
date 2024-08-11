@@ -31,7 +31,10 @@ impl ManagedDNSServiceRef {
     /// Delegate function for [`DNSServiceRegister`].
     ///
     /// [`DNSServiceRegister`]: https://developer.apple.com/documentation/dnssd/1804733-dnsserviceregister?language=objc
-    pub fn register_service(
+    ///
+    /// # Safety
+    /// This function is unsafe because it calls a C function.
+    pub unsafe fn register_service(
         &mut self,
         RegisterServiceParams {
             flags,
@@ -48,7 +51,7 @@ impl ManagedDNSServiceRef {
         }: RegisterServiceParams,
     ) -> Result<()> {
         bonjour_util::sys_exec(
-            || unsafe {
+            || {
                 DNSServiceRegister(
                     &mut self.0 as *mut DNSServiceRef,
                     flags,
@@ -71,7 +74,10 @@ impl ManagedDNSServiceRef {
     /// Delegate function for [`DNSServiceBrowse`].
     ///
     /// [`DNSServiceBrowse`]: https://developer.apple.com/documentation/dnssd/1804742-dnsservicebrowse?language=objc
-    pub fn browse_services(
+    ///
+    /// # Safety
+    /// This function is unsafe because it calls a C function.
+    pub unsafe fn browse_services(
         &mut self,
         BrowseServicesParams {
             flags,
@@ -83,7 +89,7 @@ impl ManagedDNSServiceRef {
         }: BrowseServicesParams,
     ) -> Result<()> {
         bonjour_util::sys_exec(
-            || unsafe {
+            || {
                 DNSServiceBrowse(
                     &mut self.0 as *mut DNSServiceRef,
                     flags,
@@ -101,7 +107,10 @@ impl ManagedDNSServiceRef {
     /// Delegate function fro [`DNSServiceResolve`].
     ///
     /// [`DNSServiceResolve`]: https://developer.apple.com/documentation/dnssd/1804744-dnsserviceresolve?language=objc
-    pub fn resolve_service(
+    ///
+    /// # Safety
+    /// This function is unsafe because it calls a C function.
+    pub unsafe fn resolve_service(
         &mut self,
         ServiceResolveParams {
             flags,
@@ -114,7 +123,7 @@ impl ManagedDNSServiceRef {
         }: ServiceResolveParams,
     ) -> Result<()> {
         bonjour_util::sys_exec(
-            || unsafe {
+            || {
                 DNSServiceResolve(
                     &mut self.0 as *mut DNSServiceRef,
                     flags,
@@ -135,7 +144,10 @@ impl ManagedDNSServiceRef {
     /// Delegate function for [`DNSServiceGetAddrInfo`].
     ///
     /// [`DNSServiceGetAddrInfo`]: https://developer.apple.com/documentation/dnssd/1804700-dnsservicegetaddrinfo?language=objc
-    pub fn get_address_info(
+    ///
+    /// # Safety
+    /// This function is unsafe because it calls a C function.
+    pub unsafe fn get_address_info(
         &mut self,
         GetAddressInfoParams {
             flags,
@@ -147,7 +159,7 @@ impl ManagedDNSServiceRef {
         }: GetAddressInfoParams,
     ) -> Result<()> {
         bonjour_util::sys_exec(
-            || unsafe {
+            || {
                 DNSServiceGetAddrInfo(
                     &mut self.0 as *mut DNSServiceRef,
                     flags,
@@ -167,9 +179,12 @@ impl ManagedDNSServiceRef {
     /// Delegate function for [`DNSServiceProcessResult`].
     ///
     /// [`DNSServiceProcessResult`]: https://developer.apple.com/documentation/dnssd/1804696-dnsserviceprocessresult?language=objc
-    pub fn process_result(&self) -> Result<()> {
+    ///
+    /// # Safety
+    /// This function is unsafe because it calls a C function.
+    pub unsafe fn process_result(&self) -> Result<()> {
         bonjour_util::sys_exec(
-            || unsafe { DNSServiceProcessResult(self.0) },
+            || DNSServiceProcessResult(self.0),
             "could not process service result",
         )
     }
@@ -177,8 +192,11 @@ impl ManagedDNSServiceRef {
     /// Delegate function for [`DNSServiceRefSockFD`].
     ///
     /// [`DNSServiceRefSockFD`]: https://developer.apple.com/documentation/dnssd/1804698-dnsservicerefsockfd?language=objc
-    pub fn sock_fd(&self) -> dnssd_sock_t {
-        unsafe { DNSServiceRefSockFD(self.0) }
+    ///
+    /// # Safety
+    /// This function is unsafe because it calls a C function.
+    pub unsafe fn sock_fd(&self) -> dnssd_sock_t {
+        DNSServiceRefSockFD(self.0)
     }
 }
 
