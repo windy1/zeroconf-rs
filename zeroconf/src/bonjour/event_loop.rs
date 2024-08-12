@@ -22,10 +22,11 @@ impl TEventLoop for BonjourEventLoop {
             .service
             .lock()
             .expect("should have been able to obtain lock on service ref");
+
         let select = unsafe { ffi::bonjour::read_select(service.sock_fd(), timeout)? };
 
         if select > 0 {
-            service.process_result()
+            unsafe { service.process_result() }
         } else {
             Ok(())
         }

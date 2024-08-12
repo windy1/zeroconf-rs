@@ -25,7 +25,10 @@ pub struct ManagedAvahiServiceBrowser {
 impl ManagedAvahiServiceBrowser {
     /// Initializes the underlying `*mut AvahiClient` and verifies it was created; returning
     /// `Err(String)` if unsuccessful.
-    pub fn new(
+    ///
+    /// # Safety
+    /// This function is unsafe because of the raw pointer dereference.
+    pub unsafe fn new(
         ManagedAvahiServiceBrowserParams {
             client,
             interface,
@@ -37,18 +40,16 @@ impl ManagedAvahiServiceBrowser {
             userdata,
         }: ManagedAvahiServiceBrowserParams,
     ) -> Result<Self> {
-        let inner = unsafe {
-            avahi_service_browser_new(
-                client.inner,
-                interface,
-                protocol,
-                kind,
-                domain,
-                flags,
-                callback,
-                userdata,
-            )
-        };
+        let inner = avahi_service_browser_new(
+            client.inner,
+            interface,
+            protocol,
+            kind,
+            domain,
+            flags,
+            callback,
+            userdata,
+        );
 
         if inner.is_null() {
             Err("could not initialize Avahi service browser".into())

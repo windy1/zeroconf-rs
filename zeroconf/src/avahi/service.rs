@@ -110,21 +110,22 @@ impl TMdnsService for AvahiMdnsService {
     fn register(&mut self) -> Result<EventLoop> {
         debug!("Registering service: {:?}", self);
 
-        self.poll = Some(Arc::new(ManagedAvahiSimplePoll::new()?));
+        self.poll = Some(Arc::new(unsafe { ManagedAvahiSimplePoll::new() }?));
 
-        self.client = Some(Arc::new(ManagedAvahiClient::new(
-            ManagedAvahiClientParams::builder()
-                .poll(
-                    self.poll
-                        .as_ref()
-                        .ok_or("could not get poll as ref")?
-                        .clone(),
-                )
-                .flags(AvahiClientFlags(0))
-                .callback(Some(client_callback))
-                .userdata(self.context.as_raw())
-                .build()?,
-        )?));
+        let poll = self
+            .poll
+            .as_ref()
+            .ok_or("could not get poll as ref")?
+            .clone();
+
+        let client_params = ManagedAvahiClientParams::builder()
+            .poll(poll)
+            .flags(AvahiClientFlags(0))
+            .callback(Some(client_callback))
+            .userdata(self.context.as_raw())
+            .build()?;
+
+        self.client = Some(Arc::new(unsafe { ManagedAvahiClient::new(client_params) }?));
 
         self.context.client.clone_from(&self.client);
 
@@ -260,7 +261,7 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
     add_services(context, &name)
 }
 
-fn add_services(context: &mut AvahiServiceContext, name: &CStr) -> Result<()> {
+unsafe fn add_services(context: &mut AvahiServiceContext, name: &CStr) -> Result<()> {
     debug!("Adding service: {}", context.kind.to_string_lossy());
 
     let group = context
@@ -268,34 +269,34 @@ fn add_services(context: &mut AvahiServiceContext, name: &CStr) -> Result<()> {
         .as_mut()
         .ok_or("could not borrow group as mut")?;
 
-    group.add_service(
-        AddServiceParams::builder()
+    let params = AddServiceParams::builder()
+        .interface(context.interface_index)
+        .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
+        .flags(0)
+        .name(name.as_ptr())
+        .kind(context.kind.as_ptr())
+        .domain(context.domain.as_ref().map(|d| d.as_ptr()).unwrap_or_null())
+        .host(context.host.as_ref().map(|h| h.as_ptr()).unwrap_or_null())
+        .port(context.port)
+        .txt(context.txt_record.as_ref().map(|t| t.inner()))
+        .build()?;
+
+    group.add_service(params)?;
+
+    for sub_type in &context.sub_types {
+        debug!("Adding service subtype: {}", sub_type.to_string_lossy());
+
+        let params = AddServiceSubtypeParams::builder()
             .interface(context.interface_index)
             .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
             .flags(0)
             .name(name.as_ptr())
             .kind(context.kind.as_ptr())
             .domain(context.domain.as_ref().map(|d| d.as_ptr()).unwrap_or_null())
-            .host(context.host.as_ref().map(|h| h.as_ptr()).unwrap_or_null())
-            .port(context.port)
-            .txt(context.txt_record.as_ref().map(|t| t.inner()))
-            .build()?,
-    )?;
+            .subtype(sub_type.as_ptr())
+            .build()?;
 
-    for sub_type in &context.sub_types {
-        debug!("Adding service subtype: {}", sub_type.to_string_lossy());
-
-        group.add_service_subtype(
-            AddServiceSubtypeParams::builder()
-                .interface(context.interface_index)
-                .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
-                .flags(0)
-                .name(name.as_ptr())
-                .kind(context.kind.as_ptr())
-                .domain(context.domain.as_ref().map(|d| d.as_ptr()).unwrap_or_null())
-                .subtype(sub_type.as_ptr())
-                .build()?,
-        )?;
+        group.add_service_subtype(params)?;
     }
 
     group.commit()

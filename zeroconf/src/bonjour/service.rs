@@ -103,33 +103,35 @@ impl TMdnsService for BonjourMdnsService {
         let txt_len = self
             .txt_record
             .as_ref()
-            .map(|t| t.inner().get_length())
+            .map(|t| unsafe { t.inner().get_length() })
             .unwrap_or(0);
 
         let txt_record = self
             .txt_record
             .as_ref()
-            .map(|t| t.inner().get_bytes_ptr())
+            .map(|t| unsafe { t.inner().get_bytes_ptr() })
             .unwrap_or_null();
 
-        self.service
+        let mut service_lock = self
+            .service
             .lock()
-            .expect("should be able to obtain lock on service")
-            .register_service(
-                RegisterServiceParams::builder()
-                    .flags(constants::BONJOUR_RENAME_FLAGS)
-                    .interface_index(self.interface_index)
-                    .name(self.name.as_ref().as_c_chars().unwrap_or_null())
-                    .regtype(self.kind.as_ptr())
-                    .domain(self.domain.as_ref().as_c_chars().unwrap_or_null())
-                    .host(self.host.as_ref().as_c_chars().unwrap_or_null())
-                    .port(self.port)
-                    .txt_len(txt_len)
-                    .txt_record(txt_record)
-                    .callback(Some(register_callback))
-                    .context(self.context.as_raw())
-                    .build()?,
-            )?;
+            .expect("should be able to obtain lock on service");
+
+        let register_params = RegisterServiceParams::builder()
+            .flags(constants::BONJOUR_RENAME_FLAGS)
+            .interface_index(self.interface_index)
+            .name(self.name.as_ref().as_c_chars().unwrap_or_null())
+            .regtype(self.kind.as_ptr())
+            .domain(self.domain.as_ref().as_c_chars().unwrap_or_null())
+            .host(self.host.as_ref().as_c_chars().unwrap_or_null())
+            .port(self.port)
+            .txt_len(txt_len)
+            .txt_record(txt_record)
+            .callback(Some(register_callback))
+            .context(self.context.as_raw())
+            .build()?;
+
+        unsafe { service_lock.register_service(register_params)? };
 
         Ok(EventLoop::new(self.service.clone()))
     }
