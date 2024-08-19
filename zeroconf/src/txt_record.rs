@@ -1,11 +1,15 @@
 //! TxtRecord utilities common to all platforms
 
 use crate::{Result, TxtRecord};
+#[cfg(feature = "serde")]
 use serde::de::{MapAccess, Visitor};
+#[cfg(feature = "serde")]
 use serde::ser::SerializeMap;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::HashMap;
 use std::fmt::{self, Debug};
+#[cfg(feature = "serde")]
 use std::marker::PhantomData;
 
 /// Interface for interacting with underlying mDNS implementation TXT record capabilities
@@ -84,6 +88,7 @@ impl Default for TxtRecord {
     }
 }
 
+#[cfg(feature = "serde")]
 impl Serialize for TxtRecord {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
@@ -98,10 +103,12 @@ impl Serialize for TxtRecord {
 }
 
 #[derive(new)]
+#[cfg(feature = "serde")]
 struct TxtRecordVisitor {
     marker: PhantomData<fn() -> TxtRecord>,
 }
 
+#[cfg(feature = "serde")]
 impl<'de> Visitor<'de> for TxtRecordVisitor {
     type Value = TxtRecord;
 
@@ -124,6 +131,7 @@ impl<'de> Visitor<'de> for TxtRecordVisitor {
     }
 }
 
+#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for TxtRecord {
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
@@ -301,6 +309,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "serde")]
     fn serialize_success() {
         crate::tests::setup();
 

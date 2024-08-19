@@ -2,4 +2,6 @@
 members = [
     "zeroconf",
     "zeroconf-macros",
+    "examples/browser",
+    "examples/service",
 ]

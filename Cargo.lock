@@ -760,9 +760,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "zeroconf-browser-example"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "env_logger",
+ "log",
+ "zeroconf",
+]
+
+[[package]]
 name = "zeroconf-macros"
 version = "0.1.4"
 dependencies = [
  "quote",
  "syn 2.0.72",
+]
+
+[[package]]
+name = "zeroconf-service-example"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "env_logger",
+ "log",
+ "zeroconf",
 ]
