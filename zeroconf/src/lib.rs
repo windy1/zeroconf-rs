@@ -186,6 +186,7 @@
 
 #![allow(clippy::needless_doctest_main)]
 #[macro_use]
+#[cfg(feature = "serde")]
 extern crate serde;
 #[macro_use]
 extern crate derive_builder;

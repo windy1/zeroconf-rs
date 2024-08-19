@@ -5,7 +5,8 @@ use std::str::FromStr;
 use crate::{error::Error, Result};
 
 /// Data type for constructing a service type to register as an mDNS service.
-#[derive(Default, Debug, Getters, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Default, Debug, Getters, Clone, PartialEq, Eq)]
 pub struct ServiceType {
     name: String,
     protocol: String,

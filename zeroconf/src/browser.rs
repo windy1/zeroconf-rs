@@ -50,9 +50,8 @@ pub type ServiceDiscoveredCallback = dyn Fn(Result<ServiceDiscovery>, Option<Arc
 /// Represents a service that has been discovered by a [`MdnsBrowser`].
 ///
 /// [`MdnsBrowser`]: type.MdnsBrowser.html
-#[derive(
-    Debug, Getters, Builder, BuilderDelegate, Serialize, Deserialize, Clone, PartialEq, Eq,
-)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Debug, Getters, Builder, BuilderDelegate, Clone, PartialEq, Eq)]
 pub struct ServiceDiscovery {
     name: String,
     service_type: ServiceType,
