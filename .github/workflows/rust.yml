@@ -1,60 +1,58 @@
-name: Rust
+name: Rust CI
 
 on:
   push:
-    branches: [master]
+    branches:
+      - master
   pull_request:
-    branches: [master, release/**]
-
-env:
-  CARGO_TERM_COLOR: always
+    branches:
+      - master
 
 jobs:
-  macOS:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Prepare
-        run: rustup component add clippy
-      - name: Build
-        run: ./scripts/buildall.sh
-      - name: Check formatting
-        run: ./scripts/checkfmt.sh
-      - name: Run clippy
-        run: ./scripts/lintall.sh
-      - name: Run tests
-        run: cargo test --verbose -- --skip service_register_is_browsable
+  build:
+    name: zeroconf-rs
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        features: [serde, ""]
 
-  linux:
-    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Prepare
-        run: "rustup component add clippy && sudo apt -y install avahi-daemon libavahi-client-dev && sudo systemctl start avahi-daemon.service"
-      - name: Build
-        run: ./scripts/buildall.sh
-      - name: Check formatting
-        run: ./scripts/checkfmt.sh
-      - name: Run clippy
-        run: ./scripts/lintall.sh
-      - name: Run tests
-        run: cargo test --verbose
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-  windows-latest:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Bonjour
-        run: choco install -y bonjour
-      - name: Prepare
-        run: "rustup component add clippy"
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.os == 'windows-latest' && 'x86_64-pc-windows-msvc' || matrix.os == 'macos-latest' && 'x86_64-apple-darwin' || 'x86_64-unknown-linux-gnu' }}
+
+      - name: Prepare for Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt -y install avahi-daemon libavahi-client-dev
+          sudo systemctl start avahi-daemon.service
+
+      - name: Prepare for Windows
+        if: matrix.os == 'windows-latest'
+        run: "choco install -y bonjour"
+
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Build
-        shell: pwsh
-        run: ./scripts/buildall.ps1
-      - name: Check formatting
-        run: ./scripts/checkfmt.ps1
-      - name: Run clippy
-        shell: pwsh
-        run: ./scripts/lintall.ps1
+        run: cargo build --features "${{ matrix.features }}"
+
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --features "${{ matrix.features }}" -- --skip service_register_is_browsable
+
+      - name: Check formatting
+        run: cargo fmt -- --check
+
+      - name: Run Clippy
+        run: cargo clippy --features "${{ matrix.features }}" -- -D warnings
