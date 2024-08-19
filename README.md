@@ -190,6 +190,10 @@ fn on_service_discovered(
 }
 ```
 
+## Features
+
+- `serde` - enables serialization on relevant data structures
+
 ## Resources
 
 * [Avahi docs]
