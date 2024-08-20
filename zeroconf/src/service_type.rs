@@ -44,7 +44,8 @@ impl FromStr for ServiceType {
         let parts = s.split('.').collect::<Vec<_>>();
 
         if parts.len() != 2 {
-            return Err("invalid name and protocol".into());
+            let msg = "invalid name and protocol";
+            return Err(Error::InvalidServiceType(msg.into()));
         }
 
         let name = lstrip_underscore(check_valid_characters(parts[0])?);
@@ -56,11 +57,12 @@ impl FromStr for ServiceType {
 
 pub fn check_valid_characters(part: &str) -> Result<&str> {
     if part.contains('.') {
-        Err("invalid character: .".into())
+        let msg = "invalid character: .";
+        Err(Error::InvalidServiceType(msg.into()))
     } else if part.contains(',') {
-        Err("invalid character: ,".into())
+        Err(Error::InvalidServiceType("invalid character: ,".into()))
     } else if part.is_empty() {
-        Err("cannot be empty".into())
+        Err(Error::InvalidServiceType("cannot be empty".into()))
     } else {
         Ok(part)
     }

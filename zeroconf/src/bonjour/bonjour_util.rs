@@ -3,7 +3,9 @@
 use std::{ffi::CString, str::FromStr};
 
 use super::constants;
-use crate::{check_valid_characters, lstrip_underscore, NetworkInterface, Result, ServiceType};
+use crate::{
+    check_valid_characters, lstrip_underscore, Error, NetworkInterface, Result, ServiceType,
+};
 use bonjour_sys::DNSServiceErrorType;
 
 /// Normalizes the specified domain `&str` to conform to a standard enforced by this crate.
@@ -46,7 +48,10 @@ pub fn sys_exec<F: FnOnce() -> DNSServiceErrorType>(func: F, message: &str) -> R
     let err = func();
 
     if err < 0 {
-        Err(format!("{} (code: {})", message, err).into())
+        Err(Error::MdnsSystemError {
+            code: err,
+            message: message.into(),
+        })
     } else {
         Ok(())
     }
@@ -106,10 +111,9 @@ mod tests {
 
     #[test]
     fn parse_regtype_failure_invalid_regtype() {
-        assert_eq!(
-            parse_regtype("foobar"),
-            Err("invalid name and protocol".into())
-        );
+        let expected = Error::InvalidServiceType("invalid name and protocol".into());
+        let result = parse_regtype("foobar");
+        assert_eq!(result, Err(expected));
     }
 
     #[test]
@@ -132,10 +136,9 @@ mod tests {
 
     #[test]
     fn sys_exec_returns_error() {
-        assert_eq!(
-            sys_exec(|| -42, "uh oh spaghetti-o"),
-            Err("uh oh spaghetti-o (code: -42)".into())
-        );
+        let expected = Error::InvalidServiceType("uh oh spaghetti-o (code: -42)".into());
+        let result = sys_exec(|| -42, "uh oh spaghetti-o");
+        assert_eq!(result, Err(expected));
     }
 
     #[test]

@@ -6,7 +6,7 @@ use super::service_ref::{
 use super::txt_record_ref::ManagedTXTRecordRef;
 use super::{bonjour_util, constants};
 use crate::ffi::{c_str, AsRaw, FromRaw};
-use crate::prelude::*;
+use crate::{prelude::*, Error};
 use crate::{BrowserEvent, ServiceBrowserCallback, ServiceDiscovery, ServiceRemoval};
 use crate::{EventLoop, NetworkInterface, Result, ServiceType, TxtRecord};
 #[cfg(target_vendor = "pc")]
@@ -75,7 +75,8 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
             .domain(ptr::null_mut())
             .callback(Some(browse_callback))
             .context(self.context.as_raw())
-            .build()?;
+            .build()
+            .map_err(Error::BrowserError)?;
 
         unsafe { service_lock.browse_services(browse_params)? };
 
@@ -165,7 +166,8 @@ unsafe fn handle_browse_add(
             .domain(domain)
             .callback(Some(resolve_callback))
             .context(ctx.as_raw())
-            .build()?,
+            .build()
+            .map_err(Error::BrowserError)?,
     )
 }
 
@@ -232,7 +234,10 @@ unsafe fn handle_resolve(
     txt_record: *const c_uchar,
 ) -> Result<()> {
     if error != 0 {
-        return Err(format!("error reported by resolve_callback: (code: {})", error).into());
+        return Err(Error::MdnsSystemError {
+            code: error,
+            message: "resolve_callback() reported error".into(),
+        });
     }
 
     ctx.resolved_port = port;
@@ -253,7 +258,8 @@ unsafe fn handle_resolve(
             .hostname(host_target)
             .callback(Some(get_address_info_callback))
             .context(ctx.as_raw())
-            .build()?,
+            .build()
+            .map_err(Error::BrowserError)?,
     )
 }
 
@@ -285,11 +291,10 @@ unsafe fn handle_get_address_info(
     }
 
     if error != 0 {
-        return Err(format!(
-            "get_address_info_callback() reported error (code: {})",
-            error
-        )
-        .into());
+        return Err(Error::MdnsSystemError {
+            code: error,
+            message: "get_address_info_callback() reported error".into(),
+        });
     }
 
     // on macOS the bytes are swapped for the port
@@ -315,22 +320,17 @@ unsafe fn handle_get_address_info(
 
     let hostname = c_str::copy_raw(hostname);
 
-    let domain = bonjour_util::normalize_domain(
-        &ctx.resolved_domain
-            .take()
-            .ok_or("could not get domain from BonjourBrowserContext")?,
-    );
+    let domain = bonjour_util::normalize_domain(&ctx.resolved_domain.take().ok_or(
+        Error::BrowserError("could not get domain from BonjourBrowserContext".into()),
+    )?);
 
-    let kind = bonjour_util::normalize_domain(
-        &ctx.resolved_kind
-            .take()
-            .ok_or("could not get kind from BonjourBrowserContext")?,
-    );
+    let kind = bonjour_util::normalize_domain(&ctx.resolved_kind.take().ok_or(
+        Error::BrowserError("could not get kind from BonjourBrowserContext".into()),
+    )?);
 
-    let name = ctx
-        .resolved_name
-        .take()
-        .ok_or("could not get name from BonjourBrowserContext")?;
+    let name = ctx.resolved_name.take().ok_or(Error::BrowserError(
+        "could not get name from BonjourBrowserContext".into(),
+    ))?;
 
     let result = ServiceDiscovery::builder()
         .name(name)
