@@ -229,6 +229,7 @@ pub mod avahi;
 pub mod bonjour;
 
 pub use browser::{ServiceDiscoveredCallback, ServiceDiscovery};
+pub use error::Error;
 pub use interface::*;
 pub use service::{ServiceRegisteredCallback, ServiceRegistration};
 pub use service_type::*;

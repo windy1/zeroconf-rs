@@ -1,29 +1,23 @@
 //! Utilities regarding error handling
 
-use std::fmt;
+use thiserror::Error;
 
-/// For when something goes wrong when interfacing with mDNS implementations
-#[derive(new, Debug, Clone, PartialEq, Eq)]
-pub struct Error {
-    description: String,
-}
-
-impl std::error::Error for Error {}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.description)
-    }
-}
-
-impl From<&str> for Error {
-    fn from(s: &str) -> Self {
-        Error::from(s.to_string())
-    }
-}
-
-impl From<String> for Error {
-    fn from(s: String) -> Self {
-        Error::new(s)
-    }
+/// Error type for the zeroconf crate
+#[derive(Error, Debug, PartialEq)]
+pub enum Error {
+    /// An instance of `crate::ServiceType` could not be created due to an invalid format
+    #[error("Invalid ServiceType format: {0}")]
+    InvalidServiceType(String),
+    /// An error occurred in the underlying mDNS system (Avahi/Bonjour)
+    #[error("{message} (code: {code})")]
+    MdnsSystemError { code: i32, message: String },
+    /// An error occurred in the underlying system (ABI)
+    #[error("{message} (code: {code})")]
+    SystemError { code: i32, message: String },
+    /// An error occurred in an instance of an `crate::MdnsBrowser`
+    #[error("{0}")]
+    BrowserError(String),
+    /// An error occurred in an instance of an `crate::MdnsService`
+    #[error("{0}")]
+    ServiceError(String),
 }

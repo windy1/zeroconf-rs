@@ -4,7 +4,7 @@ use super::service_ref::{ManagedDNSServiceRef, RegisterServiceParams};
 use super::{bonjour_util, constants};
 use crate::ffi::c_str::{self, AsCChars};
 use crate::ffi::{AsRaw, FromRaw, UnwrapOrNull};
-use crate::prelude::*;
+use crate::{prelude::*, Error};
 use crate::{
     EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration,
     ServiceType, TxtRecord,
@@ -129,7 +129,8 @@ impl TMdnsService for BonjourMdnsService {
             .txt_record(txt_record)
             .callback(Some(register_callback))
             .context(self.context.as_raw())
-            .build()?;
+            .build()
+            .map_err(Error::ServiceError)?;
 
         unsafe { service_lock.register_service(register_params)? };
 
@@ -185,7 +186,10 @@ unsafe fn handle_register(
     regtype: *const c_char,
 ) -> Result<()> {
     if error != 0 {
-        return Err(format!("register_callback() reported error (code: {0})", error).into());
+        return Err(Error::MdnsSystemError {
+            code: error,
+            message: "register_callback() reported error".to_string(),
+        });
     }
 
     let domain = bonjour_util::normalize_domain(c_str::raw_to_str(domain));
