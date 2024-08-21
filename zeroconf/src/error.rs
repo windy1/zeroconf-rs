@@ -21,3 +21,47 @@ pub enum Error {
     #[error("{0}")]
     ServiceError(String),
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_invalid_service_type_display() {
+        let error = Error::InvalidServiceType("invalid name and protocol".into());
+        assert_eq!(
+            error.to_string(),
+            "Invalid ServiceType format: invalid name and protocol"
+        );
+    }
+
+    #[test]
+    fn test_mdns_system_error_display() {
+        let error = Error::MdnsSystemError {
+            code: -42,
+            message: "uh oh spaghetti-o".into(),
+        };
+        assert_eq!(error.to_string(), "uh oh spaghetti-o (code: -42)");
+    }
+
+    #[test]
+    fn test_system_error_display() {
+        let error = Error::SystemError {
+            code: -42,
+            message: "uh oh spaghetti-o".into(),
+        };
+        assert_eq!(error.to_string(), "uh oh spaghetti-o (code: -42)");
+    }
+
+    #[test]
+    fn test_browser_error_display() {
+        let error = Error::BrowserError("uh oh spaghetti-o".into());
+        assert_eq!(error.to_string(), "uh oh spaghetti-o");
+    }
+
+    #[test]
+    fn test_service_error_display() {
+        let error = Error::ServiceError("uh oh spaghetti-o".into());
+        assert_eq!(error.to_string(), "uh oh spaghetti-o");
+    }
+}
