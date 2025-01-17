@@ -14,8 +14,8 @@ use crate::ffi::{c_str, AsRaw, FromRaw};
 use crate::prelude::*;
 use crate::Result;
 use crate::{
-    EventLoop, NetworkInterface, ServiceDiscoveredCallback, ServiceDiscovery, ServiceType,
-    TxtRecord,
+    BrowserEvent, EventLoop, NetworkInterface, ServiceDiscoveredCallback, ServiceDiscovery,
+    ServiceType, TxtRecord,
 };
 use avahi_sys::{
     AvahiAddress, AvahiBrowserEvent, AvahiClient, AvahiClientFlags, AvahiClientState, AvahiIfIndex,
@@ -56,7 +56,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
         avahi_util::interface_from_index(self.context.interface_index)
     }
 
-    fn set_service_discovered_callback(
+    fn set_service_callback(
         &mut self,
         service_discovered_callback: Box<ServiceDiscoveredCallback>,
     ) {
@@ -132,7 +132,7 @@ impl AvahiBrowserContext {
         }
     }
 
-    fn invoke_callback(&self, result: Result<ServiceDiscovery>) {
+    fn invoke_callback(&self, result: Result<BrowserEvent>) {
         if let Some(f) = &self.service_discovered_callback {
             f(result, self.user_context.clone());
         } else {
@@ -204,6 +204,12 @@ unsafe extern "C" fn browse_callback(
         }
         avahi_sys::AvahiBrowserEvent_AVAHI_BROWSER_FAILURE => {
             context.invoke_callback(Err("browser failure".into()))
+        }
+        avahi_sys::AvahiBrowserEvent_AVAHI_BROWSER_REMOVE => {
+            let name = c_str::raw_to_str(name).to_string();
+            let kind = c_str::raw_to_str(kind).to_string();
+            let domain = c_str::raw_to_str(domain).to_string();
+            context.invoke_callback(Ok(BrowserEvent::Remove { name, kind, domain }));
         }
         _ => {}
     };
@@ -324,7 +330,7 @@ unsafe fn handle_resolver_found(
 
     debug!("Service resolved: {:?}", result);
 
-    context.invoke_callback(Ok(result));
+    context.invoke_callback(Ok(BrowserEvent::New(result)));
 
     Ok(())
 }

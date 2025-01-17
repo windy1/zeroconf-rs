@@ -4,6 +4,15 @@ use crate::{EventLoop, NetworkInterface, Result, ServiceType, TxtRecord};
 use std::any::Any;
 use std::sync::Arc;
 
+pub enum BrowserEvent {
+    New(ServiceDiscovery),
+    Remove {
+        name: String,   // The "abc" part in "abc._http._udp.local"
+        kind: String,   // The "_http._udp" part in "abc._http._udp.local"
+        domain: String, // The "local" part in "abc._http._udp.local"
+    },
+}
+
 /// Interface for interacting with underlying mDNS implementation service browsing capabilities.
 pub trait TMdnsBrowser {
     /// Creates a new `MdnsBrowser` that browses for the specified `kind` (e.g. `_http._tcp`)
@@ -22,10 +31,7 @@ pub trait TMdnsBrowser {
     /// resolved a service.
     ///
     /// [`ServiceDiscoveredCallback`]: ../type.ServiceDiscoveredCallback.html
-    fn set_service_discovered_callback(
-        &mut self,
-        service_discovered_callback: Box<ServiceDiscoveredCallback>,
-    );
+    fn set_service_callback(&mut self, service_discovered_callback: Box<ServiceDiscoveredCallback>);
 
     /// Sets the optional user context to pass through to the callback. This is useful if you need
     /// to share state between pre and post-callback. The context type must implement `Any`.
@@ -45,7 +51,7 @@ pub trait TMdnsBrowser {
 /// * `context` - The optional user context passed through
 ///
 /// [`MdnsBrowser`]: type.MdnsBrowser.html
-pub type ServiceDiscoveredCallback = dyn Fn(Result<ServiceDiscovery>, Option<Arc<dyn Any>>);
+pub type ServiceDiscoveredCallback = dyn Fn(Result<BrowserEvent>, Option<Arc<dyn Any>>);
 
 /// Represents a service that has been discovered by a [`MdnsBrowser`].
 ///

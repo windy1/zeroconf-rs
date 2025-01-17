@@ -228,7 +228,7 @@ pub mod avahi;
 #[cfg(any(target_vendor = "apple", target_vendor = "pc"))]
 pub mod bonjour;
 
-pub use browser::{ServiceDiscoveredCallback, ServiceDiscovery};
+pub use browser::{BrowserEvent, ServiceDiscoveredCallback, ServiceDiscovery};
 pub use interface::*;
 pub use service::{ServiceRegisteredCallback, ServiceRegistration};
 pub use service_type::*;
