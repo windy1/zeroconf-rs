@@ -46,27 +46,30 @@ fn service_register_is_browsable() {
 
         browser.set_context(Box::new(context.clone()));
 
-        browser.set_service_callback(Box::new(|event, context| {
-            match event.unwrap() {
-                BrowserEvent::New(service) => {
-                    if service.name() == SERVICE_NAME {
-                        let mut mtx = context
-                            .as_ref()
-                            .unwrap()
-                            .downcast_ref::<Arc<Mutex<Context>>>()
-                            .unwrap()
-                            .lock()
-                            .unwrap();
+        browser.set_service_callback(Box::new(|event, context| match event.unwrap() {
+            BrowserEvent::Add(service) => {
+                if service.name() == SERVICE_NAME {
+                    let mut mtx = context
+                        .as_ref()
+                        .unwrap()
+                        .downcast_ref::<Arc<Mutex<Context>>>()
+                        .unwrap()
+                        .lock()
+                        .unwrap();
 
-                        mtx.txt.clone_from(service.txt());
-                        mtx.is_discovered = true;
+                    mtx.txt.clone_from(service.txt());
+                    mtx.is_discovered = true;
 
-                        debug!("Service discovered");
-                    }
+                    debug!("Service discovered");
                 }
-                BrowserEvent::Remove { name, kind, domain } => {
-                    debug!("Service removed: {name}.{kind}.{domain}");
-                }
+            }
+            BrowserEvent::Remove(service) => {
+                debug!(
+                    "Service removed: {}.{}.{}",
+                    service.name(),
+                    service.kind(),
+                    service.domain()
+                );
             }
         }));
 
