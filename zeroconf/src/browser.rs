@@ -4,6 +4,7 @@ use crate::{EventLoop, NetworkInterface, Result, ServiceType, TxtRecord};
 use std::any::Any;
 use std::sync::Arc;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BrowserEvent {
     New(ServiceDiscovery),
     Remove {
