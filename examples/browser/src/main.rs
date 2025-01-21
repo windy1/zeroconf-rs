@@ -55,10 +55,7 @@ fn main() -> zeroconf::Result<()> {
     }
 }
 
-fn on_service_discovered(
-    result: zeroconf::Result<BrowserEvent>,
-    _context: Option<Arc<dyn Any>>,
-) {
+fn on_service_discovered(result: zeroconf::Result<BrowserEvent>, _context: Option<Arc<dyn Any>>) {
     info!(
         "Service event: {:?}",
         result.expect("service discovery failed")
