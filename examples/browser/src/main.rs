@@ -27,7 +27,7 @@ struct Args {
 }
 
 fn main() -> zeroconf::Result<()> {
-    env_logger::init();
+    env_logger::Builder::from_env(env_logger::Env::new().filter_or("RUST_LOG", "info")).init();
 
     let Args {
         name,
