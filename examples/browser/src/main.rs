@@ -45,7 +45,7 @@ fn main() -> zeroconf::Result<()> {
 
     let mut browser = MdnsBrowser::new(service_type);
 
-    browser.set_service_callback(Box::new(on_service_event));
+    browser.set_service_callback(Box::new(on_service_discovery_event));
 
     let event_loop = browser.browse_services()?;
 
@@ -55,7 +55,10 @@ fn main() -> zeroconf::Result<()> {
     }
 }
 
-fn on_service_event(result: zeroconf::Result<BrowserEvent>, _context: Option<Arc<dyn Any>>) {
+fn on_service_discovery_event(
+    result: zeroconf::Result<BrowserEvent>,
+    _context: Option<Arc<dyn Any>>,
+) {
     info!(
         "Service event: {:?}",
         result.expect("service discovery failed")
