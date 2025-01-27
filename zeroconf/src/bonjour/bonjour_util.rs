@@ -50,7 +50,7 @@ pub fn sys_exec<F: FnOnce() -> DNSServiceErrorType>(func: F, message: &str) -> R
     if err < 0 {
         Err(Error::MdnsSystemError {
             code: err,
-            message: message.into(),
+            message: format!("{} (code: {})", message, err).into(),
         })
     } else {
         Ok(())
@@ -136,9 +136,11 @@ mod tests {
 
     #[test]
     fn sys_exec_returns_error() {
-        let expected = Error::InvalidServiceType("uh oh spaghetti-o (code: -42)".into());
         let result = sys_exec(|| -42, "uh oh spaghetti-o");
-        assert_eq!(result, Err(expected));
+        assert_eq!(result, Err(Error::MdnsSystemError {
+            code: -42,
+            message: "uh oh spaghetti-o (code: -42)".into(),
+        }));
     }
 
     #[test]
