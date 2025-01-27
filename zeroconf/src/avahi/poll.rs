@@ -21,12 +21,12 @@ impl ManagedAvahiSimplePoll {
     ///
     /// # Safety
     /// This function is unsafe because of the raw pointer dereference.
-    pub unsafe fn new() -> Result<Self> {
+    pub unsafe fn new() -> Option<Self> {
         let poll = avahi_simple_poll_new();
         if poll.is_null() {
-            Err("could not initialize AvahiSimplePoll".into())
+            None
         } else {
-            Ok(Self(poll))
+            Some(Self(poll))
         }
     }
 
@@ -58,12 +58,14 @@ impl ManagedAvahiSimplePoll {
         // Returns -1 on error, 0 on success and 1 if a quit request has been scheduled
         match avahi_simple_poll_iterate(self.0, sleep_time) {
             0 | 1 => Ok(()),
-            -1 => Err(Error::from(
-                "avahi_simple_poll_iterate(..) threw an error result",
-            )),
-            _ => Err(Error::from(
-                "avahi_simple_poll_iterate(..) returned an unknown result",
-            )),
+            -1 => Err(Error::MdnsSystemError {
+                code: -1, // Translates to AVAHI_ERR_FAILURE with description "Generic error code".
+                message: "avahi_simple_poll_iterate(..) threw an error result".into(),
+            }),
+            err => Err(Error::MdnsSystemError {
+                code: err,
+                message: "avahi_simple_poll_iterate(..) returned an unknown result".into(),
+            }),
         }
     }
 

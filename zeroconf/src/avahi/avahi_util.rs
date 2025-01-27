@@ -1,6 +1,6 @@
 //! Utilities related to Avahi
 
-use crate::ffi::c_str;
+use crate::{ffi::c_str, Error};
 use avahi_sys::{
     avahi_address_snprint, avahi_alternative_service_name, avahi_strerror, AvahiAddress,
     AvahiClient,
@@ -47,8 +47,14 @@ pub unsafe fn get_error<'a>(code: i32) -> &'a str {
 ///
 /// # Safety
 /// This function is unsafe because of internal Avahi calls.
-pub unsafe fn get_last_error<'a>(client: *mut AvahiClient) -> &'a str {
-    get_error(avahi_sys::avahi_client_errno(client))
+pub unsafe fn get_last_error(client: *mut AvahiClient) -> Error {
+    let code = avahi_sys::avahi_client_errno(client);
+    let message = get_error(code);
+
+    Error::MdnsSystemError {
+        code,
+        message: message.into(),
+    }
 }
 
 /// Converts the specified [`NetworkInterface`] to the Avahi expected value.
@@ -77,7 +83,10 @@ pub unsafe fn sys_exec<F: FnOnce() -> i32>(func: F, message: &str) -> Result<()>
     let err = func();
 
     if err < 0 {
-        Err(format!("{}: `{}`", message, get_error(err)).into())
+        Err(Error::MdnsSystemError {
+            code: err,
+            message: format!("{}: (code: {}, message:{:?})", message, err, get_error(err)).into(),
+        })
     } else {
         Ok(())
     }
@@ -139,7 +148,10 @@ mod tests {
     fn sys_exec_returns_error_for_failure() {
         assert_eq!(
             unsafe { sys_exec(|| avahi_sys::AVAHI_ERR_FAILURE, "uh oh spaghetti-o") },
-            Err("uh oh spaghetti-o: `Operation failed`".into())
+            Err(Error::MdnsSystemError {
+                code: avahi_sys::AVAHI_ERR_FAILURE,
+                message: "uh oh spaghetti-o: (code: -1, message:\"Operation failed\")".into(),
+            })
         );
     }
 
