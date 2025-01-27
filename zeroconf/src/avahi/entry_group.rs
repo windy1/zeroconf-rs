@@ -7,10 +7,10 @@ use crate::avahi::avahi_util;
 use crate::ffi::UnwrapMutOrNull;
 use crate::Result;
 use avahi_sys::{
-    avahi_client_errno, avahi_entry_group_add_service_strlst,
-    avahi_entry_group_add_service_subtype, avahi_entry_group_commit, avahi_entry_group_free,
-    avahi_entry_group_is_empty, avahi_entry_group_new, avahi_entry_group_reset, AvahiClient,
-    AvahiEntryGroup, AvahiEntryGroupCallback, AvahiIfIndex, AvahiProtocol, AvahiPublishFlags,
+    avahi_entry_group_add_service_strlst, avahi_entry_group_add_service_subtype,
+    avahi_entry_group_commit, avahi_entry_group_free, avahi_entry_group_is_empty,
+    avahi_entry_group_new, avahi_entry_group_reset, AvahiClient, AvahiEntryGroup,
+    AvahiEntryGroupCallback, AvahiIfIndex, AvahiProtocol, AvahiPublishFlags,
 };
 use libc::{c_char, c_void};
 
@@ -40,8 +40,7 @@ impl ManagedAvahiEntryGroup {
         let inner = avahi_entry_group_new(client.inner, callback, userdata);
 
         if inner.is_null() {
-            let err = avahi_util::get_error(avahi_client_errno(client.inner));
-            Err(format!("could not initialize AvahiEntryGroup: {}", err).into())
+            Err(avahi_util::get_last_error(client.inner))
         } else {
             Ok(Self {
                 inner,

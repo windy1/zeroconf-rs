@@ -12,7 +12,7 @@ use super::{
 };
 use crate::ffi::{c_str, AsRaw, FromRaw};
 use crate::prelude::*;
-use crate::Result;
+use crate::{Error, Result};
 use crate::{
     BrowserEvent, EventLoop, NetworkInterface, ServiceBrowserCallback, ServiceDiscovery,
     ServiceRemoval, ServiceType, TxtRecord,
@@ -71,12 +71,16 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
     fn browse_services(&mut self) -> Result<EventLoop> {
         debug!("Browsing services: {:?}", self);
 
-        self.poll = Some(Arc::new(unsafe { ManagedAvahiSimplePoll::new() }?));
+        self.poll = Some(Arc::new(
+            unsafe { ManagedAvahiSimplePoll::new() }.ok_or_else(|| {
+                Error::BrowserError("could not initialize AvahiSimplePoll".into())
+            })?,
+        ));
 
         let poll = self
             .poll
             .as_ref()
-            .ok_or("could not get poll as ref")?
+            .ok_or(Error::BrowserError("could not get poll as ref".into()))?
             .clone();
 
         let client_params = ManagedAvahiClientParams::builder()
@@ -84,7 +88,8 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
             .flags(AvahiClientFlags(0))
             .callback(Some(client_callback))
             .userdata(self.context.as_raw())
-            .build()?;
+            .build()
+            .map_err(Error::BrowserError)?;
 
         self.client = Some(Arc::new(unsafe { ManagedAvahiClient::new(client_params) }?));
 
@@ -99,7 +104,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
         Ok(EventLoop::new(
             self.poll
                 .as_ref()
-                .ok_or("could not get poll as ref")?
+                .ok_or(Error::BrowserError("could not get poll as ref".into()))?
                 .clone(),
         ))
     }
@@ -168,13 +173,11 @@ unsafe fn create_browser(context: &mut AvahiBrowserContext) -> Result<()> {
             .flags(0)
             .callback(Some(browse_callback))
             .userdata(context.as_raw())
-            .client(Arc::clone(
-                context
-                    .client
-                    .as_ref()
-                    .ok_or("could not get client as ref")?,
-            ))
-            .build()?,
+            .client(Arc::clone(context.client.as_ref().ok_or(
+                Error::BrowserError("could not get client as ref".into()),
+            )?))
+            .build()
+            .map_err(Error::BrowserError)?,
     )?);
 
     Ok(())
@@ -200,7 +203,7 @@ unsafe extern "C" fn browse_callback(
             }
         }
         avahi_sys::AvahiBrowserEvent_AVAHI_BROWSER_FAILURE => {
-            context.invoke_callback(Err("browser failure".into()))
+            context.invoke_callback(Err(Error::BrowserError("browser failure".into())))
         }
         avahi_sys::AvahiBrowserEvent_AVAHI_BROWSER_REMOVE => {
             handle_browser_remove(context, name, kind, domain);
@@ -222,7 +225,7 @@ unsafe fn handle_browser_new(
     let client = context
         .client
         .as_ref()
-        .ok_or("expected initialized client")?;
+        .ok_or(Error::BrowserError("expected initialized client".into()))?;
 
     context.resolvers.insert(ManagedAvahiServiceResolver::new(
         ManagedAvahiServiceResolverParams::builder()
@@ -236,7 +239,8 @@ unsafe fn handle_browser_new(
             .flags(0)
             .callback(Some(resolve_callback))
             .userdata(raw_context)
-            .build()?,
+            .build()
+            .map_err(Error::BrowserError)?,
     )?);
 
     Ok(())
@@ -285,11 +289,13 @@ unsafe extern "C" fn resolve_callback(
 
     match event {
         avahi_sys::AvahiResolverEvent_AVAHI_RESOLVER_FAILURE => {
-            context.invoke_callback(Err(format!(
-                "failed to resolve service `{}` of type `{}` in domain `{}`",
-                name, kind, domain
-            )
-            .into()));
+            context.invoke_callback(Err(Error::BrowserError(
+                format!(
+                    "failed to resolve service `{}` of type `{}` in domain `{}`",
+                    name, kind, domain
+                )
+                .into(),
+            )));
         }
         avahi_sys::AvahiResolverEvent_AVAHI_RESOLVER_FOUND => {
             let result = handle_resolver_found(
@@ -340,7 +346,8 @@ unsafe fn handle_resolver_found(
         .address(address)
         .port(port)
         .txt(txt)
-        .build()?;
+        .build()
+        .map_err(Error::BrowserError)?;
 
     debug!("Service resolved: {:?}", result);
 

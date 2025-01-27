@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::Result;
+use crate::{avahi::avahi_util, Result};
 use avahi_sys::{
     avahi_service_browser_free, avahi_service_browser_get_client, avahi_service_browser_new,
     AvahiClient, AvahiIfIndex, AvahiLookupFlags, AvahiProtocol, AvahiServiceBrowser,
@@ -52,7 +52,7 @@ impl ManagedAvahiServiceBrowser {
         );
 
         if inner.is_null() {
-            Err("could not initialize Avahi service browser".into())
+            Err(avahi_util::get_last_error(client.inner))
         } else {
             Ok(Self {
                 inner,
