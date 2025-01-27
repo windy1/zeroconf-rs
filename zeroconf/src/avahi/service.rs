@@ -9,7 +9,7 @@ use super::poll::ManagedAvahiSimplePoll;
 use crate::ffi::{c_str, AsRaw, FromRaw, UnwrapOrNull};
 use crate::prelude::*;
 use crate::{
-    EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration,
+    Error, EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration,
     ServiceType, TxtRecord,
 };
 use avahi_sys::{
@@ -110,12 +110,16 @@ impl TMdnsService for AvahiMdnsService {
     fn register(&mut self) -> Result<EventLoop> {
         debug!("Registering service: {:?}", self);
 
-        self.poll = Some(Arc::new(unsafe { ManagedAvahiSimplePoll::new() }?));
+        self.poll = Some(Arc::new(
+            unsafe { ManagedAvahiSimplePoll::new() }.ok_or_else(|| {
+                Error::ServiceError("could not initialize AvahiSimplePoll".into())
+            })?,
+        ));
 
         let poll = self
             .poll
             .as_ref()
-            .ok_or("could not get poll as ref")?
+            .ok_or(Error::ServiceError("could not get poll as ref".into()))?
             .clone();
 
         let client_params = ManagedAvahiClientParams::builder()
@@ -123,7 +127,8 @@ impl TMdnsService for AvahiMdnsService {
             .flags(AvahiClientFlags(0))
             .callback(Some(client_callback))
             .userdata(self.context.as_raw())
-            .build()?;
+            .build()
+            .map_err(Error::ServiceError)?;
 
         self.client = Some(Arc::new(unsafe { ManagedAvahiClient::new(client_params) }?));
 
@@ -138,7 +143,7 @@ impl TMdnsService for AvahiMdnsService {
         Ok(EventLoop::new(
             self.poll
                 .as_ref()
-                .ok_or("could not get poll as ref")?
+                .ok_or(Error::ServiceError("could not get poll as ref".into()))?
                 .clone(),
         ))
     }
@@ -220,7 +225,7 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
         let host_name = context
             .client
             .as_ref()
-            .ok_or("expected initialized client")?
+            .ok_or(Error::ServiceError("expected initialized client".into()))?
             .host_name()?;
 
         context.name = Some(c_string!(host_name.to_string()));
@@ -231,22 +236,20 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
 
         context.group = Some(ManagedAvahiEntryGroup::new(
             ManagedAvahiEntryGroupParams::builder()
-                .client(Arc::clone(
-                    context
-                        .client
-                        .as_ref()
-                        .ok_or("could not get client as ref")?,
-                ))
+                .client(Arc::clone(context.client.as_ref().ok_or(
+                    Error::ServiceError("could not get client as ref".into()),
+                )?))
                 .callback(Some(entry_group_callback))
                 .userdata(context.as_raw())
-                .build()?,
+                .build()
+                .map_err(Error::ServiceError)?,
         )?);
     }
 
     let group = context
         .group
         .as_mut()
-        .ok_or("could not borrow group as mut")?;
+        .ok_or(Error::ServiceError("could not borrow group as mut".into()))?;
 
     if !group.is_empty() {
         return Ok(());
@@ -255,7 +258,7 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
     let name = context
         .name
         .as_ref()
-        .ok_or("could not get name as ref")?
+        .ok_or(Error::ServiceError("could not get name as ref".into()))?
         .clone();
 
     add_services(context, &name)
@@ -267,7 +270,7 @@ unsafe fn add_services(context: &mut AvahiServiceContext, name: &CStr) -> Result
     let group = context
         .group
         .as_mut()
-        .ok_or("could not borrow group as mut")?;
+        .ok_or(Error::ServiceError("could not borrow group as mut".into()))?;
 
     let params = AddServiceParams::builder()
         .interface(context.interface_index)
@@ -279,7 +282,8 @@ unsafe fn add_services(context: &mut AvahiServiceContext, name: &CStr) -> Result
         .host(context.host.as_ref().map(|h| h.as_ptr()).unwrap_or_null())
         .port(context.port)
         .txt(context.txt_record.as_ref().map(|t| t.inner()))
-        .build()?;
+        .build()
+        .map_err(Error::ServiceError)?;
 
     group.add_service(params)?;
 
@@ -294,7 +298,8 @@ unsafe fn add_services(context: &mut AvahiServiceContext, name: &CStr) -> Result
             .kind(context.kind.as_ptr())
             .domain(context.domain.as_ref().map(|d| d.as_ptr()).unwrap_or_null())
             .subtype(sub_type.as_ptr())
-            .build()?;
+            .build()
+            .map_err(Error::ServiceError)?;
 
         group.add_service_subtype(params)?;
     }
@@ -348,7 +353,7 @@ unsafe fn handle_group_established(context: &AvahiServiceContext) -> Result<Serv
         context
             .name
             .as_ref()
-            .ok_or("could not get name as ref")?
+            .ok_or(Error::ServiceError("could not get name as ref".into()))?
             .as_ptr(),
     );
 
@@ -358,5 +363,6 @@ unsafe fn handle_group_established(context: &AvahiServiceContext) -> Result<Serv
             context.kind.as_ptr(),
         ))?)
         .domain("local".to_string())
-        .build()?)
+        .build()
+        .map_err(Error::ServiceError)?)
 }

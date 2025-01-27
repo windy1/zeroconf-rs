@@ -1,6 +1,6 @@
 //! Rust friendly `AvahiServiceResolver` wrappers/helpers
 
-use crate::Result;
+use crate::{avahi::avahi_util, Result};
 use avahi_sys::{
     avahi_service_resolver_free, avahi_service_resolver_new, AvahiIfIndex, AvahiLookupFlags,
     AvahiProtocol, AvahiServiceResolver, AvahiServiceResolverCallback,
@@ -55,7 +55,7 @@ impl ManagedAvahiServiceResolver {
         );
 
         if inner.is_null() {
-            Err("could not initialize AvahiServiceResolver".into())
+            Err(avahi_util::get_last_error(client.inner))
         } else {
             Ok(Self {
                 inner,
