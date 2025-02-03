@@ -138,15 +138,16 @@ impl Iterator for Iter<'_> {
         let pair = unsafe { n.get_pair() };
         self.node = unsafe { n.next() };
 
-        let key = unsafe { pair.key().as_str() }
-            .expect("could not key as str")
-            .to_string();
-
-        let value = unsafe { pair.value().as_str() }
-            .expect("could not get value as str")
-            .to_string();
-
-        Some((key, value))
+        if let Some(key) = unsafe { pair.key().as_str() } {
+            let key = key.to_string();
+            if let Some(value) = unsafe { pair.value().as_str() } {
+                return Some((key, value.to_string()));
+            } else {
+                return None;
+            }
+        } else {
+            return None;
+        }
     }
 }
 
