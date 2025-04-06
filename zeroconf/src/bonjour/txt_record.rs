@@ -171,7 +171,7 @@ impl Iterator for Keys<'_> {
 /// An `Iterator` that allows iteration over a [`BonjourTxtRecord`]'s values.
 pub struct Values<'a>(Iter<'a>);
 
-impl<'a> Iterator for Values<'a> {
+impl Iterator for Values<'_> {
     type Item = String;
 
     fn next(&mut self) -> Option<Self::Item> {
