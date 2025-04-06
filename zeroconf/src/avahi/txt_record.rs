@@ -140,13 +140,9 @@ impl Iterator for Iter<'_> {
 
         if let Some(key) = unsafe { pair.key().as_str() } {
             let key = key.to_string();
-            if let Some(value) = unsafe { pair.value().as_str() } {
-                return Some((key, value.to_string()));
-            } else {
-                return None;
-            }
+            unsafe { pair.value().as_str() }.map(|value| (key, value.to_string()))
         } else {
-            return None;
+            None
         }
     }
 }
