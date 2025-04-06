@@ -7,8 +7,8 @@ use super::txt_record_ref::ManagedTXTRecordRef;
 use super::{bonjour_util, constants};
 use crate::ffi::{c_str, AsRaw, FromRaw};
 use crate::prelude::*;
+use crate::{BrowserEvent, ServiceBrowserCallback, ServiceDiscovery, ServiceRemoval};
 use crate::{EventLoop, NetworkInterface, Result, ServiceType, TxtRecord};
-use crate::{ServiceDiscoveredCallback, ServiceDiscovery};
 #[cfg(target_vendor = "pc")]
 use bonjour_sys::sockaddr_in;
 use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
@@ -48,10 +48,7 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
         bonjour_util::interface_from_index(self.interface_index)
     }
 
-    fn set_service_discovered_callback(
-        &mut self,
-        service_discovered_callback: Box<ServiceDiscoveredCallback>,
-    ) {
+    fn set_service_callback(&mut self, service_discovered_callback: Box<ServiceBrowserCallback>) {
         self.context.service_discovered_callback = Some(service_discovered_callback);
     }
 
@@ -88,7 +85,7 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
 
 #[derive(Default, FromRaw, AsRaw)]
 struct BonjourBrowserContext {
-    service_discovered_callback: Option<Box<ServiceDiscoveredCallback>>,
+    service_discovered_callback: Option<Box<ServiceBrowserCallback>>,
     resolved_name: Option<String>,
     resolved_kind: Option<String>,
     resolved_domain: Option<String>,
@@ -98,7 +95,7 @@ struct BonjourBrowserContext {
 }
 
 impl BonjourBrowserContext {
-    fn invoke_callback(&self, result: Result<ServiceDiscovery>) {
+    fn invoke_callback(&self, result: Result<BrowserEvent>) {
         if let Some(f) = &self.service_discovered_callback {
             f(result, self.user_context.clone());
         } else {
@@ -120,7 +117,7 @@ impl fmt::Debug for BonjourBrowserContext {
 
 unsafe extern "system" fn browse_callback(
     _sd_ref: DNSServiceRef,
-    _flags: DNSServiceFlags,
+    flags: DNSServiceFlags,
     interface_index: u32,
     error: DNSServiceErrorType,
     name: *const c_char,
@@ -129,23 +126,32 @@ unsafe extern "system" fn browse_callback(
     context: *mut c_void,
 ) {
     let ctx = BonjourBrowserContext::from_raw(context);
-    if let Err(e) = handle_browse(ctx, error, name, regtype, domain, interface_index) {
-        ctx.invoke_callback(Err(e));
+
+    if error != 0 {
+        ctx.invoke_callback(Err(format!(
+            "browse_callback() reported error (code: {})",
+            error
+        )
+        .into()));
+        return;
+    }
+
+    if flags & bonjour_sys::kDNSServiceFlagsAdd != 0 {
+        if let Err(e) = handle_browse_add(ctx, name, regtype, domain, interface_index) {
+            ctx.invoke_callback(Err(e));
+        }
+    } else {
+        handle_browse_remove(ctx, name, regtype, domain);
     }
 }
 
-unsafe fn handle_browse(
+unsafe fn handle_browse_add(
     ctx: &mut BonjourBrowserContext,
-    error: DNSServiceErrorType,
     name: *const c_char,
     regtype: *const c_char,
     domain: *const c_char,
     interface_index: u32,
 ) -> Result<()> {
-    if error != 0 {
-        return Err(format!("browse_callback() reported error (code: {})", error).into());
-    }
-
     ctx.resolved_name = Some(c_str::copy_raw(name));
     ctx.resolved_kind = Some(c_str::copy_raw(regtype));
     ctx.resolved_domain = Some(c_str::copy_raw(domain));
@@ -161,6 +167,30 @@ unsafe fn handle_browse(
             .context(ctx.as_raw())
             .build()?,
     )
+}
+
+unsafe fn handle_browse_remove(
+    ctx: &mut BonjourBrowserContext,
+    name: *const c_char,
+    regtype: *const c_char,
+    domain: *const c_char,
+) {
+    let name = c_str::raw_to_str(name);
+    let regtype = c_str::raw_to_str(regtype);
+    let domain = c_str::raw_to_str(domain);
+
+    // Remove the "." suffix to be consistent with the Avahi implementation.
+    let regtype = regtype.strip_suffix(".").unwrap_or(domain);
+    let domain = domain.strip_suffix(".").unwrap_or(domain);
+
+    ctx.invoke_callback(Ok(BrowserEvent::Remove(
+        ServiceRemoval::builder()
+            .name(name.to_string())
+            .kind(regtype.to_string())
+            .domain(domain.to_string())
+            .build()
+            .expect("could not build ServiceRemoval"),
+    )));
 }
 
 unsafe extern "system" fn resolve_callback(
@@ -313,7 +343,7 @@ unsafe fn handle_get_address_info(
         .build()
         .expect("could not build ServiceResolution");
 
-    ctx.invoke_callback(Ok(result));
+    ctx.invoke_callback(Ok(BrowserEvent::Add(result)));
 
     Ok(())
 }

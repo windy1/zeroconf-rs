@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::{MdnsBrowser, MdnsService, ServiceType, TxtRecord};
+use crate::{BrowserEvent, MdnsBrowser, MdnsService, ServiceType, TxtRecord};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -46,22 +46,30 @@ fn service_register_is_browsable() {
 
         browser.set_context(Box::new(context.clone()));
 
-        browser.set_service_discovered_callback(Box::new(|service, context| {
-            let service = service.unwrap();
+        browser.set_service_callback(Box::new(|event, context| match event.unwrap() {
+            BrowserEvent::Add(service) => {
+                if service.name() == SERVICE_NAME {
+                    let mut mtx = context
+                        .as_ref()
+                        .unwrap()
+                        .downcast_ref::<Arc<Mutex<Context>>>()
+                        .unwrap()
+                        .lock()
+                        .unwrap();
 
-            if service.name() == SERVICE_NAME {
-                let mut mtx = context
-                    .as_ref()
-                    .unwrap()
-                    .downcast_ref::<Arc<Mutex<Context>>>()
-                    .unwrap()
-                    .lock()
-                    .unwrap();
+                    mtx.txt.clone_from(service.txt());
+                    mtx.is_discovered = true;
 
-                mtx.txt.clone_from(service.txt());
-                mtx.is_discovered = true;
-
-                debug!("Service discovered");
+                    debug!("Service discovered");
+                }
+            }
+            BrowserEvent::Remove(service) => {
+                debug!(
+                    "Service removed: {}.{}.{}",
+                    service.name(),
+                    service.kind(),
+                    service.domain()
+                );
             }
         }));
 
