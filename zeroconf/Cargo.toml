@@ -26,6 +26,7 @@ derive-new = "0.5.9"
 log = "0.4.20"
 libc = "0.2.148"
 zeroconf-macros = { path = "../zeroconf-macros", version = "0.1.4" }
+thiserror = "1.0.63"
 
 [dev-dependencies]
 env_logger = "0.10.0"

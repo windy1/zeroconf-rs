@@ -53,7 +53,7 @@ impl<T> UnwrapMutOrNull<T> for Option<*mut T> {
 
 #[cfg(target_vendor = "apple")]
 pub(crate) mod bonjour {
-    use crate::Result;
+    use crate::{Error, Result};
     use libc::{fd_set, suseconds_t, time_t, timeval};
     use std::time::Duration;
     use std::{mem, ptr};
@@ -82,7 +82,10 @@ pub(crate) mod bonjour {
         );
 
         if result < 0 {
-            Err("select(): returned error status".into())
+            Err(Error::SystemError {
+                code: result,
+                message: "select(): returned error status".to_string(),
+            })
         } else {
             Ok(result as u32)
         }
