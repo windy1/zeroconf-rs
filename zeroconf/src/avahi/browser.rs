@@ -14,8 +14,8 @@ use crate::ffi::{c_str, AsRaw, FromRaw};
 use crate::prelude::*;
 use crate::Result;
 use crate::{
-    EventLoop, NetworkInterface, ServiceDiscoveredCallback, ServiceDiscovery, ServiceType,
-    TxtRecord,
+    BrowserEvent, EventLoop, NetworkInterface, ServiceBrowserCallback, ServiceDiscovery,
+    ServiceRemoval, ServiceType, TxtRecord,
 };
 use avahi_sys::{
     AvahiAddress, AvahiBrowserEvent, AvahiClient, AvahiClientFlags, AvahiClientState, AvahiIfIndex,
@@ -56,11 +56,8 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
         avahi_util::interface_from_index(self.context.interface_index)
     }
 
-    fn set_service_discovered_callback(
-        &mut self,
-        service_discovered_callback: Box<ServiceDiscoveredCallback>,
-    ) {
-        self.context.service_discovered_callback = Some(service_discovered_callback);
+    fn set_service_callback(&mut self, service_callback: Box<ServiceBrowserCallback>) {
+        self.context.service_callback = Some(service_callback);
     }
 
     fn set_context(&mut self, context: Box<dyn Any>) {
@@ -112,7 +109,7 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
 struct AvahiBrowserContext {
     client: Option<Arc<ManagedAvahiClient>>,
     resolvers: ServiceResolverSet,
-    service_discovered_callback: Option<Box<ServiceDiscoveredCallback>>,
+    service_callback: Option<Box<ServiceBrowserCallback>>,
     user_context: Option<Arc<dyn Any>>,
     interface_index: AvahiIfIndex,
     kind: CString,
@@ -124,7 +121,7 @@ impl AvahiBrowserContext {
         Self {
             client: None,
             resolvers: ServiceResolverSet::default(),
-            service_discovered_callback: None,
+            service_callback: None,
             user_context: None,
             interface_index,
             kind,
@@ -132,8 +129,8 @@ impl AvahiBrowserContext {
         }
     }
 
-    fn invoke_callback(&self, result: Result<ServiceDiscovery>) {
-        if let Some(f) = &self.service_discovered_callback {
+    fn invoke_callback(&self, result: Result<BrowserEvent>) {
+        if let Some(f) = &self.service_callback {
             f(result, self.user_context.clone());
         } else {
             warn!("attempted to invoke browser callback but none was set");
@@ -205,6 +202,9 @@ unsafe extern "C" fn browse_callback(
         avahi_sys::AvahiBrowserEvent_AVAHI_BROWSER_FAILURE => {
             context.invoke_callback(Err("browser failure".into()))
         }
+        avahi_sys::AvahiBrowserEvent_AVAHI_BROWSER_REMOVE => {
+            handle_browser_remove(context, name, kind, domain);
+        }
         _ => {}
     };
 }
@@ -240,6 +240,26 @@ unsafe fn handle_browser_new(
     )?);
 
     Ok(())
+}
+
+unsafe fn handle_browser_remove(
+    ctx: &mut AvahiBrowserContext,
+    name: *const c_char,
+    regtype: *const c_char,
+    domain: *const c_char,
+) {
+    let name = c_str::raw_to_str(name);
+    let regtype = c_str::raw_to_str(regtype);
+    let domain = c_str::raw_to_str(domain);
+
+    ctx.invoke_callback(Ok(BrowserEvent::Remove(
+        ServiceRemoval::builder()
+            .name(name.to_string())
+            .kind(regtype.to_string())
+            .domain(domain.to_string())
+            .build()
+            .expect("could not build ServiceRemoval"),
+    )));
 }
 
 unsafe extern "C" fn resolve_callback(
@@ -324,7 +344,7 @@ unsafe fn handle_resolver_found(
 
     debug!("Service resolved: {:?}", result);
 
-    context.invoke_callback(Ok(result));
+    context.invoke_callback(Ok(BrowserEvent::Add(result)));
 
     Ok(())
 }
