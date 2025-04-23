@@ -4,6 +4,15 @@ use crate::{EventLoop, NetworkInterface, Result, ServiceType, TxtRecord};
 use std::any::Any;
 use std::sync::Arc;
 
+/// Event from [`MdnsBrowser`] received by the `ServiceBrowserCallback`.
+///
+/// [`MdnsBrowser`]: type.MdnsBrowser.html
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum BrowserEvent {
+    Add(ServiceDiscovery),
+    Remove(ServiceRemoval),
+}
+
 /// Interface for interacting with underlying mDNS implementation service browsing capabilities.
 pub trait TMdnsBrowser {
     /// Creates a new `MdnsBrowser` that browses for the specified `kind` (e.g. `_http._tcp`)
@@ -18,14 +27,11 @@ pub trait TMdnsBrowser {
     /// Returns the network interface on which to browse for services on.
     fn network_interface(&self) -> NetworkInterface;
 
-    /// Sets the [`ServiceDiscoveredCallback`] that is invoked when the browser has discovered and
-    /// resolved a service.
+    /// Sets the [`ServiceBrowserCallback`] that is invoked when the browser has discovered and
+    /// resolved or removed a service.
     ///
-    /// [`ServiceDiscoveredCallback`]: ../type.ServiceDiscoveredCallback.html
-    fn set_service_discovered_callback(
-        &mut self,
-        service_discovered_callback: Box<ServiceDiscoveredCallback>,
-    );
+    /// [`ServiceBrowserCallback`]: ../type.ServiceBrowserCallback.html
+    fn set_service_callback(&mut self, service_callback: Box<ServiceBrowserCallback>);
 
     /// Sets the optional user context to pass through to the callback. This is useful if you need
     /// to share state between pre and post-callback. The context type must implement `Any`.
@@ -38,14 +44,15 @@ pub trait TMdnsBrowser {
     fn browse_services(&mut self) -> Result<EventLoop>;
 }
 
-/// Callback invoked from [`MdnsBrowser`] once a service has been discovered and resolved.
+/// Callback invoked from [`MdnsBrowser`] once a service has been discovered and resolved or
+/// removed.
 ///
 /// # Arguments
-/// * `discovered_service` - The service that was disovered
+/// * `browser_event` - The event received from Zeroconf
 /// * `context` - The optional user context passed through
 ///
 /// [`MdnsBrowser`]: type.MdnsBrowser.html
-pub type ServiceDiscoveredCallback = dyn Fn(Result<ServiceDiscovery>, Option<Arc<dyn Any>>);
+pub type ServiceBrowserCallback = dyn Fn(Result<BrowserEvent>, Option<Arc<dyn Any>>);
 
 /// Represents a service that has been discovered by a [`MdnsBrowser`].
 ///
@@ -60,4 +67,17 @@ pub struct ServiceDiscovery {
     address: String,
     port: u16,
     txt: Option<TxtRecord>,
+}
+
+/// Represents a service that has been removed by a [`MdnsBrowser`].
+///
+/// [`MdnsBrowser`]: type.MdnsBrowser.html
+#[derive(Debug, Getters, Builder, BuilderDelegate, Clone, PartialEq, Eq)]
+pub struct ServiceRemoval {
+    /// The "abc" part in "abc._http._udp.local"
+    name: String,
+    /// The "_http._udp" part in "abc._http._udp.local"
+    kind: String,
+    /// The "local" part in "abc._http._udp.local"
+    domain: String,
 }
