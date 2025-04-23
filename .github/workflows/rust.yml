@@ -1,5 +1,7 @@
 name: Rust CI
 
+# foobar
+
 on:
   push:
     branches:
