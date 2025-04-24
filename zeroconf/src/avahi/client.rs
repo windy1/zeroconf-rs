@@ -2,9 +2,10 @@
 
 use std::sync::Arc;
 
-use super::{avahi_util, poll::ManagedAvahiSimplePoll};
+use super::avahi_util;
+use super::poll::ManagedAvahiSimplePoll;
 use crate::ffi::c_str;
-use crate::Result;
+use crate::{Error, Result};
 use avahi_sys::{
     avahi_client_free, avahi_client_get_host_name, avahi_client_new, avahi_simple_poll_get,
     AvahiClient, AvahiClientCallback, AvahiClientFlags,
@@ -46,17 +47,13 @@ impl ManagedAvahiClient {
         );
 
         if inner.is_null() {
-            return Err("could not initialize AvahiClient".into());
+            return Err(Error::MdnsSystemError {
+                code: err,
+                message: avahi_util::get_error(err).into(),
+            });
         }
 
-        match err {
-            0 => Ok(Self { inner, _poll: poll }),
-            _ => Err(format!(
-                "could not initialize AvahiClient: {}",
-                avahi_util::get_error(err)
-            )
-            .into()),
-        }
+        Ok(Self { inner, _poll: poll })
     }
 
     /// Delegate function for [`avahi_client_get_host_name()`].
@@ -99,6 +96,6 @@ pub(super) unsafe fn get_host_name<'a>(client: *mut AvahiClient) -> Result<&'a s
     if !host_name.is_null() {
         Ok(c_str::raw_to_str(host_name))
     } else {
-        Err("could not get host name from AvahiClient".into())
+        Err(avahi_util::get_last_error(client))
     }
 }

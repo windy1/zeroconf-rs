@@ -51,7 +51,7 @@ fn main() -> zeroconf::Result<()> {
 
     loop {
         // calling `poll()` will keep this browser alive
-        event_loop.poll(Duration::from_secs(0))?;
+        event_loop.poll(Duration::from_secs(1))?;
     }
 }
 
@@ -59,10 +59,7 @@ fn on_service_discovered(
     result: zeroconf::Result<ServiceDiscovery>,
     _context: Option<Arc<dyn Any>>,
 ) {
-    info!(
-        "Service discovered: {:?}",
-        result.expect("service discovery failed")
-    );
+    info!("Service discovery event: {:?}", result);
 
     // ...
 }
