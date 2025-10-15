@@ -149,7 +149,13 @@ impl Debug for TxtRecord {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(
+    test,
+    any(
+        all(target_os = "linux", feature = "avahi"),
+        all(target_vendor = "apple", target_vendor = "pc"),
+    )
+))]
 mod tests {
     use super::*;
     use crate::TxtRecord;

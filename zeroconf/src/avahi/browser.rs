@@ -37,6 +37,9 @@ pub struct AvahiMdnsBrowser {
 }
 
 impl TMdnsBrowser for AvahiMdnsBrowser {
+    type EventLoop = EventLoop;
+    type TxtRecord = TxtRecord;
+
     fn new(service_type: ServiceType) -> Self {
         Self {
             client: None,

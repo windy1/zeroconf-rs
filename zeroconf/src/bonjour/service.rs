@@ -29,6 +29,9 @@ pub struct BonjourMdnsService {
 }
 
 impl TMdnsService for BonjourMdnsService {
+    type EventLoop = EventLoop;
+    type TxtRecord = TxtRecord;
+
     fn new(service_type: ServiceType, port: u16) -> Self {
         Self {
             service: Arc::default(),
