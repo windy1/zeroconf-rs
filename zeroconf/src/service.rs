@@ -1,12 +1,16 @@
 //! Trait definition for cross-platform service.
 
-use crate::{EventLoop, NetworkInterface, Result, ServiceType, TxtRecord};
+use crate::prelude::{TEventLoop, TTxtRecord};
+use crate::{NetworkInterface, Result, ServiceType};
 use std::any::Any;
 use std::sync::Arc;
 
 /// Interface for interacting with underlying mDNS service implementation registration
 /// capabilities.
 pub trait TMdnsService {
+    type EventLoop: TEventLoop;
+    type TxtRecord: TTxtRecord;
+
     /// Creates a new `MdnsService` with the specified `ServiceType` (e.g. `_http._tcp`) and `port`.
     fn new(service_type: ServiceType, port: u16) -> Self;
 
@@ -45,10 +49,10 @@ pub trait TMdnsService {
     fn host(&self) -> Option<&str>;
 
     /// Sets the optional `TxtRecord` to register this service with.
-    fn set_txt_record(&mut self, txt_record: TxtRecord);
+    fn set_txt_record(&mut self, txt_record: Self::TxtRecord);
 
     /// Returns the optional `TxtRecord` to register this service with.
-    fn txt_record(&self) -> Option<&TxtRecord>;
+    fn txt_record(&self) -> Option<&Self::TxtRecord>;
 
     /// Sets the [`ServiceRegisteredCallback`] that is invoked when the service has been
     /// registered.
@@ -65,7 +69,7 @@ pub trait TMdnsService {
 
     /// Registers and start's the service. Returns an `EventLoop` which can be called to keep
     /// the service alive.
-    fn register(&mut self) -> Result<EventLoop>;
+    fn register(&mut self) -> Result<Self::EventLoop>;
 }
 
 /// Callback invoked from [`MdnsService`] once it has successfully registered.

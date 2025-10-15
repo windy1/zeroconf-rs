@@ -33,6 +33,9 @@ pub struct AvahiMdnsService {
 }
 
 impl TMdnsService for AvahiMdnsService {
+    type EventLoop = EventLoop;
+    type TxtRecord = TxtRecord;
+
     fn new(service_type: ServiceType, port: u16) -> Self {
         let kind = avahi_util::format_service_type(&service_type);
 

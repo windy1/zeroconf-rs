@@ -31,6 +31,9 @@ pub struct BonjourMdnsBrowser {
 }
 
 impl TMdnsBrowser for BonjourMdnsBrowser {
+    type EventLoop = EventLoop;
+    type TxtRecord = TxtRecord;
+
     fn new(service_type: ServiceType) -> Self {
         Self {
             service: Arc::default(),
