@@ -192,7 +192,7 @@ extern crate serde;
 extern crate derive_builder;
 #[macro_use]
 extern crate zeroconf_macros;
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "avahi"))]
 extern crate avahi_sys;
 #[cfg(any(target_vendor = "apple", target_vendor = "pc"))]
 extern crate bonjour_sys;
@@ -223,7 +223,7 @@ pub mod prelude;
 pub mod service;
 pub mod txt_record;
 
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "avahi"))]
 pub mod avahi;
 #[cfg(any(target_vendor = "apple", target_vendor = "pc"))]
 pub mod bonjour;
@@ -234,21 +234,21 @@ pub use service::{ServiceRegisteredCallback, ServiceRegistration};
 pub use service_type::*;
 
 /// Type alias for the platform-specific mDNS browser implementation
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "avahi"))]
 pub type MdnsBrowser = avahi::browser::AvahiMdnsBrowser;
 /// Type alias for the platform-specific mDNS browser implementation
 #[cfg(any(target_vendor = "apple", target_vendor = "pc"))]
 pub type MdnsBrowser = bonjour::browser::BonjourMdnsBrowser;
 
 /// Type alias for the platform-specific mDNS service implementation
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "avahi"))]
 pub type MdnsService = avahi::service::AvahiMdnsService;
 /// Type alias for the platform-specific mDNS service implementation
 #[cfg(any(target_vendor = "apple", target_vendor = "pc"))]
 pub type MdnsService = bonjour::service::BonjourMdnsService;
 
 /// Type alias for the platform-specific structure responsible for polling the mDNS event loop
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "avahi"))]
 pub type EventLoop = avahi::event_loop::AvahiEventLoop;
 /// Type alias for the platform-specific structure responsible for polling the mDNS event loop
 #[cfg(any(target_vendor = "apple", target_vendor = "pc"))]
@@ -256,7 +256,7 @@ pub type EventLoop = bonjour::event_loop::BonjourEventLoop;
 
 /// Type alias for the platform-specific structure responsible for storing and accessing TXT
 /// record data
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "avahi"))]
 pub type TxtRecord = avahi::txt_record::AvahiTxtRecord;
 /// Type alias for the platform-specific structure responsible for storing and accessing TXT
 /// record data
