@@ -32,6 +32,9 @@ pub struct AvahiMdnsService {
     poll: Option<Arc<ManagedAvahiSimplePoll>>,
 }
 
+unsafe impl Send for AvahiMdnsService {}
+unsafe impl Sync for AvahiMdnsService {}
+
 impl TMdnsService for AvahiMdnsService {
     fn new(service_type: ServiceType, port: u16) -> Self {
         let kind = avahi_util::format_service_type(&service_type);
@@ -99,11 +102,11 @@ impl TMdnsService for AvahiMdnsService {
         self.context.registered_callback = registered_callback.into()
     }
 
-    fn set_context(&mut self, context: Box<dyn Any>) {
+    fn set_context(&mut self, context: Box<dyn Any + Send + Sync>) {
         self.context.user_context = Some(Arc::from(context))
     }
 
-    fn context(&self) -> Option<&dyn Any> {
+    fn context(&self) -> Option<&(dyn Any + Send + Sync)> {
         self.context.user_context.as_ref().map(|c| c.as_ref())
     }
 
@@ -157,7 +160,7 @@ struct AvahiServiceContext {
     domain: Option<CString>,
     host: Option<CString>,
     registered_callback: Option<Box<ServiceRegisteredCallback>>,
-    user_context: Option<Arc<dyn Any>>,
+    user_context: Option<Arc<dyn Any + Send + Sync>>,
 }
 
 impl AvahiServiceContext {
@@ -197,6 +200,9 @@ impl fmt::Debug for AvahiServiceContext {
             .finish()
     }
 }
+
+unsafe impl Send for AvahiServiceContext {}
+unsafe impl Sync for AvahiServiceContext {}
 
 unsafe extern "C" fn client_callback(
     client: *mut AvahiClient,

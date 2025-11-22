@@ -57,7 +57,7 @@ fn main() -> zeroconf::Result<()> {
 
 fn on_service_discovery_event(
     result: zeroconf::Result<BrowserEvent>,
-    _context: Option<Arc<dyn Any>>,
+    _context: Option<Arc<dyn Any + Send + Sync>>,
 ) {
     info!(
         "Service event: {:?}",

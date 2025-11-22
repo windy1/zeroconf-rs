@@ -28,6 +28,9 @@ pub struct BonjourMdnsService {
     context: Box<BonjourServiceContext>,
 }
 
+unsafe impl Send for BonjourMdnsService {}
+unsafe impl Sync for BonjourMdnsService {}
+
 impl TMdnsService for BonjourMdnsService {
     fn new(service_type: ServiceType, port: u16) -> Self {
         Self {
@@ -89,11 +92,11 @@ impl TMdnsService for BonjourMdnsService {
         self.context.registered_callback = Some(registered_callback);
     }
 
-    fn set_context(&mut self, context: Box<dyn Any>) {
+    fn set_context(&mut self, context: Box<dyn Any + Send + Sync>) {
         self.context.user_context = Some(Arc::from(context));
     }
 
-    fn context(&self) -> Option<&dyn Any> {
+    fn context(&self) -> Option<&(dyn Any + Send + Sync)> {
         self.context.user_context.as_ref().map(|c| c.as_ref())
     }
 
@@ -140,7 +143,7 @@ impl TMdnsService for BonjourMdnsService {
 #[derive(Default, FromRaw, AsRaw)]
 struct BonjourServiceContext {
     registered_callback: Option<Box<ServiceRegisteredCallback>>,
-    user_context: Option<Arc<dyn Any>>,
+    user_context: Option<Arc<dyn Any + Send + Sync>>,
 }
 
 // Necessary for BonjourMdnsService, cant be `derive`d because of registered_callback
@@ -151,6 +154,9 @@ impl std::fmt::Debug for BonjourServiceContext {
             .finish()
     }
 }
+
+unsafe impl Send for BonjourServiceContext {}
+unsafe impl Sync for BonjourServiceContext {}
 
 impl BonjourServiceContext {
     fn invoke_callback(&self, result: Result<ServiceRegistration>) {

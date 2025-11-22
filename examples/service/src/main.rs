@@ -62,7 +62,7 @@ fn main() -> zeroconf::Result<()> {
 
 fn on_service_registered(
     result: zeroconf::Result<ServiceRegistration>,
-    context: Option<Arc<dyn Any>>,
+    context: Option<Arc<dyn Any + Send + Sync>>,
 ) {
     let service = result.expect("failed to register service");
 

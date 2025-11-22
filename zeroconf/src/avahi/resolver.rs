@@ -71,6 +71,9 @@ impl Drop for ManagedAvahiServiceResolver {
     }
 }
 
+unsafe impl Send for ManagedAvahiServiceResolver {}
+unsafe impl Sync for ManagedAvahiServiceResolver {}
+
 /// Holds parameters for initializing a new `ManagedAvahiServiceResolver` with
 /// `ManagedAvahiServiceResolver::new()`.
 ///

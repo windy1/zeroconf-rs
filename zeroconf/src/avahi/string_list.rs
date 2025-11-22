@@ -44,7 +44,7 @@ impl ManagedAvahiStringList {
     /// dereferenced.
     ///
     /// [`avahi_string_list_find()`]: https://avahi.org/doxygen/html/strlst_8h.html#aafc54c009a2a1608b517c15a7cf29944
-    pub unsafe fn find(&mut self, key: *const c_char) -> Option<AvahiStringListNode> {
+    pub unsafe fn find(&mut self, key: *const c_char) -> Option<AvahiStringListNode<'_>> {
         let node = avahi_string_list_find(self.0, key);
 
         if !node.is_null() {
@@ -75,7 +75,7 @@ impl ManagedAvahiStringList {
     }
 
     /// Returns the first node in the list.
-    pub fn head(&mut self) -> AvahiStringListNode {
+    pub fn head(&mut self) -> AvahiStringListNode<'_> {
         AvahiStringListNode::new(self.0)
     }
 

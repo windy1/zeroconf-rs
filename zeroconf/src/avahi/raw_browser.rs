@@ -77,6 +77,9 @@ impl Drop for ManagedAvahiServiceBrowser {
     }
 }
 
+unsafe impl Send for ManagedAvahiServiceBrowser {}
+unsafe impl Sync for ManagedAvahiServiceBrowser {}
+
 /// Holds parameters for initializing a new `ManagedAvahiServiceBrowser` with
 /// `ManagedAvahiServiceBrowser::new()`.
 ///

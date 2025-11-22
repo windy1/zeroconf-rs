@@ -172,6 +172,9 @@ impl Drop for ManagedAvahiEntryGroup {
     }
 }
 
+unsafe impl Send for ManagedAvahiEntryGroup {}
+unsafe impl Sync for ManagedAvahiEntryGroup {}
+
 /// Holds parameters for initializing a new `ManagedAvahiEntryGroup` with
 /// `ManagedAvahiEntryGroup::new()`.
 ///

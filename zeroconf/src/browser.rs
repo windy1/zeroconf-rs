@@ -35,10 +35,10 @@ pub trait TMdnsBrowser {
 
     /// Sets the optional user context to pass through to the callback. This is useful if you need
     /// to share state between pre and post-callback. The context type must implement `Any`.
-    fn set_context(&mut self, context: Box<dyn Any>);
+    fn set_context(&mut self, context: Box<dyn Any + Send + Sync>);
 
     /// Returns the optional user context to pass through to the callback.
-    fn context(&self) -> Option<&dyn Any>;
+    fn context(&self) -> Option<&(dyn Any + Send + Sync)>;
 
     /// Starts the browser. Returns an `EventLoop` which can be called to keep the browser alive.
     fn browse_services(&mut self) -> Result<EventLoop>;
@@ -52,7 +52,8 @@ pub trait TMdnsBrowser {
 /// * `context` - The optional user context passed through
 ///
 /// [`MdnsBrowser`]: type.MdnsBrowser.html
-pub type ServiceBrowserCallback = dyn Fn(Result<BrowserEvent>, Option<Arc<dyn Any>>);
+pub type ServiceBrowserCallback =
+    dyn Fn(Result<BrowserEvent>, Option<Arc<dyn Any + Send + Sync>>) + Send + Sync;
 
 /// Represents a service that has been discovered by a [`MdnsBrowser`].
 ///
