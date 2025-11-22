@@ -2,8 +2,8 @@
 
 use crate::Result;
 use avahi_sys::{
-    avahi_service_resolver_free, avahi_service_resolver_new, AvahiIfIndex, AvahiLookupFlags,
-    AvahiProtocol, AvahiServiceResolver, AvahiServiceResolverCallback,
+    AvahiIfIndex, AvahiLookupFlags, AvahiProtocol, AvahiServiceResolver,
+    AvahiServiceResolverCallback, avahi_service_resolver_free, avahi_service_resolver_new,
 };
 use libc::{c_char, c_void};
 use std::{collections::HashMap, sync::Arc};

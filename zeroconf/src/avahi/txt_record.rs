@@ -1,8 +1,8 @@
 //! Avahi implementation for cross-platform TXT record.
 
 use super::string_list::{AvahiStringListNode, ManagedAvahiStringList};
-use crate::txt_record::TTxtRecord;
 use crate::Result;
+use crate::txt_record::TTxtRecord;
 use libc::c_char;
 use std::cell::UnsafeCell;
 

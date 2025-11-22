@@ -2,7 +2,7 @@
 
 use super::service_ref::ManagedDNSServiceRef;
 use crate::event_loop::TEventLoop;
-use crate::{ffi, Result};
+use crate::{Result, ffi};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 

@@ -10,9 +10,9 @@ use super::{
     },
     string_list::ManagedAvahiStringList,
 };
-use crate::ffi::{c_str, AsRaw, FromRaw};
-use crate::prelude::*;
 use crate::Result;
+use crate::ffi::{AsRaw, FromRaw, c_str};
+use crate::prelude::*;
 use crate::{
     BrowserEvent, EventLoop, NetworkInterface, ServiceBrowserCallback, ServiceDiscovery,
     ServiceRemoval, ServiceType, TxtRecord,
@@ -203,7 +203,9 @@ unsafe extern "C" fn browse_callback(
 
     match event {
         avahi_sys::AvahiBrowserEvent_AVAHI_BROWSER_NEW => {
-            if let Err(e) = unsafe { handle_browser_new(context, interface, protocol, name, kind, domain) } {
+            if let Err(e) =
+                unsafe { handle_browser_new(context, interface, protocol, name, kind, domain) }
+            {
                 context.invoke_callback(Err(e));
             }
         }

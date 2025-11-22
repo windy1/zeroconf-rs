@@ -2,10 +2,10 @@
 
 use crate::ffi::c_str;
 use avahi_sys::{
-    avahi_free, avahi_string_list_add_pair, avahi_string_list_copy, avahi_string_list_equal,
-    avahi_string_list_find, avahi_string_list_free, avahi_string_list_get_next,
-    avahi_string_list_get_pair, avahi_string_list_length, avahi_string_list_new,
-    avahi_string_list_to_string, AvahiStringList,
+    AvahiStringList, avahi_free, avahi_string_list_add_pair, avahi_string_list_copy,
+    avahi_string_list_equal, avahi_string_list_find, avahi_string_list_free,
+    avahi_string_list_get_next, avahi_string_list_get_pair, avahi_string_list_length,
+    avahi_string_list_new, avahi_string_list_to_string,
 };
 use libc::{c_char, c_void};
 use std::marker::PhantomData;

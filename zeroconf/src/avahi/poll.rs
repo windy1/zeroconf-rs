@@ -3,8 +3,8 @@
 use crate::Result;
 use crate::{avahi::avahi_util, error::Error};
 use avahi_sys::{
-    avahi_simple_poll_free, avahi_simple_poll_iterate, avahi_simple_poll_loop,
-    avahi_simple_poll_new, AvahiSimplePoll,
+    AvahiSimplePoll, avahi_simple_poll_free, avahi_simple_poll_iterate, avahi_simple_poll_loop,
+    avahi_simple_poll_new,
 };
 use std::{convert::TryInto, time::Duration};
 

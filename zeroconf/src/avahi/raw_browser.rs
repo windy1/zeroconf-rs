@@ -4,9 +4,9 @@ use std::sync::Arc;
 
 use crate::Result;
 use avahi_sys::{
-    avahi_service_browser_free, avahi_service_browser_get_client, avahi_service_browser_new,
     AvahiClient, AvahiIfIndex, AvahiLookupFlags, AvahiProtocol, AvahiServiceBrowser,
-    AvahiServiceBrowserCallback,
+    AvahiServiceBrowserCallback, avahi_service_browser_free, avahi_service_browser_get_client,
+    avahi_service_browser_new,
 };
 use libc::{c_char, c_void};
 

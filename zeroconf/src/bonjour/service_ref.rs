@@ -1,11 +1,11 @@
 //! Low level interface for interacting with `DNSserviceRef`
 
-use crate::{bonjour::bonjour_util, Result};
+use crate::{Result, bonjour::bonjour_util};
 use bonjour_sys::{
-    dnssd_sock_t, DNSServiceBrowse, DNSServiceBrowseReply, DNSServiceFlags, DNSServiceGetAddrInfo,
+    DNSServiceBrowse, DNSServiceBrowseReply, DNSServiceFlags, DNSServiceGetAddrInfo,
     DNSServiceGetAddrInfoReply, DNSServiceProcessResult, DNSServiceProtocol, DNSServiceRef,
     DNSServiceRefDeallocate, DNSServiceRefSockFD, DNSServiceRegister, DNSServiceRegisterReply,
-    DNSServiceResolve, DNSServiceResolveReply,
+    DNSServiceResolve, DNSServiceResolveReply, dnssd_sock_t,
 };
 use libc::{c_char, c_void};
 use std::ptr;

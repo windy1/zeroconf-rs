@@ -1,8 +1,8 @@
 //! Event loop for running a `MdnsService` or `MdnsBrowser`.
 
 use super::poll::ManagedAvahiSimplePoll;
-use crate::event_loop::TEventLoop;
 use crate::Result;
+use crate::event_loop::TEventLoop;
 use std::sync::Arc;
 use std::time::Duration;
 

@@ -6,7 +6,7 @@ use super::entry_group::{
     AddServiceParams, AddServiceSubtypeParams, ManagedAvahiEntryGroup, ManagedAvahiEntryGroupParams,
 };
 use super::poll::ManagedAvahiSimplePoll;
-use crate::ffi::{c_str, AsRaw, FromRaw, UnwrapOrNull};
+use crate::ffi::{AsRaw, FromRaw, UnwrapOrNull, c_str};
 use crate::prelude::*;
 use crate::{
     EventLoop, NetworkInterface, Result, ServiceRegisteredCallback, ServiceRegistration,
@@ -328,9 +328,9 @@ unsafe extern "C" fn entry_group_callback(
         avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_ESTABLISHED => {
             context.invoke_callback(unsafe { handle_group_established(context) })
         }
-        avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_FAILURE => {
-            context.invoke_callback(Err(unsafe { avahi_util::get_last_error(client.inner) }.into()))
-        }
+        avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_FAILURE => context.invoke_callback(Err(
+            unsafe { avahi_util::get_last_error(client.inner) }.into(),
+        )),
         avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_COLLISION => {
             let name = context
                 .name

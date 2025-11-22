@@ -3,7 +3,7 @@
 use std::{ffi::CString, str::FromStr};
 
 use super::constants;
-use crate::{check_valid_characters, lstrip_underscore, NetworkInterface, Result, ServiceType};
+use crate::{NetworkInterface, Result, ServiceType, check_valid_characters, lstrip_underscore};
 use bonjour_sys::DNSServiceErrorType;
 
 /// Normalizes the specified domain `&str` to conform to a standard enforced by this crate.

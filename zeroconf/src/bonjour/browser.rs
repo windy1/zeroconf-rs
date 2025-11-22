@@ -249,9 +249,7 @@ unsafe fn handle_resolve(
 
     ctx.resolved_txt = if txt_len > 1 {
         Some(TxtRecord::from(unsafe {
-            ManagedTXTRecordRef::clone_raw(
-                txt_record, txt_len,
-            )?
+            ManagedTXTRecordRef::clone_raw(txt_record, txt_len)?
         }))
     } else {
         None

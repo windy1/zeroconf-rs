@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-use crate::{error::Error, Result};
+use crate::{Result, error::Error};
 
 /// Data type for constructing a service type to register as an mDNS service.
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

@@ -3,11 +3,11 @@
 use std::sync::Arc;
 
 use super::{avahi_util, poll::ManagedAvahiSimplePoll};
-use crate::ffi::c_str;
 use crate::Result;
+use crate::ffi::c_str;
 use avahi_sys::{
-    avahi_client_free, avahi_client_get_host_name, avahi_client_new, avahi_simple_poll_get,
-    AvahiClient, AvahiClientCallback, AvahiClientFlags,
+    AvahiClient, AvahiClientCallback, AvahiClientFlags, avahi_client_free,
+    avahi_client_get_host_name, avahi_client_new, avahi_simple_poll_get,
 };
 use libc::{c_int, c_void};
 
@@ -53,10 +53,9 @@ impl ManagedAvahiClient {
 
         match err {
             0 => Ok(Self { inner, _poll: poll }),
-            _ => Err(format!(
-                "could not initialize AvahiClient: {}",
-                unsafe { avahi_util::get_error(err) }
-            )
+            _ => Err(format!("could not initialize AvahiClient: {}", unsafe {
+                avahi_util::get_error(err)
+            })
             .into()),
         }
     }
