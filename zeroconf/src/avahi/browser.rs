@@ -36,6 +36,9 @@ pub struct AvahiMdnsBrowser {
     poll: Option<Arc<ManagedAvahiSimplePoll>>,
 }
 
+unsafe impl Send for AvahiMdnsBrowser {}
+unsafe impl Sync for AvahiMdnsBrowser {}
+
 impl TMdnsBrowser for AvahiMdnsBrowser {
     fn new(service_type: ServiceType) -> Self {
         Self {
@@ -60,11 +63,11 @@ impl TMdnsBrowser for AvahiMdnsBrowser {
         self.context.service_callback = Some(service_callback);
     }
 
-    fn set_context(&mut self, context: Box<dyn Any>) {
+    fn set_context(&mut self, context: Box<dyn Any + Send + Sync>) {
         self.context.user_context = Some(Arc::from(context));
     }
 
-    fn context(&self) -> Option<&dyn Any> {
+    fn context(&self) -> Option<&(dyn Any + Send + Sync)> {
         self.context.user_context.as_ref().map(|c| c.as_ref())
     }
 
@@ -110,7 +113,7 @@ struct AvahiBrowserContext {
     client: Option<Arc<ManagedAvahiClient>>,
     resolvers: ServiceResolverSet,
     service_callback: Option<Box<ServiceBrowserCallback>>,
-    user_context: Option<Arc<dyn Any>>,
+    user_context: Option<Arc<dyn Any + Send + Sync>>,
     interface_index: AvahiIfIndex,
     kind: CString,
     browser: Option<ManagedAvahiServiceBrowser>,
@@ -145,6 +148,9 @@ impl fmt::Debug for AvahiBrowserContext {
             .finish()
     }
 }
+
+unsafe impl Send for AvahiBrowserContext {}
+unsafe impl Sync for AvahiBrowserContext {}
 
 unsafe extern "C" fn client_callback(
     client: *mut AvahiClient,

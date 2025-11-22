@@ -58,10 +58,10 @@ pub trait TMdnsService {
 
     /// Sets the optional user context to pass through to the callback. This is useful if you need
     /// to share state between pre and post-callback. The context type must implement `Any`.
-    fn set_context(&mut self, context: Box<dyn Any>);
+    fn set_context(&mut self, context: Box<dyn Any + Send + Sync>);
 
     /// Returns the optional user context.
-    fn context(&self) -> Option<&dyn Any>;
+    fn context(&self) -> Option<&(dyn Any + Send + Sync)>;
 
     /// Registers and start's the service. Returns an `EventLoop` which can be called to keep
     /// the service alive.
@@ -75,7 +75,8 @@ pub trait TMdnsService {
 /// * `context` - The optional user context passed through
 ///
 /// [`MdnsService`]: type.MdnsService.html
-pub type ServiceRegisteredCallback = dyn Fn(Result<ServiceRegistration>, Option<Arc<dyn Any>>);
+pub type ServiceRegisteredCallback =
+    dyn Fn(Result<ServiceRegistration>, Option<Arc<dyn Any + Send + Sync>>) + Send + Sync;
 
 /// Represents a registration event for a [`MdnsService`].
 ///

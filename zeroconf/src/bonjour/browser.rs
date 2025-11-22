@@ -30,6 +30,9 @@ pub struct BonjourMdnsBrowser {
     context: Box<BonjourBrowserContext>,
 }
 
+unsafe impl Send for BonjourMdnsBrowser {}
+unsafe impl Sync for BonjourMdnsBrowser {}
+
 impl TMdnsBrowser for BonjourMdnsBrowser {
     fn new(service_type: ServiceType) -> Self {
         Self {
@@ -52,11 +55,11 @@ impl TMdnsBrowser for BonjourMdnsBrowser {
         self.context.service_discovered_callback = Some(service_discovered_callback);
     }
 
-    fn set_context(&mut self, context: Box<dyn Any>) {
+    fn set_context(&mut self, context: Box<dyn Any + Send + Sync>) {
         self.context.user_context = Some(Arc::from(context));
     }
 
-    fn context(&self) -> Option<&dyn Any> {
+    fn context(&self) -> Option<&(dyn Any + Send + Sync)> {
         self.context.user_context.as_ref().map(|c| c.as_ref())
     }
 
@@ -91,7 +94,7 @@ struct BonjourBrowserContext {
     resolved_domain: Option<String>,
     resolved_port: u16,
     resolved_txt: Option<TxtRecord>,
-    user_context: Option<Arc<dyn Any>>,
+    user_context: Option<Arc<dyn Any + Send + Sync>>,
 }
 
 impl BonjourBrowserContext {
@@ -114,6 +117,9 @@ impl fmt::Debug for BonjourBrowserContext {
             .finish()
     }
 }
+
+unsafe impl Send for BonjourBrowserContext {}
+unsafe impl Sync for BonjourBrowserContext {}
 
 unsafe extern "system" fn browse_callback(
     _sd_ref: DNSServiceRef,
