@@ -5,7 +5,7 @@ use super::service_ref::{
 };
 use super::txt_record_ref::ManagedTXTRecordRef;
 use super::{bonjour_util, constants};
-use crate::ffi::{c_str, AsRaw, FromRaw};
+use crate::ffi::{AsRaw, FromRaw, c_str};
 use crate::prelude::*;
 use crate::{BrowserEvent, ServiceBrowserCallback, ServiceDiscovery, ServiceRemoval};
 use crate::{EventLoop, NetworkInterface, Result, ServiceType, TxtRecord};
@@ -131,7 +131,7 @@ unsafe extern "system" fn browse_callback(
     domain: *const c_char,
     context: *mut c_void,
 ) {
-    let ctx = BonjourBrowserContext::from_raw(context);
+    let ctx = unsafe { BonjourBrowserContext::from_raw(context) };
 
     if error != 0 {
         ctx.invoke_callback(Err(format!(
@@ -143,11 +143,11 @@ unsafe extern "system" fn browse_callback(
     }
 
     if flags & bonjour_sys::kDNSServiceFlagsAdd != 0 {
-        if let Err(e) = handle_browse_add(ctx, name, regtype, domain, interface_index) {
+        if let Err(e) = unsafe { handle_browse_add(ctx, name, regtype, domain, interface_index) } {
             ctx.invoke_callback(Err(e));
         }
     } else {
-        handle_browse_remove(ctx, name, regtype, domain);
+        unsafe { handle_browse_remove(ctx, name, regtype, domain) };
     }
 }
 
@@ -158,21 +158,23 @@ unsafe fn handle_browse_add(
     domain: *const c_char,
     interface_index: u32,
 ) -> Result<()> {
-    ctx.resolved_name = Some(c_str::copy_raw(name));
-    ctx.resolved_kind = Some(c_str::copy_raw(regtype));
-    ctx.resolved_domain = Some(c_str::copy_raw(domain));
+    ctx.resolved_name = Some(unsafe { c_str::copy_raw(name) });
+    ctx.resolved_kind = Some(unsafe { c_str::copy_raw(regtype) });
+    ctx.resolved_domain = Some(unsafe { c_str::copy_raw(domain) });
 
-    ManagedDNSServiceRef::default().resolve_service(
-        ServiceResolveParams::builder()
-            .flags(bonjour_sys::kDNSServiceFlagsForceMulticast)
-            .interface_index(interface_index)
-            .name(name)
-            .regtype(regtype)
-            .domain(domain)
-            .callback(Some(resolve_callback))
-            .context(ctx.as_raw())
-            .build()?,
-    )
+    unsafe {
+        ManagedDNSServiceRef::default().resolve_service(
+            ServiceResolveParams::builder()
+                .flags(bonjour_sys::kDNSServiceFlagsForceMulticast)
+                .interface_index(interface_index)
+                .name(name)
+                .regtype(regtype)
+                .domain(domain)
+                .callback(Some(resolve_callback))
+                .context(ctx.as_raw())
+                .build()?,
+        )
+    }
 }
 
 unsafe fn handle_browse_remove(
@@ -181,9 +183,9 @@ unsafe fn handle_browse_remove(
     regtype: *const c_char,
     domain: *const c_char,
 ) {
-    let name = c_str::raw_to_str(name);
-    let regtype = c_str::raw_to_str(regtype);
-    let domain = c_str::raw_to_str(domain);
+    let name = unsafe { c_str::raw_to_str(name) };
+    let regtype = unsafe { c_str::raw_to_str(regtype) };
+    let domain = unsafe { c_str::raw_to_str(domain) };
 
     // Remove the "." suffix to be consistent with the Avahi implementation.
     let regtype = regtype.strip_suffix(".").unwrap_or(domain);
@@ -211,17 +213,19 @@ unsafe extern "system" fn resolve_callback(
     txt_record: *const c_uchar,
     context: *mut c_void,
 ) {
-    let ctx = BonjourBrowserContext::from_raw(context);
+    let ctx = unsafe { BonjourBrowserContext::from_raw(context) };
 
-    let result = handle_resolve(
-        ctx,
-        error,
-        port,
-        interface_index,
-        host_target,
-        txt_len,
-        txt_record,
-    );
+    let result = unsafe {
+        handle_resolve(
+            ctx,
+            error,
+            port,
+            interface_index,
+            host_target,
+            txt_len,
+            txt_record,
+        )
+    };
 
     if let Err(e) = result {
         ctx.invoke_callback(Err(e));
@@ -244,23 +248,27 @@ unsafe fn handle_resolve(
     ctx.resolved_port = port;
 
     ctx.resolved_txt = if txt_len > 1 {
-        Some(TxtRecord::from(ManagedTXTRecordRef::clone_raw(
-            txt_record, txt_len,
-        )?))
+        Some(TxtRecord::from(unsafe {
+            ManagedTXTRecordRef::clone_raw(
+                txt_record, txt_len,
+            )?
+        }))
     } else {
         None
     };
 
-    ManagedDNSServiceRef::default().get_address_info(
-        GetAddressInfoParams::builder()
-            .flags(bonjour_sys::kDNSServiceFlagsForceMulticast)
-            .interface_index(interface_index)
-            .protocol(0)
-            .hostname(host_target)
-            .callback(Some(get_address_info_callback))
-            .context(ctx.as_raw())
-            .build()?,
-    )
+    unsafe {
+        ManagedDNSServiceRef::default().get_address_info(
+            GetAddressInfoParams::builder()
+                .flags(bonjour_sys::kDNSServiceFlagsForceMulticast)
+                .interface_index(interface_index)
+                .protocol(0)
+                .hostname(host_target)
+                .callback(Some(get_address_info_callback))
+                .context(ctx.as_raw())
+                .build()?,
+        )
+    }
 }
 
 unsafe extern "system" fn get_address_info_callback(
@@ -273,8 +281,8 @@ unsafe extern "system" fn get_address_info_callback(
     _ttl: u32,
     context: *mut c_void,
 ) {
-    let ctx = BonjourBrowserContext::from_raw(context);
-    if let Err(e) = handle_get_address_info(ctx, error, address, hostname) {
+    let ctx = unsafe { BonjourBrowserContext::from_raw(context) };
+    if let Err(e) = unsafe { handle_get_address_info(ctx, error, address, hostname) } {
         ctx.invoke_callback(Err(e));
     }
 }
@@ -306,7 +314,7 @@ unsafe fn handle_get_address_info(
     let ip = {
         let address = address as *const sockaddr_in;
         assert_not_null!(address);
-        let s_addr = (*address).sin_addr.s_addr.to_le_bytes();
+        let s_addr = unsafe { (*address).sin_addr.s_addr.to_le_bytes() };
         IpAddr::from(s_addr).to_string()
     };
 
@@ -319,7 +327,7 @@ unsafe fn handle_get_address_info(
         IpAddr::from(s_addr).to_string()
     };
 
-    let hostname = c_str::copy_raw(hostname);
+    let hostname = unsafe { c_str::copy_raw(hostname) };
 
     let domain = bonjour_util::normalize_domain(
         &ctx.resolved_domain

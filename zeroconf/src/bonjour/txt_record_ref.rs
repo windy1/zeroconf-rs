@@ -23,8 +23,8 @@ impl ManagedTXTRecordRef {
     /// # Safety
     /// This function is unsafe because it calls a C function.
     pub unsafe fn new() -> Self {
-        let mut record: TXTRecordRef = mem::zeroed();
-        TXTRecordCreate(&mut record, 0, ptr::null_mut());
+        let mut record: TXTRecordRef = unsafe { mem::zeroed() };
+        unsafe { TXTRecordCreate(&mut record, 0, ptr::null_mut()) };
         Self(record)
     }
 
@@ -35,7 +35,7 @@ impl ManagedTXTRecordRef {
     /// # Safety
     /// This function is unsafe because it makes no guarantees about the raw pointer arguments
     pub unsafe fn get_bytes_ptr(&self) -> *const c_void {
-        TXTRecordGetBytesPtr(&self.0)
+        unsafe { TXTRecordGetBytesPtr(&self.0) }
     }
 
     /// Delegate function for [`TXTRecordGetLength()`].
@@ -45,7 +45,7 @@ impl ManagedTXTRecordRef {
     /// # Safety
     /// This function is unsafe because it makes no guarantees about the raw pointer arguments
     pub unsafe fn get_length(&self) -> u16 {
-        TXTRecordGetLength(&self.0)
+        unsafe { TXTRecordGetLength(&self.0) }
     }
 
     /// Delegate function for [`TXTRecordRemoveValue()`].
@@ -57,7 +57,7 @@ impl ManagedTXTRecordRef {
     /// [`TXTRecordRemoveValue()`]: https://developer.apple.com/documentation/dnssd/1804721-txtrecordremovevalue?language=objc
     pub unsafe fn remove_value(&mut self, key: *const c_char) -> Result<()> {
         bonjour_util::sys_exec(
-            || TXTRecordRemoveValue(&mut self.0, key),
+            || unsafe { TXTRecordRemoveValue(&mut self.0, key) },
             "could not remove TXT record value",
         )
     }
@@ -76,7 +76,7 @@ impl ManagedTXTRecordRef {
         value: *const c_void,
     ) -> Result<()> {
         bonjour_util::sys_exec(
-            || TXTRecordSetValue(&mut self.0, key, value_size, value),
+            || unsafe { TXTRecordSetValue(&mut self.0, key, value_size, value) },
             "could not set TXT record value",
         )
     }
@@ -89,7 +89,7 @@ impl ManagedTXTRecordRef {
     ///
     /// [`TXTRecordContainsKey`]: https://developer.apple.com/documentation/dnssd/1804705-txtrecordcontainskey?language=objc
     pub unsafe fn contains_key(&self, key: *const c_char) -> bool {
-        TXTRecordContainsKey(self.get_length(), self.get_bytes_ptr(), key) == 1
+        unsafe { TXTRecordContainsKey(self.get_length(), self.get_bytes_ptr(), key) == 1 }
     }
 
     /// Delegate function for [`TXTRecordGetCount`].
@@ -99,7 +99,7 @@ impl ManagedTXTRecordRef {
     /// # Safety
     /// This function is unsafe because it makes no guarantees about it's raw pointer arguments
     pub unsafe fn get_count(&self) -> u16 {
-        _get_count(self.get_length(), self.get_bytes_ptr())
+        unsafe { _get_count(self.get_length(), self.get_bytes_ptr()) }
     }
 
     /// Delegate function for [`TXTRecordGetItemAtIndex`].
@@ -117,15 +117,17 @@ impl ManagedTXTRecordRef {
         value_len: *mut u8,
         value: *mut *const c_void,
     ) -> Result<()> {
-        _get_item_at_index(
-            self.get_length(),
-            self.get_bytes_ptr(),
-            item_index,
-            key_buf_len,
-            key,
-            value_len,
-            value,
-        )
+        unsafe {
+            _get_item_at_index(
+                self.get_length(),
+                self.get_bytes_ptr(),
+                item_index,
+                key_buf_len,
+                key,
+                value_len,
+                value,
+            )
+        }
     }
 
     /// Delegate function for [`TXTRecordGetValuePtr`].
@@ -135,8 +137,8 @@ impl ManagedTXTRecordRef {
     /// that are dereferenced.
     ///
     /// [`TXTRecordGetValuePtr`]: https://developer.apple.com/documentation/dnssd/1804709-txtrecordgetvalueptr?language=objc
-    pub unsafe fn get_value_ptr(&self, key: *const c_char, value_len: *mut u8) -> *const c_void {
-        TXTRecordGetValuePtr(self.get_length(), self.get_bytes_ptr(), key, value_len)
+    pub unsafe fn get_value_ptr(&self, key: *mut c_char, value_len: &mut u8) -> *const c_void {
+        unsafe { TXTRecordGetValuePtr(self.get_length(), self.get_bytes_ptr(), key, value_len) }
     }
 
     /// Returns a copy of the TXT record.
@@ -144,33 +146,35 @@ impl ManagedTXTRecordRef {
     /// # Safety
     /// This function is unsafe because it makes no guarantees about the raw pointer arguments
     pub unsafe fn clone(&self) -> Self {
-        Self::clone_raw(self.get_bytes_ptr() as *const c_uchar, self.get_length())
+        unsafe { Self::clone_raw(self.get_bytes_ptr() as *const c_uchar, self.get_length()) }
             .expect("could not clone TXT record")
     }
 
     pub(crate) unsafe fn clone_raw(raw: *const c_uchar, size: u16) -> Result<Self> {
         let chars = c_string!(alloc(size as usize)).into_raw() as *mut c_uchar;
-        ptr::copy(raw, chars, size as usize);
-        let chars = CString::from_raw(chars as *mut c_char);
+        unsafe { ptr::copy(raw, chars, size as usize) };
+        let chars = unsafe { CString::from_raw(chars as *mut c_char) };
 
-        let mut record = Self::new();
+        let mut record = unsafe { Self::new() };
 
-        for i in 0.._get_count(size, chars.as_ptr() as *const c_void) {
+        for i in 0..unsafe { _get_count(size, chars.as_ptr() as *const c_void) } {
             let key = c_string!(alloc(256));
             let mut value_len: u8 = 0;
             let mut value: *const c_void = ptr::null_mut();
 
-            _get_item_at_index(
-                size,
-                chars.as_ptr() as *const c_void,
-                i,
-                256,
-                key.as_ptr() as *mut c_char,
-                &mut value_len,
-                &mut value,
-            )?;
+            unsafe {
+                _get_item_at_index(
+                    size,
+                    chars.as_ptr() as *const c_void,
+                    i,
+                    256,
+                    key.as_ptr() as *mut c_char,
+                    &mut value_len,
+                    &mut value,
+                )
+            }?;
 
-            record.set_value(key.as_ptr() as *mut c_char, value_len, value)?;
+            unsafe { record.set_value(key.as_ptr() as *mut c_char, value_len, value) }?;
         }
 
         Ok(record)
@@ -192,7 +196,7 @@ impl fmt::Debug for ManagedTXTRecordRef {
 unsafe impl Send for ManagedTXTRecordRef {}
 
 unsafe fn _get_count(length: u16, data: *const c_void) -> u16 {
-    TXTRecordGetCount(length, data)
+    unsafe { TXTRecordGetCount(length, data) }
 }
 
 unsafe fn _get_item_at_index(
@@ -205,7 +209,9 @@ unsafe fn _get_item_at_index(
     value: *mut *const c_void,
 ) -> Result<()> {
     bonjour_util::sys_exec(
-        || TXTRecordGetItemAtIndex(length, data, item_index, key_buf_len, key, value_len, value),
+        || unsafe {
+            TXTRecordGetItemAtIndex(length, data, item_index, key_buf_len, key, value_len, value)
+        },
         "could get item at index for TXT record",
     )
 }
@@ -235,8 +241,7 @@ mod tests {
         let mut value_len: u8 = 0;
         let result = unsafe {
             c_str::raw_to_str(
-                record.get_value_ptr(key.as_ptr() as *const c_char, &mut value_len)
-                    as *const c_char,
+                record.get_value_ptr(key.as_ptr() as *mut c_char, &mut value_len) as *const c_char,
             )
         };
 
@@ -256,7 +261,7 @@ mod tests {
         }
 
         let mut value_len: u8 = 0;
-        let result = unsafe { record.get_value_ptr(key.as_ptr() as *const c_char, &mut value_len) };
+        let result = unsafe { record.get_value_ptr(key.as_ptr() as *mut c_char, &mut value_len) };
 
         assert!(result.is_null());
     }
@@ -281,7 +286,7 @@ mod tests {
         }
 
         let mut value_len: u8 = 0;
-        let result = unsafe { record.get_value_ptr(key.as_ptr() as *const c_char, &mut value_len) };
+        let result = unsafe { record.get_value_ptr(key.as_ptr() as *mut c_char, &mut value_len) };
 
         assert!(result.is_null());
     }
@@ -358,7 +363,7 @@ mod tests {
                 .unwrap();
         }
 
-        let key = unsafe { c_string!(alloc(256)) };
+        let key = c_string!(alloc(256));
         let mut value_len: u8 = 0;
         let mut value: *const c_void = ptr::null_mut();
 

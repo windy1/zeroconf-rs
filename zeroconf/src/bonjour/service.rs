@@ -177,8 +177,8 @@ unsafe extern "system" fn register_callback(
     domain: *const c_char,
     context: *mut c_void,
 ) {
-    let context = BonjourServiceContext::from_raw(context);
-    if let Err(e) = handle_register(context, error, domain, name, regtype) {
+    let context = unsafe { BonjourServiceContext::from_raw(context) };
+    if let Err(e) = unsafe { handle_register(context, error, domain, name, regtype) } {
         context.invoke_callback(Err(e));
     }
 }
@@ -194,11 +194,11 @@ unsafe fn handle_register(
         return Err(format!("register_callback() reported error (code: {0})", error).into());
     }
 
-    let domain = bonjour_util::normalize_domain(c_str::raw_to_str(domain));
-    let kind = bonjour_util::normalize_domain(c_str::raw_to_str(regtype));
+    let domain = bonjour_util::normalize_domain(unsafe { c_str::raw_to_str(domain) });
+    let kind = bonjour_util::normalize_domain(unsafe { c_str::raw_to_str(regtype) });
 
     let result = ServiceRegistration::builder()
-        .name(c_str::copy_raw(name))
+        .name(unsafe { c_str::copy_raw(name) })
         .service_type(bonjour_util::parse_regtype(&kind)?)
         .domain(domain)
         .build()
