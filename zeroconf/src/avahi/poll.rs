@@ -22,7 +22,7 @@ impl ManagedAvahiSimplePoll {
     /// # Safety
     /// This function is unsafe because of the raw pointer dereference.
     pub unsafe fn new() -> Result<Self> {
-        let poll = avahi_simple_poll_new();
+        let poll = unsafe { avahi_simple_poll_new() };
         if poll.is_null() {
             Err("could not initialize AvahiSimplePoll".into())
         } else {
@@ -37,10 +37,12 @@ impl ManagedAvahiSimplePoll {
     /// # Safety
     /// This function is unsafe because of the call to `avahi_simple_poll_loop()`.
     pub unsafe fn start_loop(&self) -> Result<()> {
-        avahi_util::sys_exec(
-            || avahi_simple_poll_loop(self.0),
-            "could not start AvahiSimplePoll",
-        )
+        unsafe {
+            avahi_util::sys_exec(
+                || avahi_simple_poll_loop(self.0),
+                "could not start AvahiSimplePoll",
+            )
+        }
     }
 
     /// Delegate function for [`avahi_simple_poll_iterate()`].
@@ -56,7 +58,7 @@ impl ManagedAvahiSimplePoll {
             .unwrap_or(i32::MAX); // if converting to an i32 overflows, just use the largest number we can.
 
         // Returns -1 on error, 0 on success and 1 if a quit request has been scheduled
-        match avahi_simple_poll_iterate(self.0, sleep_time) {
+        match unsafe { avahi_simple_poll_iterate(self.0, sleep_time) } {
             0 | 1 => Ok(()),
             -1 => Err(Error::from(
                 "avahi_simple_poll_iterate(..) threw an error result",

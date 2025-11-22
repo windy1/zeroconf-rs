@@ -209,13 +209,13 @@ unsafe extern "C" fn client_callback(
     state: AvahiClientState,
     userdata: *mut c_void,
 ) {
-    let context = AvahiServiceContext::from_raw(userdata);
+    let context = unsafe { AvahiServiceContext::from_raw(userdata) };
 
     match state {
         avahi_sys::AvahiServerState_AVAHI_SERVER_INVALID
         | avahi_sys::AvahiServerState_AVAHI_SERVER_COLLISION
         | avahi_sys::AvahiServerState_AVAHI_SERVER_FAILURE => {
-            context.invoke_callback(Err(avahi_util::get_last_error(client).into()))
+            context.invoke_callback(Err(unsafe { avahi_util::get_last_error(client) }.into()))
         }
         _ => {}
     }
@@ -223,11 +223,13 @@ unsafe extern "C" fn client_callback(
 
 unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
     if context.name.is_none() {
-        let host_name = context
-            .client
-            .as_ref()
-            .ok_or("expected initialized client")?
-            .host_name()?;
+        let host_name = unsafe {
+            context
+                .client
+                .as_ref()
+                .ok_or("expected initialized client")?
+                .host_name()?
+        };
 
         context.name = Some(c_string!(host_name.to_string()));
     }
@@ -235,18 +237,20 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
     if context.group.is_none() {
         debug!("Creating group");
 
-        context.group = Some(ManagedAvahiEntryGroup::new(
-            ManagedAvahiEntryGroupParams::builder()
-                .client(Arc::clone(
-                    context
-                        .client
-                        .as_ref()
-                        .ok_or("could not get client as ref")?,
-                ))
-                .callback(Some(entry_group_callback))
-                .userdata(context.as_raw())
-                .build()?,
-        )?);
+        context.group = Some(unsafe {
+            ManagedAvahiEntryGroup::new(
+                ManagedAvahiEntryGroupParams::builder()
+                    .client(Arc::clone(
+                        context
+                            .client
+                            .as_ref()
+                            .ok_or("could not get client as ref")?,
+                    ))
+                    .callback(Some(entry_group_callback))
+                    .userdata(context.as_raw())
+                    .build()?,
+            )?
+        });
     }
 
     let group = context
@@ -254,7 +258,7 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
         .as_mut()
         .ok_or("could not borrow group as mut")?;
 
-    if !group.is_empty() {
+    if unsafe { !group.is_empty() } {
         return Ok(());
     }
 
@@ -264,7 +268,7 @@ unsafe fn create_service(context: &mut AvahiServiceContext) -> Result<()> {
         .ok_or("could not get name as ref")?
         .clone();
 
-    add_services(context, &name)
+    unsafe { add_services(context, &name) }
 }
 
 unsafe fn add_services(context: &mut AvahiServiceContext, name: &CStr) -> Result<()> {
@@ -287,7 +291,7 @@ unsafe fn add_services(context: &mut AvahiServiceContext, name: &CStr) -> Result
         .txt(context.txt_record.as_ref().map(|t| t.inner()))
         .build()?;
 
-    group.add_service(params)?;
+    unsafe { group.add_service(params)? };
 
     for sub_type in &context.sub_types {
         debug!("Adding service subtype: {}", sub_type.to_string_lossy());
@@ -302,10 +306,10 @@ unsafe fn add_services(context: &mut AvahiServiceContext, name: &CStr) -> Result
             .subtype(sub_type.as_ptr())
             .build()?;
 
-        group.add_service_subtype(params)?;
+        unsafe { group.add_service_subtype(params)? };
     }
 
-    group.commit()
+    unsafe { group.commit() }
 }
 
 unsafe extern "C" fn entry_group_callback(
@@ -313,7 +317,7 @@ unsafe extern "C" fn entry_group_callback(
     state: AvahiEntryGroupState,
     userdata: *mut c_void,
 ) {
-    let context = AvahiServiceContext::from_raw(userdata);
+    let context = unsafe { AvahiServiceContext::from_raw(userdata) };
 
     let client = context
         .client
@@ -322,10 +326,10 @@ unsafe extern "C" fn entry_group_callback(
 
     match state {
         avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_ESTABLISHED => {
-            context.invoke_callback(handle_group_established(context))
+            context.invoke_callback(unsafe { handle_group_established(context) })
         }
         avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_FAILURE => {
-            context.invoke_callback(Err(avahi_util::get_last_error(client.inner).into()))
+            context.invoke_callback(Err(unsafe { avahi_util::get_last_error(client.inner) }.into()))
         }
         avahi_sys::AvahiEntryGroupState_AVAHI_ENTRY_GROUP_COLLISION => {
             let name = context
@@ -334,8 +338,8 @@ unsafe extern "C" fn entry_group_callback(
                 .expect("expected initialized name")
                 .clone();
 
-            let new_name = avahi_util::alternative_service_name(name.as_c_str());
-            let result = add_services(context, new_name);
+            let new_name = unsafe { avahi_util::alternative_service_name(name.as_c_str()) };
+            let result = unsafe { add_services(context, new_name) };
 
             context.name = Some(new_name.into());
 
@@ -350,19 +354,21 @@ unsafe extern "C" fn entry_group_callback(
 unsafe fn handle_group_established(context: &AvahiServiceContext) -> Result<ServiceRegistration> {
     debug!("Group established");
 
-    let name = c_str::copy_raw(
-        context
-            .name
-            .as_ref()
-            .ok_or("could not get name as ref")?
-            .as_ptr(),
-    );
+    let name = unsafe {
+        c_str::copy_raw(
+            context
+                .name
+                .as_ref()
+                .ok_or("could not get name as ref")?
+                .as_ptr(),
+        )
+    };
 
     Ok(ServiceRegistration::builder()
         .name(name)
-        .service_type(ServiceType::from_str(&c_str::copy_raw(
-            context.kind.as_ptr(),
-        ))?)
+        .service_type(ServiceType::from_str(&unsafe {
+            c_str::copy_raw(context.kind.as_ptr())
+        })?)
         .domain("local".to_string())
         .build()?)
 }

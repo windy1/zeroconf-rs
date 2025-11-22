@@ -41,18 +41,20 @@ impl ManagedAvahiServiceResolver {
             userdata,
         }: ManagedAvahiServiceResolverParams,
     ) -> Result<Self> {
-        let inner = avahi_service_resolver_new(
-            client.inner,
-            interface,
-            protocol,
-            name,
-            kind,
-            domain,
-            aprotocol,
-            flags,
-            callback,
-            userdata,
-        );
+        let inner = unsafe {
+            avahi_service_resolver_new(
+                client.inner,
+                interface,
+                protocol,
+                name,
+                kind,
+                domain,
+                aprotocol,
+                flags,
+                callback,
+                userdata,
+            )
+        };
 
         if inner.is_null() {
             Err("could not initialize AvahiServiceResolver".into())
