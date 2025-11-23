@@ -123,7 +123,7 @@ pub(crate) mod bonjour {
         };
         set.fd_array[0] = sock_fd;
 
-        let result = select(0, &mut set, ptr::null_mut(), &mut set, &timeout);
+        let result = unsafe { select(0, &mut set, ptr::null_mut(), &mut set, &timeout) };
 
         if result < 0 {
             Err("select(): returned error status".into())
