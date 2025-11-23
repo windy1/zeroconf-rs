@@ -5,7 +5,7 @@ use super::service_ref::{
 };
 use super::txt_record_ref::ManagedTXTRecordRef;
 use super::{bonjour_util, constants};
-use crate::ffi::{c_str, AsRaw, FromRaw};
+use crate::ffi::{AsRaw, FromRaw, c_str};
 use crate::prelude::*;
 use crate::{BrowserEvent, ServiceBrowserCallback, ServiceDiscovery, ServiceRemoval};
 use crate::{EventLoop, NetworkInterface, Result, ServiceType, TxtRecord};
