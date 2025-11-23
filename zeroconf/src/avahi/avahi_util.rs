@@ -2,8 +2,8 @@
 
 use crate::ffi::c_str;
 use avahi_sys::{
-    avahi_address_snprint, avahi_alternative_service_name, avahi_strerror, AvahiAddress,
-    AvahiClient,
+    AvahiAddress, AvahiClient, avahi_address_snprint, avahi_alternative_service_name,
+    avahi_strerror,
 };
 use libc::c_char;
 use std::ffi::CStr;
@@ -22,11 +22,13 @@ pub unsafe fn avahi_address_to_string(addr: *const AvahiAddress) -> String {
 
     let addr_str = c_string!(alloc(avahi_sys::AVAHI_ADDRESS_STR_MAX as usize));
 
-    avahi_address_snprint(
-        addr_str.as_ptr() as *mut c_char,
-        avahi_sys::AVAHI_ADDRESS_STR_MAX as usize,
-        addr,
-    );
+    unsafe {
+        avahi_address_snprint(
+            addr_str.as_ptr() as *mut c_char,
+            avahi_sys::AVAHI_ADDRESS_STR_MAX as usize,
+            addr,
+        );
+    }
 
     String::from(c_str::to_str(&addr_str))
         .trim_matches(char::from(0))
@@ -38,9 +40,11 @@ pub unsafe fn avahi_address_to_string(addr: *const AvahiAddress) -> String {
 /// # Safety
 /// This function is unsafe because of internal Avahi calls.
 pub unsafe fn get_error<'a>(code: i32) -> &'a str {
-    CStr::from_ptr(avahi_strerror(code))
-        .to_str()
-        .expect("could not fetch Avahi error string")
+    unsafe {
+        CStr::from_ptr(avahi_strerror(code))
+            .to_str()
+            .expect("could not fetch Avahi error string")
+    }
 }
 
 /// Returns the last error message associated with the specified `*mut AvahiClient`.
@@ -48,7 +52,7 @@ pub unsafe fn get_error<'a>(code: i32) -> &'a str {
 /// # Safety
 /// This function is unsafe because of internal Avahi calls.
 pub unsafe fn get_last_error<'a>(client: *mut AvahiClient) -> &'a str {
-    get_error(avahi_sys::avahi_client_errno(client))
+    unsafe { get_error(avahi_sys::avahi_client_errno(client)) }
 }
 
 /// Converts the specified [`NetworkInterface`] to the Avahi expected value.
@@ -77,7 +81,7 @@ pub unsafe fn sys_exec<F: FnOnce() -> i32>(func: F, message: &str) -> Result<()>
     let err = func();
 
     if err < 0 {
-        Err(format!("{}: `{}`", message, get_error(err)).into())
+        Err(format!("{}: `{}`", message, unsafe { get_error(err) }).into())
     } else {
         Ok(())
     }
@@ -98,7 +102,9 @@ pub fn format_browser_type(service_type: &ServiceType) -> String {
     }
 
     if sub_types.len() > 1 {
-        warn!("browsing by multiple sub-types is not supported on Avahi devices, using first sub-type only");
+        warn!(
+            "browsing by multiple sub-types is not supported on Avahi devices, using first sub-type only"
+        );
     }
 
     format_sub_type(&sub_types[0], &kind)
@@ -119,15 +125,15 @@ pub fn format_sub_type(sub_type: &str, kind: &str) -> String {
 /// # Safety
 /// This function is unsafe because of the call to `avahi_alternative_service_name`.
 pub unsafe fn alternative_service_name(name: &CStr) -> &CStr {
-    CStr::from_ptr(avahi_alternative_service_name(name.as_ptr()))
+    unsafe { CStr::from_ptr(avahi_alternative_service_name(name.as_ptr())) }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use avahi_sys::{
-        AvahiAddress__bindgen_ty_1, AvahiIPv4Address, AvahiIPv6Address, AVAHI_PROTO_INET,
-        AVAHI_PROTO_INET6,
+        AVAHI_PROTO_INET, AVAHI_PROTO_INET6, AvahiAddress__bindgen_ty_1, AvahiIPv4Address,
+        AvahiIPv6Address,
     };
 
     #[test]

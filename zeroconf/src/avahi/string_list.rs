@@ -2,10 +2,10 @@
 
 use crate::ffi::c_str;
 use avahi_sys::{
-    avahi_free, avahi_string_list_add_pair, avahi_string_list_copy, avahi_string_list_equal,
-    avahi_string_list_find, avahi_string_list_free, avahi_string_list_get_next,
-    avahi_string_list_get_pair, avahi_string_list_length, avahi_string_list_new,
-    avahi_string_list_to_string, AvahiStringList,
+    AvahiStringList, avahi_free, avahi_string_list_add_pair, avahi_string_list_copy,
+    avahi_string_list_equal, avahi_string_list_find, avahi_string_list_free,
+    avahi_string_list_get_next, avahi_string_list_get_pair, avahi_string_list_length,
+    avahi_string_list_new, avahi_string_list_to_string,
 };
 use libc::{c_char, c_void};
 use std::marker::PhantomData;
@@ -23,7 +23,7 @@ impl ManagedAvahiStringList {
     /// # Safety
     /// This function is unsafe because of the call to `avahi_string_list_new()`.
     pub unsafe fn new() -> Self {
-        Self(avahi_string_list_new(ptr::null()))
+        Self(unsafe { avahi_string_list_new(ptr::null()) })
     }
 
     /// Delegate function for [`avahi_string_list_add_pair()`].
@@ -34,7 +34,7 @@ impl ManagedAvahiStringList {
     ///
     /// [`avahi_string_list_add_pair()`]: https://avahi.org/doxygen/html/strlst_8h.html#a72e1b0f724f0c29b5e3c8792f385223f
     pub unsafe fn add_pair(&mut self, key: *const c_char, value: *const c_char) {
-        self.0 = avahi_string_list_add_pair(self.0, key, value);
+        self.0 = unsafe { avahi_string_list_add_pair(self.0, key, value) };
     }
 
     /// Delegate function for [`avahi_string_list_find()`]. Returns a new `AvahiStringListNode`.
@@ -45,7 +45,7 @@ impl ManagedAvahiStringList {
     ///
     /// [`avahi_string_list_find()`]: https://avahi.org/doxygen/html/strlst_8h.html#aafc54c009a2a1608b517c15a7cf29944
     pub unsafe fn find(&mut self, key: *const c_char) -> Option<AvahiStringListNode<'_>> {
-        let node = avahi_string_list_find(self.0, key);
+        let node = unsafe { avahi_string_list_find(self.0, key) };
 
         if !node.is_null() {
             Some(AvahiStringListNode::new(node))
@@ -61,7 +61,7 @@ impl ManagedAvahiStringList {
     /// # Safety
     /// This function is unsafe because of the call to `avahi_string_list_length()`.
     pub unsafe fn length(&self) -> u32 {
-        avahi_string_list_length(self.0)
+        unsafe { avahi_string_list_length(self.0) }
     }
 
     /// Delegate function for [`avahi_string_list_to_string()`].
@@ -71,7 +71,7 @@ impl ManagedAvahiStringList {
     /// # Safety
     /// This function is unsafe because of the call to `avahi_string_list_to_string()`.
     pub unsafe fn to_string(&self) -> AvahiString {
-        avahi_string_list_to_string(self.0).into()
+        unsafe { avahi_string_list_to_string(self.0).into() }
     }
 
     /// Returns the first node in the list.
@@ -84,11 +84,11 @@ impl ManagedAvahiStringList {
     /// # Safety
     /// This function is unsafe because of the call to `avahi_string_list_copy()`.
     pub unsafe fn clone(&self) -> Self {
-        Self::clone_raw(self.0)
+        unsafe { Self::clone_raw(self.0) }
     }
 
     pub(super) unsafe fn clone_raw(raw: *mut AvahiStringList) -> Self {
-        Self(avahi_string_list_copy(raw))
+        Self(unsafe { avahi_string_list_copy(raw) })
     }
 
     pub(super) fn inner(&self) -> *mut AvahiStringList {
@@ -129,7 +129,7 @@ impl<'a> AvahiStringListNode<'a> {
     /// # Safety
     /// This function is unsafe because of the call to `avahi_string_list_get_next()`.
     pub unsafe fn next(self) -> Option<AvahiStringListNode<'a>> {
-        let next = avahi_string_list_get_next(self.list);
+        let next = unsafe { avahi_string_list_get_next(self.list) };
 
         if next.is_null() {
             None
@@ -147,7 +147,9 @@ impl<'a> AvahiStringListNode<'a> {
         let mut value: *mut c_char = ptr::null_mut();
         let mut value_size: usize = 0;
 
-        avahi_string_list_get_pair(self.list, &mut key, &mut value, &mut value_size);
+        unsafe {
+            avahi_string_list_get_pair(self.list, &mut key, &mut value, &mut value_size);
+        }
 
         AvahiPair::new(key.into(), value.into(), value_size)
     }
@@ -175,7 +177,7 @@ impl AvahiString {
         if self.0.is_null() {
             None
         } else {
-            Some(c_str::raw_to_str(self.0))
+            Some(unsafe { c_str::raw_to_str(self.0) })
         }
     }
 }

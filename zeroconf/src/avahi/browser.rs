@@ -10,9 +10,9 @@ use super::{
     },
     string_list::ManagedAvahiStringList,
 };
-use crate::ffi::{c_str, AsRaw, FromRaw};
-use crate::prelude::*;
 use crate::Result;
+use crate::ffi::{AsRaw, FromRaw, c_str};
+use crate::prelude::*;
 use crate::{
     BrowserEvent, EventLoop, NetworkInterface, ServiceBrowserCallback, ServiceDiscovery,
     ServiceRemoval, ServiceType, TxtRecord,
@@ -157,31 +157,33 @@ unsafe extern "C" fn client_callback(
     state: AvahiClientState,
     userdata: *mut c_void,
 ) {
-    let context = AvahiBrowserContext::from_raw(userdata);
+    let context = unsafe { AvahiBrowserContext::from_raw(userdata) };
 
     if state == avahi_sys::AvahiClientState_AVAHI_CLIENT_FAILURE {
-        context.invoke_callback(Err(avahi_util::get_last_error(client).into()));
+        context.invoke_callback(Err(unsafe { avahi_util::get_last_error(client) }.into()));
     }
 }
 
 unsafe fn create_browser(context: &mut AvahiBrowserContext) -> Result<()> {
-    context.browser = Some(ManagedAvahiServiceBrowser::new(
-        ManagedAvahiServiceBrowserParams::builder()
-            .interface(context.interface_index)
-            .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
-            .kind(context.kind.as_ptr())
-            .domain(ptr::null_mut())
-            .flags(0)
-            .callback(Some(browse_callback))
-            .userdata(context.as_raw())
-            .client(Arc::clone(
-                context
-                    .client
-                    .as_ref()
-                    .ok_or("could not get client as ref")?,
-            ))
-            .build()?,
-    )?);
+    context.browser = Some(unsafe {
+        ManagedAvahiServiceBrowser::new(
+            ManagedAvahiServiceBrowserParams::builder()
+                .interface(context.interface_index)
+                .protocol(avahi_sys::AVAHI_PROTO_UNSPEC)
+                .kind(context.kind.as_ptr())
+                .domain(ptr::null_mut())
+                .flags(0)
+                .callback(Some(browse_callback))
+                .userdata(context.as_raw())
+                .client(Arc::clone(
+                    context
+                        .client
+                        .as_ref()
+                        .ok_or("could not get client as ref")?,
+                ))
+                .build()?,
+        )?
+    });
 
     Ok(())
 }
@@ -197,11 +199,13 @@ unsafe extern "C" fn browse_callback(
     _flags: AvahiLookupResultFlags,
     userdata: *mut c_void,
 ) {
-    let context = AvahiBrowserContext::from_raw(userdata);
+    let context = unsafe { AvahiBrowserContext::from_raw(userdata) };
 
     match event {
         avahi_sys::AvahiBrowserEvent_AVAHI_BROWSER_NEW => {
-            if let Err(e) = handle_browser_new(context, interface, protocol, name, kind, domain) {
+            if let Err(e) =
+                unsafe { handle_browser_new(context, interface, protocol, name, kind, domain) }
+            {
                 context.invoke_callback(Err(e));
             }
         }
@@ -209,7 +213,7 @@ unsafe extern "C" fn browse_callback(
             context.invoke_callback(Err("browser failure".into()))
         }
         avahi_sys::AvahiBrowserEvent_AVAHI_BROWSER_REMOVE => {
-            handle_browser_remove(context, name, kind, domain);
+            unsafe { handle_browser_remove(context, name, kind, domain) };
         }
         _ => {}
     };
@@ -230,20 +234,22 @@ unsafe fn handle_browser_new(
         .as_ref()
         .ok_or("expected initialized client")?;
 
-    context.resolvers.insert(ManagedAvahiServiceResolver::new(
-        ManagedAvahiServiceResolverParams::builder()
-            .client(client.clone())
-            .interface(interface)
-            .protocol(protocol)
-            .name(name)
-            .kind(kind)
-            .domain(domain)
-            .aprotocol(avahi_sys::AVAHI_PROTO_UNSPEC)
-            .flags(0)
-            .callback(Some(resolve_callback))
-            .userdata(raw_context)
-            .build()?,
-    )?);
+    context.resolvers.insert(unsafe {
+        ManagedAvahiServiceResolver::new(
+            ManagedAvahiServiceResolverParams::builder()
+                .client(client.clone())
+                .interface(interface)
+                .protocol(protocol)
+                .name(name)
+                .kind(kind)
+                .domain(domain)
+                .aprotocol(avahi_sys::AVAHI_PROTO_UNSPEC)
+                .flags(0)
+                .callback(Some(resolve_callback))
+                .userdata(raw_context)
+                .build()?,
+        )?
+    });
 
     Ok(())
 }
@@ -254,9 +260,9 @@ unsafe fn handle_browser_remove(
     regtype: *const c_char,
     domain: *const c_char,
 ) {
-    let name = c_str::raw_to_str(name);
-    let regtype = c_str::raw_to_str(regtype);
-    let domain = c_str::raw_to_str(domain);
+    let name = unsafe { c_str::raw_to_str(name) };
+    let regtype = unsafe { c_str::raw_to_str(regtype) };
+    let domain = unsafe { c_str::raw_to_str(domain) };
 
     ctx.invoke_callback(Ok(BrowserEvent::Remove(
         ServiceRemoval::builder()
@@ -283,11 +289,11 @@ unsafe extern "C" fn resolve_callback(
     _flags: AvahiLookupResultFlags,
     userdata: *mut c_void,
 ) {
-    let name = c_str::raw_to_str(name);
-    let kind = c_str::raw_to_str(kind);
-    let domain = c_str::raw_to_str(domain);
+    let name = unsafe { c_str::raw_to_str(name) };
+    let kind = unsafe { c_str::raw_to_str(kind) };
+    let domain = unsafe { c_str::raw_to_str(domain) };
 
-    let context = AvahiBrowserContext::from_raw(userdata);
+    let context = unsafe { AvahiBrowserContext::from_raw(userdata) };
 
     match event {
         avahi_sys::AvahiResolverEvent_AVAHI_RESOLVER_FAILURE => {
@@ -298,16 +304,18 @@ unsafe extern "C" fn resolve_callback(
             .into()));
         }
         avahi_sys::AvahiResolverEvent_AVAHI_RESOLVER_FOUND => {
-            let result = handle_resolver_found(
-                context,
-                c_str::raw_to_str(host_name),
-                addr,
-                name,
-                kind,
-                domain,
-                port,
-                txt,
-            );
+            let result = unsafe {
+                handle_resolver_found(
+                    context,
+                    c_str::raw_to_str(host_name),
+                    addr,
+                    name,
+                    kind,
+                    domain,
+                    port,
+                    txt,
+                )
+            };
 
             if let Err(e) = result {
                 context.invoke_callback(Err(e));
@@ -330,12 +338,14 @@ unsafe fn handle_resolver_found(
     port: u16,
     txt: *mut AvahiStringList,
 ) -> Result<()> {
-    let address = avahi_util::avahi_address_to_string(addr);
+    let address = unsafe { avahi_util::avahi_address_to_string(addr) };
 
     let txt = if txt.is_null() {
         None
     } else {
-        Some(TxtRecord::from(ManagedAvahiStringList::clone_raw(txt)))
+        Some(TxtRecord::from(unsafe {
+            ManagedAvahiStringList::clone_raw(txt)
+        }))
     };
 
     let result = ServiceDiscovery::builder()

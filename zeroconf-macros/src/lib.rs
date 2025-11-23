@@ -13,11 +13,11 @@ fn impl_from_raw(ast: &DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let generics = &ast.generics;
 
-    let gen = quote! {
+    let result = quote! {
         impl #generics crate::ffi::FromRaw<#name #generics> for #name #generics {}
     };
 
-    gen.into()
+    result.into()
 }
 
 #[proc_macro_derive(CloneRaw)]
@@ -29,11 +29,11 @@ fn impl_clone_raw(ast: &DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let generics = &ast.generics;
 
-    let gen = quote! {
+    let result = quote! {
         impl #generics crate::ffi::CloneRaw<#name #generics> for #name #generics {}
     };
 
-    gen.into()
+    result.into()
 }
 
 #[proc_macro_derive(AsRaw)]
@@ -45,11 +45,11 @@ fn impl_as_raw(ast: &DeriveInput) -> TokenStream {
     let name = &ast.ident;
     let generics = &ast.generics;
 
-    let gen = quote! {
+    let result = quote! {
         impl #generics crate::ffi::AsRaw for #name #generics {}
     };
 
-    gen.into()
+    result.into()
 }
 
 #[proc_macro_derive(BuilderDelegate)]
@@ -65,9 +65,9 @@ fn impl_builder_delegate(ast: &DeriveInput) -> TokenStream {
 
     let generics = &ast.generics;
 
-    let gen = quote! {
+    let result = quote! {
         impl #generics crate::prelude::BuilderDelegate<#builder #generics> for #name #generics {}
     };
 
-    gen.into()
+    result.into()
 }

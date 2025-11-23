@@ -8,7 +8,7 @@ macro_rules! assert_not_null {
 
 macro_rules! c_string {
     (alloc($len:expr)) => {
-        ::std::ffi::CString::from_vec_unchecked(vec![0; $len])
+        unsafe { ::std::ffi::CString::from_vec_unchecked(vec![0; $len]) }
     };
     ($x:expr) => {
         ::std::ffi::CString::new($x).expect("could not create new CString")

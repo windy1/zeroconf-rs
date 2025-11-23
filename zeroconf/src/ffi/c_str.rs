@@ -25,9 +25,11 @@ impl AsCChars for Option<&CString> {
 /// [`CStr::from_ptr()`]: https://doc.rust-lang.org/std/ffi/struct.CStr.html#method.from_ptr
 pub unsafe fn raw_to_str<'a>(s: *const c_char) -> &'a str {
     assert_not_null!(s);
-    CStr::from_ptr(s)
-        .to_str()
-        .expect("could not convert raw to str")
+    unsafe {
+        CStr::from_ptr(s)
+            .to_str()
+            .expect("could not convert raw to str")
+    }
 }
 
 /// Copies the specified `*const c_char` into a `String`.
@@ -38,7 +40,7 @@ pub unsafe fn raw_to_str<'a>(s: *const c_char) -> &'a str {
 /// [`raw_to_str()`]: fn.raw_to_str.html
 pub unsafe fn copy_raw(s: *const c_char) -> String {
     assert_not_null!(s);
-    String::from(raw_to_str(s))
+    String::from(unsafe { raw_to_str(s) })
 }
 
 /// Converts the specified [`CString`] to a `&str`.

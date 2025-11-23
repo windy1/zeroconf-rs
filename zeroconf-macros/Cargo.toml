@@ -1,8 +1,8 @@
 [package]
 name = "zeroconf-macros"
-version = "0.1.4"
+version = "0.2.0"
 authors = ["Walker Crouse <walkercrouse@hotmail.com>"]
-edition = "2018"
+edition = "2024"
 description = "Macros for zeroconf crate"
 readme = "../README.md"
 homepage = "https://github.com/windy1/zeroconf-rs"

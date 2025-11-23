@@ -1,9 +1,9 @@
 //! Bonjour implementation for cross-platform TXT record.
 
 use super::txt_record_ref::ManagedTXTRecordRef;
+use crate::Result;
 use crate::ffi::c_str;
 use crate::txt_record::TTxtRecord;
-use crate::Result;
 use libc::{c_char, c_void};
 use std::ffi::CString;
 use std::{ptr, slice};
@@ -37,7 +37,7 @@ impl TTxtRecord for BonjourTxtRecord {
 
         let value_raw = unsafe {
             self.0
-                .get_value_ptr(c_str.as_ptr() as *const c_char, &mut value_len)
+                .get_value_ptr(c_str.as_ptr() as *mut c_char, &mut value_len)
         };
 
         if value_raw.is_null() {
@@ -126,7 +126,7 @@ impl Iterator for Iter<'_> {
             return None;
         }
 
-        let raw_key: CString = unsafe { c_string!(alloc(Iter::KEY_LEN as usize)) };
+        let raw_key: CString = c_string!(alloc(Iter::KEY_LEN as usize));
         let mut value_len: u8 = 0;
         let mut value: *const c_void = ptr::null_mut();
 
@@ -181,6 +181,6 @@ impl Iterator for Values<'_> {
 
 unsafe fn read_value(value: *const c_void, value_len: u8) -> String {
     let value_len = value_len as usize;
-    let value_raw = slice::from_raw_parts(value as *const u8, value_len);
+    let value_raw = unsafe { slice::from_raw_parts(value as *const u8, value_len) };
     String::from_utf8(value_raw.to_vec()).expect("could not read value")
 }

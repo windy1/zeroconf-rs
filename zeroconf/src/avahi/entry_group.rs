@@ -3,14 +3,14 @@
 use std::sync::Arc;
 
 use super::{client::ManagedAvahiClient, string_list::ManagedAvahiStringList};
+use crate::Result;
 use crate::avahi::avahi_util;
 use crate::ffi::UnwrapMutOrNull;
-use crate::Result;
 use avahi_sys::{
-    avahi_client_errno, avahi_entry_group_add_service_strlst,
+    AvahiClient, AvahiEntryGroup, AvahiEntryGroupCallback, AvahiIfIndex, AvahiProtocol,
+    AvahiPublishFlags, avahi_client_errno, avahi_entry_group_add_service_strlst,
     avahi_entry_group_add_service_subtype, avahi_entry_group_commit, avahi_entry_group_free,
-    avahi_entry_group_is_empty, avahi_entry_group_new, avahi_entry_group_reset, AvahiClient,
-    AvahiEntryGroup, AvahiEntryGroupCallback, AvahiIfIndex, AvahiProtocol, AvahiPublishFlags,
+    avahi_entry_group_is_empty, avahi_entry_group_new, avahi_entry_group_reset,
 };
 use libc::{c_char, c_void};
 
@@ -37,10 +37,10 @@ impl ManagedAvahiEntryGroup {
             userdata,
         }: ManagedAvahiEntryGroupParams,
     ) -> Result<Self> {
-        let inner = avahi_entry_group_new(client.inner, callback, userdata);
+        let inner = unsafe { avahi_entry_group_new(client.inner, callback, userdata) };
 
         if inner.is_null() {
-            let err = avahi_util::get_error(avahi_client_errno(client.inner));
+            let err = unsafe { avahi_util::get_error(avahi_client_errno(client.inner)) };
             Err(format!("could not initialize AvahiEntryGroup: {}", err).into())
         } else {
             Ok(Self {
@@ -57,7 +57,7 @@ impl ManagedAvahiEntryGroup {
     /// # Safety
     /// This function is unsafe because of the call to `avahi_entry_group_is_empty()`.
     pub unsafe fn is_empty(&self) -> bool {
-        avahi_entry_group_is_empty(self.inner) != 0
+        unsafe { avahi_entry_group_is_empty(self.inner) != 0 }
     }
 
     /// Delegate function for [`avahi_entry_group_add_service()`].
@@ -82,23 +82,25 @@ impl ManagedAvahiEntryGroup {
             txt,
         }: AddServiceParams,
     ) -> Result<()> {
-        avahi_util::sys_exec(
-            || {
-                avahi_entry_group_add_service_strlst(
-                    self.inner,
-                    interface,
-                    protocol,
-                    flags,
-                    name,
-                    kind,
-                    domain,
-                    host,
-                    port,
-                    txt.map(|t| t.inner()).unwrap_mut_or_null(),
-                )
-            },
-            "could not register service",
-        )
+        unsafe {
+            avahi_util::sys_exec(
+                || {
+                    avahi_entry_group_add_service_strlst(
+                        self.inner,
+                        interface,
+                        protocol,
+                        flags,
+                        name,
+                        kind,
+                        domain,
+                        host,
+                        port,
+                        txt.map(|t| t.inner()).unwrap_mut_or_null(),
+                    )
+                },
+                "could not register service",
+            )
+        }
     }
 
     /// Delegate function for [`avahi_entry_group_add_service_subtype()`].
@@ -121,14 +123,16 @@ impl ManagedAvahiEntryGroup {
             subtype,
         }: AddServiceSubtypeParams,
     ) -> Result<()> {
-        avahi_util::sys_exec(
-            || {
-                avahi_entry_group_add_service_subtype(
-                    self.inner, interface, protocol, flags, name, kind, domain, subtype,
-                )
-            },
-            "could not register service subtype",
-        )
+        unsafe {
+            avahi_util::sys_exec(
+                || {
+                    avahi_entry_group_add_service_subtype(
+                        self.inner, interface, protocol, flags, name, kind, domain, subtype,
+                    )
+                },
+                "could not register service subtype",
+            )
+        }
     }
 
     /// Delegate function for [`avahi_entry_group_commit()`].
@@ -140,10 +144,12 @@ impl ManagedAvahiEntryGroup {
     /// # Safety
     /// This function is unsafe because of the call to `avahi_entry_group_commit()`.
     pub unsafe fn commit(&mut self) -> Result<()> {
-        avahi_util::sys_exec(
-            || avahi_entry_group_commit(self.inner),
-            "could not commit service",
-        )
+        unsafe {
+            avahi_util::sys_exec(
+                || avahi_entry_group_commit(self.inner),
+                "could not commit service",
+            )
+        }
     }
 
     /// Delegate function for [`avahi_entry_group_reset()`].
@@ -153,7 +159,7 @@ impl ManagedAvahiEntryGroup {
     /// # Safety
     /// This function is unsafe because of the call to `avahi_entry_group_reset()`.
     pub unsafe fn reset(&mut self) {
-        avahi_entry_group_reset(self.inner);
+        unsafe { avahi_entry_group_reset(self.inner) };
     }
 
     /// Delegate function for [`avahi_entry_group_get_client()`].
@@ -162,7 +168,7 @@ impl ManagedAvahiEntryGroup {
     /// This function is unsafe because it returns a raw pointer to
     /// the underlying `AvahiClient`.
     pub unsafe fn get_client(&self) -> *mut AvahiClient {
-        avahi_sys::avahi_entry_group_get_client(self.inner)
+        unsafe { avahi_sys::avahi_entry_group_get_client(self.inner) }
     }
 }
 

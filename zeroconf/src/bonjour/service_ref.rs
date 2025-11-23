@@ -1,11 +1,11 @@
 //! Low level interface for interacting with `DNSserviceRef`
 
-use crate::{bonjour::bonjour_util, Result};
+use crate::{Result, bonjour::bonjour_util};
 use bonjour_sys::{
-    dnssd_sock_t, DNSServiceBrowse, DNSServiceBrowseReply, DNSServiceFlags, DNSServiceGetAddrInfo,
+    DNSServiceBrowse, DNSServiceBrowseReply, DNSServiceFlags, DNSServiceGetAddrInfo,
     DNSServiceGetAddrInfoReply, DNSServiceProcessResult, DNSServiceProtocol, DNSServiceRef,
     DNSServiceRefDeallocate, DNSServiceRefSockFD, DNSServiceRegister, DNSServiceRegisterReply,
-    DNSServiceResolve, DNSServiceResolveReply,
+    DNSServiceResolve, DNSServiceResolveReply, dnssd_sock_t,
 };
 use libc::{c_char, c_void};
 use std::ptr;
@@ -51,7 +51,7 @@ impl ManagedDNSServiceRef {
         }: RegisterServiceParams,
     ) -> Result<()> {
         bonjour_util::sys_exec(
-            || {
+            || unsafe {
                 DNSServiceRegister(
                     &mut self.0 as *mut DNSServiceRef,
                     flags,
@@ -89,7 +89,7 @@ impl ManagedDNSServiceRef {
         }: BrowseServicesParams,
     ) -> Result<()> {
         bonjour_util::sys_exec(
-            || {
+            || unsafe {
                 DNSServiceBrowse(
                     &mut self.0 as *mut DNSServiceRef,
                     flags,
@@ -123,7 +123,7 @@ impl ManagedDNSServiceRef {
         }: ServiceResolveParams,
     ) -> Result<()> {
         bonjour_util::sys_exec(
-            || {
+            || unsafe {
                 DNSServiceResolve(
                     &mut self.0 as *mut DNSServiceRef,
                     flags,
@@ -138,7 +138,7 @@ impl ManagedDNSServiceRef {
             "DNSServiceResolve() reported error",
         )?;
 
-        self.process_result()
+        unsafe { self.process_result() }
     }
 
     /// Delegate function for [`DNSServiceGetAddrInfo`].
@@ -159,7 +159,7 @@ impl ManagedDNSServiceRef {
         }: GetAddressInfoParams,
     ) -> Result<()> {
         bonjour_util::sys_exec(
-            || {
+            || unsafe {
                 DNSServiceGetAddrInfo(
                     &mut self.0 as *mut DNSServiceRef,
                     flags,
@@ -173,7 +173,7 @@ impl ManagedDNSServiceRef {
             "DNSServiceGetAddrInfo() reported error",
         )?;
 
-        self.process_result()
+        unsafe { self.process_result() }
     }
 
     /// Delegate function for [`DNSServiceProcessResult`].
@@ -184,7 +184,7 @@ impl ManagedDNSServiceRef {
     /// This function is unsafe because it calls a C function.
     pub unsafe fn process_result(&self) -> Result<()> {
         bonjour_util::sys_exec(
-            || DNSServiceProcessResult(self.0),
+            || unsafe { DNSServiceProcessResult(self.0) },
             "could not process service result",
         )
     }
@@ -196,7 +196,7 @@ impl ManagedDNSServiceRef {
     /// # Safety
     /// This function is unsafe because it calls a C function.
     pub unsafe fn sock_fd(&self) -> dnssd_sock_t {
-        DNSServiceRefSockFD(self.0)
+        unsafe { DNSServiceRefSockFD(self.0) }
     }
 }
 

@@ -3,11 +3,11 @@
 use std::sync::Arc;
 
 use super::{avahi_util, poll::ManagedAvahiSimplePoll};
-use crate::ffi::c_str;
 use crate::Result;
+use crate::ffi::c_str;
 use avahi_sys::{
-    avahi_client_free, avahi_client_get_host_name, avahi_client_new, avahi_simple_poll_get,
-    AvahiClient, AvahiClientCallback, AvahiClientFlags,
+    AvahiClient, AvahiClientCallback, AvahiClientFlags, avahi_client_free,
+    avahi_client_get_host_name, avahi_client_new, avahi_simple_poll_get,
 };
 use libc::{c_int, c_void};
 
@@ -37,13 +37,15 @@ impl ManagedAvahiClient {
     ) -> Result<Self> {
         let mut err: c_int = 0;
 
-        let inner = avahi_client_new(
-            avahi_simple_poll_get(poll.inner()),
-            flags,
-            callback,
-            userdata,
-            &mut err,
-        );
+        let inner = unsafe {
+            avahi_client_new(
+                avahi_simple_poll_get(poll.inner()),
+                flags,
+                callback,
+                userdata,
+                &mut err,
+            )
+        };
 
         if inner.is_null() {
             return Err("could not initialize AvahiClient".into());
@@ -51,10 +53,9 @@ impl ManagedAvahiClient {
 
         match err {
             0 => Ok(Self { inner, _poll: poll }),
-            _ => Err(format!(
-                "could not initialize AvahiClient: {}",
+            _ => Err(format!("could not initialize AvahiClient: {}", unsafe {
                 avahi_util::get_error(err)
-            )
+            })
             .into()),
         }
     }
@@ -66,7 +67,7 @@ impl ManagedAvahiClient {
     /// # Safety
     /// This function is unsafe because of the raw pointer dereference.
     pub unsafe fn host_name<'a>(&self) -> Result<&'a str> {
-        get_host_name(self.inner)
+        unsafe { get_host_name(self.inner) }
     }
 }
 
@@ -94,10 +95,10 @@ pub struct ManagedAvahiClientParams {
 
 pub(super) unsafe fn get_host_name<'a>(client: *mut AvahiClient) -> Result<&'a str> {
     assert_not_null!(client);
-    let host_name = avahi_client_get_host_name(client);
+    let host_name = unsafe { avahi_client_get_host_name(client) };
 
     if !host_name.is_null() {
-        Ok(c_str::raw_to_str(host_name))
+        Ok(unsafe { c_str::raw_to_str(host_name) })
     } else {
         Err("could not get host name from AvahiClient".into())
     }

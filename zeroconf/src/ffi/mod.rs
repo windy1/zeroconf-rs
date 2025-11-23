@@ -13,7 +13,7 @@ pub trait FromRaw<T> {
     /// This function is unsafe due to the dereference of the specified raw pointer.
     unsafe fn from_raw<'a>(raw: *mut c_void) -> &'a mut T {
         assert_not_null!(raw);
-        &mut *(raw as *mut T)
+        unsafe { &mut *(raw as *mut T) }
     }
 }
 
@@ -64,22 +64,24 @@ pub(crate) mod bonjour {
     /// # Safety
     /// This function is unsafe because it directly interfaces with C-library system calls.
     pub unsafe fn read_select(sock_fd: i32, timeout: Duration) -> Result<u32> {
-        let mut read_flags: fd_set = mem::zeroed();
+        let mut read_flags: fd_set = unsafe { mem::zeroed() };
 
-        libc::FD_ZERO(&mut read_flags);
-        libc::FD_SET(sock_fd, &mut read_flags);
+        unsafe { libc::FD_ZERO(&mut read_flags) };
+        unsafe { libc::FD_SET(sock_fd, &mut read_flags) };
 
         let tv_sec = timeout.as_secs() as time_t;
         let tv_usec = timeout.subsec_micros() as suseconds_t;
         let mut timeout = timeval { tv_sec, tv_usec };
 
-        let result = libc::select(
-            sock_fd + 1,
-            &mut read_flags,
-            ptr::null_mut(),
-            ptr::null_mut(),
-            &mut timeout,
-        );
+        let result = unsafe {
+            libc::select(
+                sock_fd + 1,
+                &mut read_flags,
+                ptr::null_mut(),
+                ptr::null_mut(),
+                &mut timeout,
+            )
+        };
 
         if result < 0 {
             Err("select(): returned error status".into())
@@ -121,7 +123,7 @@ pub(crate) mod bonjour {
         };
         set.fd_array[0] = sock_fd;
 
-        let result = select(0, &mut set, ptr::null_mut(), &mut set, &timeout);
+        let result = unsafe { select(0, &mut set, ptr::null_mut(), &mut set, &timeout) };
 
         if result < 0 {
             Err("select(): returned error status".into())

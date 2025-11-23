@@ -4,9 +4,9 @@ use std::sync::Arc;
 
 use crate::Result;
 use avahi_sys::{
-    avahi_service_browser_free, avahi_service_browser_get_client, avahi_service_browser_new,
     AvahiClient, AvahiIfIndex, AvahiLookupFlags, AvahiProtocol, AvahiServiceBrowser,
-    AvahiServiceBrowserCallback,
+    AvahiServiceBrowserCallback, avahi_service_browser_free, avahi_service_browser_get_client,
+    avahi_service_browser_new,
 };
 use libc::{c_char, c_void};
 
@@ -40,16 +40,18 @@ impl ManagedAvahiServiceBrowser {
             userdata,
         }: ManagedAvahiServiceBrowserParams,
     ) -> Result<Self> {
-        let inner = avahi_service_browser_new(
-            client.inner,
-            interface,
-            protocol,
-            kind,
-            domain,
-            flags,
-            callback,
-            userdata,
-        );
+        let inner = unsafe {
+            avahi_service_browser_new(
+                client.inner,
+                interface,
+                protocol,
+                kind,
+                domain,
+                flags,
+                callback,
+                userdata,
+            )
+        };
 
         if inner.is_null() {
             Err("could not initialize Avahi service browser".into())
@@ -67,7 +69,7 @@ impl ManagedAvahiServiceBrowser {
     /// This function leaks the internal raw pointer, useful for accessing within callbacks where
     /// you are sure the pointer is still valid.
     pub unsafe fn get_client(&self) -> *mut AvahiClient {
-        avahi_service_browser_get_client(self.inner)
+        unsafe { avahi_service_browser_get_client(self.inner) }
     }
 }
 
