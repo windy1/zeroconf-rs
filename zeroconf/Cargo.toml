@@ -42,6 +42,9 @@ bonjour-sys = "0.3.0"
 [target.'cfg(target_vendor = "pc")'.dependencies]
 bonjour-sys = "0.3.0"
 
+[target.'cfg(target_os = "freebsd")'.dependencies]
+bonjour-sys = "0.3.0"
+
 [package.metadata.docs.rs]
 default-target = "x86_64-unknown-linux-gnu"
 targets = ["x86_64-apple-darwin", "x86_64-pc-windows-msvc"]

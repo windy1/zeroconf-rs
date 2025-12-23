@@ -194,7 +194,7 @@ extern crate derive_builder;
 extern crate zeroconf_macros;
 #[cfg(target_os = "linux")]
 extern crate avahi_sys;
-#[cfg(any(target_vendor = "apple", target_vendor = "pc"))]
+#[cfg(any(target_vendor = "apple", target_vendor = "pc", target_os = "freebsd"))]
 extern crate bonjour_sys;
 #[macro_use]
 extern crate derive_getters;
@@ -225,7 +225,7 @@ pub mod txt_record;
 
 #[cfg(target_os = "linux")]
 pub mod avahi;
-#[cfg(any(target_vendor = "apple", target_vendor = "pc"))]
+#[cfg(any(target_vendor = "apple", target_vendor = "pc", target_os = "freebsd"))]
 pub mod bonjour;
 
 pub use browser::{BrowserEvent, ServiceBrowserCallback, ServiceDiscovery, ServiceRemoval};
@@ -237,21 +237,21 @@ pub use service_type::*;
 #[cfg(target_os = "linux")]
 pub type MdnsBrowser = avahi::browser::AvahiMdnsBrowser;
 /// Type alias for the platform-specific mDNS browser implementation
-#[cfg(any(target_vendor = "apple", target_vendor = "pc"))]
+#[cfg(any(target_vendor = "apple", target_vendor = "pc", target_os = "freebsd"))]
 pub type MdnsBrowser = bonjour::browser::BonjourMdnsBrowser;
 
 /// Type alias for the platform-specific mDNS service implementation
 #[cfg(target_os = "linux")]
 pub type MdnsService = avahi::service::AvahiMdnsService;
 /// Type alias for the platform-specific mDNS service implementation
-#[cfg(any(target_vendor = "apple", target_vendor = "pc"))]
+#[cfg(any(target_vendor = "apple", target_vendor = "pc", target_os = "freebsd"))]
 pub type MdnsService = bonjour::service::BonjourMdnsService;
 
 /// Type alias for the platform-specific structure responsible for polling the mDNS event loop
 #[cfg(target_os = "linux")]
 pub type EventLoop = avahi::event_loop::AvahiEventLoop;
 /// Type alias for the platform-specific structure responsible for polling the mDNS event loop
-#[cfg(any(target_vendor = "apple", target_vendor = "pc"))]
+#[cfg(any(target_vendor = "apple", target_vendor = "pc", target_os = "freebsd"))]
 pub type EventLoop = bonjour::event_loop::BonjourEventLoop;
 
 /// Type alias for the platform-specific structure responsible for storing and accessing TXT
@@ -260,7 +260,7 @@ pub type EventLoop = bonjour::event_loop::BonjourEventLoop;
 pub type TxtRecord = avahi::txt_record::AvahiTxtRecord;
 /// Type alias for the platform-specific structure responsible for storing and accessing TXT
 /// record data
-#[cfg(any(target_vendor = "apple", target_vendor = "pc"))]
+#[cfg(any(target_vendor = "apple", target_vendor = "pc", target_os = "freebsd"))]
 pub type TxtRecord = bonjour::txt_record::BonjourTxtRecord;
 
 /// Result type for this library

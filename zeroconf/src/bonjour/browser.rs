@@ -14,6 +14,8 @@ use bonjour_sys::sockaddr_in;
 use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
 #[cfg(target_vendor = "apple")]
 use libc::sockaddr_in;
+#[cfg(target_os = "freebsd")]
+use libc::sockaddr_in;
 use libc::{c_char, c_uchar, c_void};
 use std::any::Any;
 use std::ffi::CString;
@@ -322,6 +324,14 @@ unsafe fn handle_get_address_info(
         assert_not_null!(address);
         let s_un = unsafe { (*address).sin_addr.S_un.S_un_b };
         let s_addr = [s_un.s_b1, s_un.s_b2, s_un.s_b3, s_un.s_b4];
+        IpAddr::from(s_addr).to_string()
+    };
+
+    #[cfg(target_os = "freebsd")]
+    let ip = {
+        let address = address as *const sockaddr_in;
+        assert_not_null!(address);
+        let s_addr = unsafe { (*address).sin_addr.s_addr.to_le_bytes() };
         IpAddr::from(s_addr).to_string()
     };
 
