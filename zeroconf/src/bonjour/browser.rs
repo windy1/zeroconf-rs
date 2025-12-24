@@ -12,9 +12,7 @@ use crate::{EventLoop, NetworkInterface, Result, ServiceType, TxtRecord};
 #[cfg(target_vendor = "pc")]
 use bonjour_sys::sockaddr_in;
 use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
-#[cfg(target_vendor = "apple")]
-use libc::sockaddr_in;
-#[cfg(target_os = "freebsd")]
+#[cfg(any(target_vendor = "apple", target_os = "freebsd"))]
 use libc::sockaddr_in;
 use libc::{c_char, c_uchar, c_void};
 use std::any::Any;

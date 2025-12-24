@@ -51,7 +51,7 @@ impl<T> UnwrapMutOrNull<T> for Option<*mut T> {
     }
 }
 
-#[cfg(target_vendor = "apple")]
+#[cfg(any(target_vendor = "apple", target_os = "freebsd"))]
 pub(crate) mod bonjour {
     use crate::Result;
     use libc::{fd_set, suseconds_t, time_t, timeval};
@@ -124,46 +124,6 @@ pub(crate) mod bonjour {
         set.fd_array[0] = sock_fd;
 
         let result = unsafe { select(0, &mut set, ptr::null_mut(), &mut set, &timeout) };
-
-        if result < 0 {
-            Err("select(): returned error status".into())
-        } else {
-            Ok(result as u32)
-        }
-    }
-}
-
-#[cfg(target_os = "freebsd")]
-pub(crate) mod bonjour {
-    use crate::Result;
-    use libc::{fd_set, suseconds_t, time_t, timeval};
-    use std::time::Duration;
-    use std::{mem, ptr};
-
-    /// Performs a unix `select()` on the specified `sock_fd` and `timeout`. Returns the select result
-    /// or `Err` if the result is negative.
-    ///
-    /// # Safety
-    /// This function is unsafe because it directly interfaces with C-library system calls.
-    pub unsafe fn read_select(sock_fd: i32, timeout: Duration) -> Result<u32> {
-        let mut read_flags: fd_set = unsafe { mem::zeroed() };
-
-        unsafe { libc::FD_ZERO(&mut read_flags) };
-        unsafe { libc::FD_SET(sock_fd, &mut read_flags) };
-
-        let tv_sec = timeout.as_secs() as time_t;
-        let tv_usec = timeout.subsec_micros() as suseconds_t;
-        let mut timeout = timeval { tv_sec, tv_usec };
-
-        let result = unsafe {
-            libc::select(
-                sock_fd + 1,
-                &mut read_flags,
-                ptr::null_mut(),
-                ptr::null_mut(),
-                &mut timeout,
-            )
-        };
 
         if result < 0 {
             Err("select(): returned error status".into())
