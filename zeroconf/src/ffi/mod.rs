@@ -51,7 +51,7 @@ impl<T> UnwrapMutOrNull<T> for Option<*mut T> {
     }
 }
 
-#[cfg(target_vendor = "apple")]
+#[cfg(any(target_vendor = "apple", target_os = "freebsd"))]
 pub(crate) mod bonjour {
     use crate::Result;
     use libc::{fd_set, suseconds_t, time_t, timeval};

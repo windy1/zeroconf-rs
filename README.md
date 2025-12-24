@@ -20,6 +20,33 @@ On Windows:
 Bonjour must be installed. It comes bundled with [iTunes][] or [Bonjour Print Services][]. Further redistribution &
 bundling details are available on the [Apple Developer Site][].
 
+On FreeBSD:
+
+Bonjour/mDNSResponder must be installed.
+
+```bash
+sudo pkg install mDNSResponder
+```
+
+After installing mDNSResponder, you need to enable and start the service:
+
+``` bash
+sudo sysrc mdnsd_enable="YES"
+sudo service mdnsd start
+```
+
+You might also need the development headers/libraries for linking. Check if you have the necessary files:
+Check for mDNS headers
+
+``` bash
+ls /usr/local/include/dns_sd.h
+```
+
+Check for libraries
+
+``` bash
+ls /usr/local/lib/libdns_sd.so*
+
 ## Examples
 
 ### Register a service
