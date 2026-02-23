@@ -67,6 +67,8 @@ jobs:
           usesh: true
           prepare: |
             pkg install -y curl rust mDNSResponder llvm
+            sysrc mdnsd_enable="YES"
+            service mdnsd start
           run: |
             cargo build --features "${{ matrix.features }}"
             cargo test --features "${{ matrix.features }}" -- --skip service_register_is_browsable
