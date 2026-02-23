@@ -49,3 +49,26 @@ jobs:
 
       - name: Run Clippy
         run: cargo clippy --features "${{ matrix.features }}" -- -D warnings
+
+  build-freebsd:
+    name: zeroconf-rs (FreeBSD)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        features: [serde, ""]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build and test on FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          prepare: |
+            pkg install -y curl rust mDNSResponder llvm
+          run: |
+            cargo build --features "${{ matrix.features }}"
+            cargo test --features "${{ matrix.features }}" -- --skip service_register_is_browsable
+            cargo fmt -- --check
+            cargo clippy --features "${{ matrix.features }}" -- -D warnings
