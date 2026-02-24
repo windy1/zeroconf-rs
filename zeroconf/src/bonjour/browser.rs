@@ -12,7 +12,7 @@ use crate::{EventLoop, NetworkInterface, Result, ServiceType, TxtRecord};
 #[cfg(target_vendor = "pc")]
 use bonjour_sys::sockaddr_in;
 use bonjour_sys::{DNSServiceErrorType, DNSServiceFlags, DNSServiceRef};
-#[cfg(target_vendor = "apple")]
+#[cfg(any(target_vendor = "apple", target_os = "freebsd"))]
 use libc::sockaddr_in;
 use libc::{c_char, c_uchar, c_void};
 use std::any::Any;
@@ -308,7 +308,7 @@ unsafe fn handle_get_address_info(
     let port: u16 = ctx.resolved_port.to_be();
 
     // on macOS the bytes are swapped for the ip
-    #[cfg(target_vendor = "apple")]
+    #[cfg(any(target_vendor = "apple", target_os = "freebsd"))]
     let ip = {
         let address = address as *const sockaddr_in;
         assert_not_null!(address);
