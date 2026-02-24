@@ -46,6 +46,7 @@ Check for libraries
 
 ``` bash
 ls /usr/local/lib/libdns_sd.so*
+```
 
 ## Examples
 
