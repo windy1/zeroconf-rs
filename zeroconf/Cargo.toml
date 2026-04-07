@@ -1,6 +1,6 @@
 [package]
 name = "zeroconf"
-version = "0.17.0"
+version = "0.18.0"
 authors = ["Walker Crouse <walkercrouse@hotmail.com>"]
 edition = "2024"
 description = "cross-platform library that wraps ZeroConf/mDNS implementations like Bonjour or Avahi"
